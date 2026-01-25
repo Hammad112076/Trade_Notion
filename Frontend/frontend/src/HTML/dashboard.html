@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Trade Notion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f3f4f6;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 260px;
+            background: #1f2937;
+            color: white;
+            padding: 2rem 0;
+            overflow-y: auto;
+        }
+
+        .logo {
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .logo h2 {
+            color: #4F46E5;
+            font-size: 1.5rem;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-section-title {
+            padding: 0 1.5rem;
+            color: #9ca3af;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            color: #d1d5db;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #374151;
+            color: white;
+            border-left: 3px solid #4F46E5;
+        }
+
+        .nav-icon {
+            font-size: 1.25rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #1f2937;
+            font-size: 1.75rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #4F46E5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4338CA;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #4F46E5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-title {
+            color: #6b7280;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .stat-icon.blue { background: #dbeafe; color: #2563eb; }
+        .stat-icon.green { background: #d1fae5; color: #059669; }
+        .stat-icon.purple { background: #e9d5ff; color: #7c3aed; }
+        .stat-icon.orange { background: #fed7aa; color: #ea580c; }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-change {
+            font-size: 0.875rem;
+        }
+
+        .stat-change.positive {
+            color: #059669;
+        }
+
+        .stat-change.negative {
+            color: #dc2626;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .card-action {
+            color: #4F46E5;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .card-action:hover {
+            text-decoration: underline;
+        }
+
+        /* Recent Trades Table */
+        .trades-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .trades-table th {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 2px solid #e5e7eb;
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .trades-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .trades-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge.win {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .badge.loss {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .quick-action-btn {
+            padding: 1rem;
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .quick-action-btn:hover {
+            border-color: #4F46E5;
+            background: white;
+        }
+
+        /* Chart Placeholder */
+        .chart-placeholder {
+            height: 300px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 1024px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .nav-item span {
+                display: none;
+            }
+
+            .logo h2 {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <h2>Trade Notion</h2>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="/dashboard.html" class="nav-item active">
+                <span class="nav-icon">📊</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="/trades.html" class="nav-item">
+                <span class="nav-icon">📝</span>
+                <span>Trade Journal</span>
+            </a>
+            <a href="/analytics.html" class="nav-item">
+                <span class="nav-icon">📈</span>
+                <span>Analytics</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Tools</div>
+            <a href="/calendar.html" class="nav-item">
+                <span class="nav-icon">📅</span>
+                <span>Calendar</span>
+            </a>
+            <a href="/reports.html" class="nav-item">
+                <span class="nav-icon">📄</span>
+                <span>Reports</span>
+            </a>
+            <a href="/goals.html" class="nav-item">
+                <span class="nav-icon">🎯</span>
+                <span>Goals</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Account</div>
+            <a href="/settings.html" class="nav-item">
+                <span class="nav-icon">⚙️</span>
+                <span>Settings</span>
+            </a>
+            <a href="#" class="nav-item" onclick="logout()">
+                <span class="nav-icon">🚪</span>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1>Welcome back, Trader!</h1>
+                <p style="color: #6b7280; margin-top: 0.25rem;">Here's your trading overview</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="window.location.href='/new-trade.html'">+ Add Trade</button>
+                <div class="user-menu">
+                    <div class="user-avatar">JD</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Total P&L</span>
+                    <div class="stat-icon green">💰</div>
+                </div>
+                <div class="stat-value">$12,450</div>
+                <div class="stat-change positive">↑ 12.5% this month</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Win Rate</span>
+                    <div class="stat-icon blue">📊</div>
+                </div>
+                <div class="stat-value">68.5%</div>
+                <div class="stat-change positive">↑ 3.2% from last month</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Total Trades</span>
+                    <div class="stat-icon purple">📝</div>
+                </div>
+                <div class="stat-value">127</div>
+                <div class="stat-change positive">↑ 15 this month</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-title">Avg Win/Loss</span>
+                    <div class="stat-icon orange">⚖️</div>
+                </div>
+                <div class="stat-value">1.85</div>
+                <div class="stat-change positive">↑ 0.15 improvement</div>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Recent Trades -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Recent Trades</h2>
+                    <a href="/trades.html" class="card-action">View all →</a>
+                </div>
+                <table class="trades-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>P&L</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>AAPL</strong></td>
+                            <td>Jan 24, 2026</td>
+                            <td>Long</td>
+                            <td style="color: #059669;">+$245.50</td>
+                            <td><span class="badge win">Win</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>TSLA</strong></td>
+                            <td>Jan 23, 2026</td>
+                            <td>Short</td>
+                            <td style="color: #dc2626;">-$120.00</td>
+                            <td><span class="badge loss">Loss</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>MSFT</strong></td>
+                            <td>Jan 22, 2026</td>
+                            <td>Long</td>
+                            <td style="color: #059669;">+$180.25</td>
+                            <td><span class="badge win">Win</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>NVDA</strong></td>
+                            <td>Jan 21, 2026</td>
+                            <td>Long</td>
+                            <td style="color: #059669;">+$320.00</td>
+                            <td><span class="badge win">Win</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>AMZN</strong></td>
+                            <td>Jan 20, 2026</td>
+                            <td>Short</td>
+                            <td style="color: #dc2626;">-$95.75</td>
+                            <td><span class="badge loss">Loss</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Quick Actions</h2>
+                </div>
+                <div class="quick-actions">
+                    <button class="quick-action-btn" onclick="window.location.href='/new-trade.html'">
+                        📝 Log New Trade
+                    </button>
+                    <button class="quick-action-btn" onclick="window.location.href='/analytics.html'">
+                        📊 View Analytics
+                    </button>
+                    <button class="quick-action-btn" onclick="window.location.href='/reports.html'">
+                        📄 Generate Report
+                    </button>
+                    <button class="quick-action-btn" onclick="window.location.href='/goals.html'">
+                        🎯 Set Goals
+                    </button>
+                    <button class="quick-action-btn" onclick="window.location.href='/settings.html'">
+                        ⚙️ Account Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Chart -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Performance Overview</h2>
+                <a href="/analytics.html" class="card-action">Detailed analytics →</a>
+            </div>
+            <div class="chart-placeholder">
+                Chart Visualization Coming Soon
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if user is logged in
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/index.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/index.html';
+        }
+    </script>
+</body>
+</html>
