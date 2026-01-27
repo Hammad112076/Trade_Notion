@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar - Trade Notion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f3f4f6;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 260px;
+            background: #1f2937;
+            color: white;
+            padding: 2rem 0;
+            overflow-y: auto;
+        }
+
+        .logo {
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .logo h2 {
+            color: #4F46E5;
+            font-size: 1.5rem;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-section-title {
+            padding: 0 1.5rem;
+            color: #9ca3af;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            color: #d1d5db;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #374151;
+            color: white;
+            border-left: 3px solid #4F46E5;
+        }
+
+        .nav-icon {
+            font-size: 1.25rem;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 2rem;
+        }
+
+        .header {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #1f2937;
+            font-size: 1.75rem;
+        }
+
+        .calendar-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .month-selector {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .month-btn {
+            padding: 0.5rem 1rem;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .month-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .current-month {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .calendar-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #e5e7eb;
+            border: 1px solid #e5e7eb;
+        }
+
+        .calendar-header {
+            background: #f9fafb;
+            padding: 1rem;
+            text-align: center;
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .calendar-day {
+            background: white;
+            min-height: 120px;
+            padding: 0.75rem;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .calendar-day:hover {
+            background: #f9fafb;
+        }
+
+        .calendar-day.other-month {
+            background: #f9fafb;
+            color: #9ca3af;
+        }
+
+        .calendar-day.today {
+            background: #eff6ff;
+        }
+
+        .day-number {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .today .day-number {
+            background: #4F46E5;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .trade-indicator {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+        }
+
+        .trade-win {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .trade-loss {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .day-summary {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+
+        .legend {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid #f3f4f6;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .nav-item span {
+                display: none;
+            }
+
+            .calendar-day {
+                min-height: 80px;
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <h2>Trade Notion</h2>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="/dashboard.html" class="nav-item">
+                <span class="nav-icon">📊</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="/trades.html" class="nav-item">
+                <span class="nav-icon">📝</span>
+                <span>Trade Journal</span>
+            </a>
+            <a href="/analytics.html" class="nav-item">
+                <span class="nav-icon">📈</span>
+                <span>Analytics</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Tools</div>
+            <a href="/calendar.html" class="nav-item active">
+                <span class="nav-icon">📅</span>
+                <span>Calendar</span>
+            </a>
+            <a href="/reports.html" class="nav-item">
+                <span class="nav-icon">📄</span>
+                <span>Reports</span>
+            </a>
+            <a href="/goals.html" class="nav-item">
+                <span class="nav-icon">🎯</span>
+                <span>Goals</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Account</div>
+            <a href="/settings.html" class="nav-item">
+                <span class="nav-icon">⚙️</span>
+                <span>Settings</span>
+            </a>
+            <a href="#" class="nav-item" onclick="logout()">
+                <span class="nav-icon">🚪</span>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Trading Calendar</h1>
+            <div class="calendar-controls">
+                <div class="month-selector">
+                    <button class="month-btn">←</button>
+                    <span class="current-month">January 2026</span>
+                    <button class="month-btn">→</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">Trades This Month</div>
+                <div class="stat-value">23</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Win Rate</div>
+                <div class="stat-value">69.6%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Monthly P&L</div>
+                <div class="stat-value" style="color: #059669;">+$2,845</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Best Day</div>
+                <div class="stat-value" style="color: #059669;">+$680</div>
+            </div>
+        </div>
+
+        <div class="calendar-container">
+            <div class="calendar-grid">
+                <div class="calendar-header">Sun</div>
+                <div class="calendar-header">Mon</div>
+                <div class="calendar-header">Tue</div>
+                <div class="calendar-header">Wed</div>
+                <div class="calendar-header">Thu</div>
+                <div class="calendar-header">Fri</div>
+                <div class="calendar-header">Sat</div>
+
+                <!-- Week 1 -->
+                <div class="calendar-day other-month">
+                    <div class="day-number">29</div>
+                </div>
+                <div class="calendar-day other-month">
+                    <div class="day-number">30</div>
+                </div>
+                <div class="calendar-day other-month">
+                    <div class="day-number">31</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">1</div>
+                    <div class="trade-indicator trade-win">2 Wins</div>
+                    <div class="day-summary">+$320</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">2</div>
+                    <div class="trade-indicator trade-win">1 Win</div>
+                    <div class="day-summary">+$185</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">3</div>
+                    <div class="trade-indicator trade-loss">1 Loss</div>
+                    <div class="day-summary">-$95</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">4</div>
+                </div>
+
+                <!-- Week 2 -->
+                <div class="calendar-day">
+                    <div class="day-number">5</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">6</div>
+                    <div class="trade-indicator trade-win">3 Wins</div>
+                    <div class="day-summary">+$540</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">7</div>
+                    <div class="trade-indicator trade-win">1 Win</div>
+                    <div class="trade-indicator trade-loss">1 Loss</div>
+                    <div class="day-summary">+$125</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">8</div>
+                    <div class="trade-indicator trade-win">2 Wins</div>
+                    <div class="day-summary">+$420</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">9</div>
+                    <div class="trade-indicator trade-loss">2 Losses</div>
+                    <div class="day-summary">-$180</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">10</div>
+                    <div class="trade-indicator trade-win">1 Win</div>
+                    <div class="day-summary">+$245</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">11</div>
+                </div>
+
+                <!-- Week 3 -->
+                <div class="calendar-day">
+                    <div class="day-number">12</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">13</div>
+                    <div class="trade-indicator trade-win">2 Wins</div>
+                    <div class="day-summary">+$380</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">14</div>
+                    <div class="trade-indicator trade-win">1 Win</div>
+                    <div class="day-summary">+$220</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">15</div>
+                    <div class="trade-indicator trade-loss">1 Loss</div>
+                    <div class="day-summary">-$165</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">16</div>
+                    <div class="trade-indicator trade-win">3 Wins</div>
+                    <div class="day-summary">+$680</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">17</div>
+                    <div class="trade-indicator trade-win">1 Win</div>
+                    <div class="trade-indicator trade-loss">1 Loss</div>
+                    <div class="day-summary">+$95</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">18</div>
+                </div>
+
+                <!-- Week 4 -->
+                <div class="calendar-day">
+                    <div class="day-number">19</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">20</div>
+                    <div class="trade-indicator trade-win">1 Win</div>
+                    <div class="day-summary">+$112</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">21</div>
+                    <div class="trade-indicator trade-win">1 Win</div>
+                    <div class="day-summary">+$320</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">22</div>
+                    <div class="trade-indicator trade-win">1 Win</div>
+                    <div class="day-summary">+$180</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">23</div>
+                    <div class="trade-indicator trade-loss">1 Loss</div>
+                    <div class="day-summary">-$120</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">24</div>
+                    <div class="trade-indicator trade-win">1 Win</div>
+                    <div class="day-summary">+$245</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">25</div>
+                </div>
+
+                <!-- Week 5 -->
+                <div class="calendar-day today">
+                    <div class="day-number">26</div>
+                    <div style="font-size: 0.75rem; color: #4F46E5; font-weight: 600; margin-top: 0.5rem;">Today</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">27</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">28</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">29</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">30</div>
+                </div>
+                <div class="calendar-day">
+                    <div class="day-number">31</div>
+                </div>
+                <div class="calendar-day other-month">
+                    <div class="day-number">1</div>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #d1fae5;"></div>
+                    <span>Winning Day</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #fee2e2;"></div>
+                    <span>Losing Day</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #eff6ff; border: 2px solid #4F46E5;"></div>
+                    <span>Today</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Trade Notion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f3f4f6;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 260px;
+            background: #1f2937;
+            color: white;
+            padding: 2rem 0;
+            overflow-y: auto;
+        }
+
+        .logo {
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .logo h2 {
+            color: #4F46E5;
+            font-size: 1.5rem;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-section-title {
+            padding: 0 1.5rem;
+            color: #9ca3af;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            color: #d1d5db;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #374151;
+            color: white;
+            border-left: 3px solid #4F46E5;
+        }
+
+        .nav-icon {
+            font-size: 1.25rem;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 2rem;
+        }
+
+        .header {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #1f2937;
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .report-generator {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .generator-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            color: #374151;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        select, input {
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #4F46E5;
+        }
+
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #4F46E5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4338CA;
+        }
+
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .report-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .report-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .report-icon.blue { background: #dbeafe; }
+        .report-icon.green { background: #d1fae5; }
+        .report-icon.purple { background: #e9d5ff; }
+        .report-icon.orange { background: #fed7aa; }
+
+        .report-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .report-description {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .report-meta {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 1rem;
+            border-top: 2px solid #f3f4f6;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .recent-reports {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-top: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .recent-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+        }
+
+        .report-item {
+            padding: 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s;
+        }
+
+        .report-item:hover {
+            background: #f9fafb;
+        }
+
+        .report-info h4 {
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+
+        .report-info p {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .report-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            background: #e5e7eb;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .nav-item span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <h2>Trade Notion</h2>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="/dashboard.html" class="nav-item">
+                <span class="nav-icon">📊</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="/trades.html" class="nav-item">
+                <span class="nav-icon">📝</span>
+                <span>Trade Journal</span>
+            </a>
+            <a href="/analytics.html" class="nav-item">
+                <span class="nav-icon">📈</span>
+                <span>Analytics</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Tools</div>
+            <a href="/calendar.html" class="nav-item">
+                <span class="nav-icon">📅</span>
+                <span>Calendar</span>
+            </a>
+            <a href="/reports.html" class="nav-item active">
+                <span class="nav-icon">📄</span>
+                <span>Reports</span>
+            </a>
+            <a href="/goals.html" class="nav-item">
+                <span class="nav-icon">🎯</span>
+                <span>Goals</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Account</div>
+            <a href="/settings.html" class="nav-item">
+                <span class="nav-icon">⚙️</span>
+                <span>Settings</span>
+            </a>
+            <a href="#" class="nav-item" onclick="logout()">
+                <span class="nav-icon">🚪</span>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Reports</h1>
+            <p style="color: #6b7280; margin-top: 0.25rem;">Generate and download custom trading reports</p>
+        </div>
+
+        <div class="report-generator">
+            <h2 class="generator-title">Generate New Report</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Report Type</label>
+                    <select id="reportType">
+                        <option value="performance">Performance Summary</option>
+                        <option value="detailed">Detailed Trade Analysis</option>
+                        <option value="monthly">Monthly Overview</option>
+                        <option value="strategy">Strategy Breakdown</option>
+                        <option value="risk">Risk Analysis</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Date Range</label>
+                    <select id="dateRange">
+                        <option value="week">Last 7 Days</option>
+                        <option value="month">Last 30 Days</option>
+                        <option value="quarter">Last 3 Months</option>
+                        <option value="year">Last Year</option>
+                        <option value="all">All Time</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Format</label>
+                    <select id="format">
+                        <option value="pdf">PDF Document</option>
+                        <option value="excel">Excel Spreadsheet</option>
+                        <option value="csv">CSV File</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="generateReport()">📥 Generate Report</button>
+        </div>
+
+        <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; color: #1f2937;">Report Templates</h2>
+
+        <div class="reports-grid">
+            <div class="report-card">
+                <div class="report-header">
+                    <div>
+                        <div class="report-title">Performance Summary</div>
+                        <div class="report-description">Complete overview of your trading performance including P&L, win rate, and key metrics</div>
+                    </div>
+                    <div class="report-icon blue">📊</div>
+                </div>
+                <div class="report-meta">
+                    <span>Most Popular</span>
+                    <span>5-10 pages</span>
+                </div>
+            </div>
+
+            <div class="report-card">
+                <div class="report-header">
+                    <div>
+                        <div class="report-title">Detailed Trade Analysis</div>
+                        <div class="report-description">In-depth analysis of each trade with entry/exit details, notes, and screenshots</div>
+                    </div>
+                    <div class="report-icon green">🔍</div>
+                </div>
+                <div class="report-meta">
+                    <span>Comprehensive</span>
+                    <span>15-30 pages</span>
+                </div>
+            </div>
+
+            <div class="report-card">
+                <div class="report-header">
+                    <div>
+                        <div class="report-title">Monthly Overview</div>
+                        <div class="report-description">Month-by-month breakdown of trading activity, profits, and patterns</div>
+                    </div>
+                    <div class="report-icon purple">📅</div>
+                </div>
+                <div class="report-meta">
+                    <span>Time-based</span>
+                    <span>3-8 pages</span>
+                </div>
+            </div>
+
+            <div class="report-card">
+                <div class="report-header">
+                    <div>
+                        <div class="report-title">Strategy Breakdown</div>
+                        <div class="report-description">Performance analysis grouped by trading strategy and setup type</div>
+                    </div>
+                    <div class="report-icon orange">🎯</div>
+                </div>
+                <div class="report-meta">
+                    <span>Strategy-focused</span>
+                    <span>8-12 pages</span>
+                </div>
+            </div>
+
+            <div class="report-card">
+                <div class="report-header">
+                    <div>
+                        <div class="report-title">Risk Analysis</div>
+                        <div class="report-description">Detailed breakdown of risk metrics, drawdowns, and risk management performance</div>
+                    </div>
+                    <div class="report-icon blue">⚠️</div>
+                </div>
+                <div class="report-meta">
+                    <span>Risk-focused</span>
+                    <span>6-10 pages</span>
+                </div>
+            </div>
+
+            <div class="report-card">
+                <div class="report-header">
+                    <div>
+                        <div class="report-title">Tax Summary</div>
+                        <div class="report-description">Year-end summary formatted for tax purposes with all realized gains/losses</div>
+                    </div>
+                    <div class="report-icon green">💰</div>
+                </div>
+                <div class="report-meta">
+                    <span>Tax Season</span>
+                    <span>4-6 pages</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="recent-reports">
+            <h2 class="recent-title">Recently Generated Reports</h2>
+            
+            <div class="report-item">
+                <div class="report-info">
+                    <h4>Performance Summary - January 2026</h4>
+                    <p>Generated on Jan 25, 2026 • PDF • 8 pages</p>
+                </div>
+                <div class="report-actions">
+                    <button class="action-btn">📥 Download</button>
+                    <button class="action-btn">👁️ View</button>
+                </div>
+            </div>
+
+            <div class="report-item">
+                <div class="report-info">
+                    <h4>Strategy Breakdown - Q4 2025</h4>
+                    <p>Generated on Jan 15, 2026 • Excel • 12 pages</p>
+                </div>
+                <div class="report-actions">
+                    <button class="action-btn">📥 Download</button>
+                    <button class="action-btn">👁️ View</button>
+                </div>
+            </div>
+
+            <div class="report-item">
+                <div class="report-info">
+                    <h4>Monthly Overview - December 2025</h4>
+                    <p>Generated on Jan 5, 2026 • PDF • 6 pages</p>
+                </div>
+                <div class="report-actions">
+                    <button class="action-btn">📥 Download</button>
+                    <button class="action-btn">👁️ View</button>
+                </div>
+            </div>
+
+            <div class="report-item">
+                <div class="report-info">
+                    <h4>Tax Summary - 2025 Full Year</h4>
+                    <p>Generated on Dec 31, 2025 • PDF • 5 pages</p>
+                </div>
+                <div class="report-actions">
+                    <button class="action-btn">📥 Download</button>
+                    <button class="action-btn">👁️ View</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
+
+        function generateReport() {
+            const reportType = document.getElementById('reportType').value;
+            const dateRange = document.getElementById('dateRange').value;
+            const format = document.getElementById('format').value;
+
+            alert(`Generating ${reportType} report for ${dateRange} in ${format} format...`);
+            // In production, this would make an API call to generate the report
+        }
+    </script>
+</body>
+</html>

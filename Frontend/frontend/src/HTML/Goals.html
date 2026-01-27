@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goals - Trade Notion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f3f4f6;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 260px;
+            background: #1f2937;
+            color: white;
+            padding: 2rem 0;
+            overflow-y: auto;
+        }
+
+        .logo {
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .logo h2 {
+            color: #4F46E5;
+            font-size: 1.5rem;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-section-title {
+            padding: 0 1.5rem;
+            color: #9ca3af;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            color: #d1d5db;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #374151;
+            color: white;
+            border-left: 3px solid #4F46E5;
+        }
+
+        .nav-icon {
+            font-size: 1.25rem;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 2rem;
+        }
+
+        .header {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #1f2937;
+            font-size: 1.75rem;
+        }
+
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #4F46E5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4338CA;
+        }
+
+        .goals-grid {
+            display: grid;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .goal-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .goal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1.5rem;
+        }
+
+        .goal-info h3 {
+            font-size: 1.25rem;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .goal-info p {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .goal-status {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .status-completed {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .status-paused {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .goal-progress {
+            margin-bottom: 1rem;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .progress-value {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #f3f4f6;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4F46E5, #7c3aed);
+            border-radius: 6px;
+            transition: width 0.3s;
+        }
+
+        .goal-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            padding-top: 1rem;
+            border-top: 2px solid #f3f4f6;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .detail-value {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .goal-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .achievements {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .achievements-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+        }
+
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .achievement {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 8px;
+            background: #f9fafb;
+            transition: transform 0.3s;
+        }
+
+        .achievement:hover {
+            transform: scale(1.05);
+        }
+
+        .achievement.unlocked {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+        }
+
+        .achievement-icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .achievement-name {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+
+        .achievement-desc {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .nav-item span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <h2>Trade Notion</h2>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="/dashboard.html" class="nav-item">
+                <span class="nav-icon">📊</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="/trades.html" class="nav-item">
+                <span class="nav-icon">📝</span>
+                <span>Trade Journal</span>
+            </a>
+            <a href="/analytics.html" class="nav-item">
+                <span class="nav-icon">📈</span>
+                <span>Analytics</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Tools</div>
+            <a href="/calendar.html" class="nav-item">
+                <span class="nav-icon">📅</span>
+                <span>Calendar</span>
+            </a>
+            <a href="/reports.html" class="nav-item">
+                <span class="nav-icon">📄</span>
+                <span>Reports</span>
+            </a>
+            <a href="/goals.html" class="nav-item active">
+                <span class="nav-icon">🎯</span>
+                <span>Goals</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Account</div>
+            <a href="/settings.html" class="nav-item">
+                <span class="nav-icon">⚙️</span>
+                <span>Settings</span>
+            </a>
+            <a href="#" class="nav-item" onclick="logout()">
+                <span class="nav-icon">🚪</span>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Trading Goals</h1>
+            <button class="btn btn-primary">+ Create New Goal</button>
+        </div>
+
+        <div class="goals-grid">
+            <div class="goal-card">
+                <div class="goal-header">
+                    <div class="goal-info">
+                        <h3>Reach $10,000 Profit</h3>
+                        <p>Target Date: March 31, 2026</p>
+                    </div>
+                    <div class="goal-status status-active">Active</div>
+                </div>
+
+                <div class="goal-progress">
+                    <div class="progress-header">
+                        <span class="progress-label">Progress</span>
+                        <span class="progress-value">$7,250 / $10,000</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 72.5%"></div>
+                    </div>
+                </div>
+
+                <div class="goal-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Time Remaining</span>
+                        <span class="detail-value">64 days</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Daily Target</span>
+                        <span class="detail-value">$42.97</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Completion</span>
+                        <span class="detail-value" style="color: #4F46E5;">72.5%</span>
+                    </div>
+                </div>
+
+                <div class="goal-actions">
+                    <button class="action-btn">✏️ Edit</button>
+                    <button class="action-btn">📊 View Details</button>
+                    <button class="action-btn">⏸️ Pause</button>
+                </div>
+            </div>
+
+            <div class="goal-card">
+                <div class="goal-header">
+                    <div class="goal-info">
+                        <h3>Maintain 70% Win Rate</h3>
+                        <p>Target Date: June 30, 2026</p>
+                    </div>
+                    <div class="goal-status status-active">Active</div>
+                </div>
+
+                <div class="goal-progress">
+                    <div class="progress-header">
+                        <span class="progress-label">Current Win Rate</span>
+                        <span class="progress-value">68.5% / 70%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 97.9%"></div>
+                    </div>
+                </div>
+
+                <div class="goal-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Wins Needed</span>
+                        <span class="detail-value">3 more</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Total Trades</span>
+                        <span class="detail-value">127</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Status</span>
+                        <span class="detail-value" style="color: #f59e0b;">Almost There</span>
+                    </div>
+                </div>
+
+                <div class="goal-actions">
+                    <button class="action-btn">✏️ Edit</button>
+                    <button class="action-btn">📊 View Details</button>
+                    <button class="action-btn">⏸️ Pause</button>
+                </div>
+            </div>
+
+            <div class="goal-card">
+                <div class="goal-header">
+                    <div class="goal-info">
+                        <h3>100 Consecutive Days Trading</h3>
+                        <p>Started: October 18, 2025</p>
+                    </div>
+                    <div class="goal-status status-completed">Completed</div>
+                </div>
+
+                <div class="goal-progress">
+                    <div class="progress-header">
+                        <span class="progress-label">Days Completed</span>
+                        <span class="progress-value">100 / 100</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 100%; background: linear-gradient(90deg, #059669, #10b981);"></div>
+                    </div>
+                </div>
+
+                <div class="goal-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Completed On</span>
+                        <span class="detail-value">Jan 25, 2026</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Longest Streak</span>
+                        <span class="detail-value">100 days</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Achievement</span>
+                        <span class="detail-value" style="color: #059669;">🏆 Unlocked</span>
+                    </div>
+                </div>
+
+                <div class="goal-actions">
+                    <button class="action-btn">👁️ View</button>
+                    <button class="action-btn">🔄 Set New Goal</button>
+                </div>
+            </div>
+
+            <div class="goal-card">
+                <div class="goal-header">
+                    <div class="goal-info">
+                        <h3>Max Drawdown Under 5%</h3>
+                        <p>Ongoing Goal</p>
+                    </div>
+                    <div class="goal-status status-active">Active</div>
+                </div>
+
+                <div class="goal-progress">
+                    <div class="progress-header">
+                        <span class="progress-label">Current Drawdown</span>
+                        <span class="progress-value">2.8% / 5%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 44%; background: linear-gradient(90deg, #059669, #10b981);"></div>
+                    </div>
+                </div>
+
+                <div class="goal-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Days Maintained</span>
+                        <span class="detail-value">87 days</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Status</span>
+                        <span class="detail-value" style="color: #059669;">On Track</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Best Month</span>
+                        <span class="detail-value">1.2%</span>
+                    </div>
+                </div>
+
+                <div class="goal-actions">
+                    <button class="action-btn">✏️ Edit</button>
+                    <button class="action-btn">📊 View Details</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="achievements">
+            <h2 class="achievements-title">Achievements & Milestones</h2>
+            <div class="achievements-grid">
+                <div class="achievement unlocked">
+                    <div class="achievement-icon">🏆</div>
+                    <div class="achievement-name">Consistency King</div>
+                    <div class="achievement-desc">100 days trading</div>
+                </div>
+
+                <div class="achievement unlocked">
+                    <div class="achievement-icon">💰</div>
+                    <div class="achievement-name">First $1K</div>
+                    <div class="achievement-desc">Earned $1,000 profit</div>
+                </div>
+
+                <div class="achievement unlocked">
+                    <div class="achievement-icon">📈</div>
+                    <div class="achievement-name">Winning Streak</div>
+                    <div class="achievement-desc">10 wins in a row</div>
+                </div>
+
+                <div class="achievement unlocked">
+                    <div class="achievement-icon">🎯</div>
+                    <div class="achievement-name">Accuracy Expert</div>
+                    <div class="achievement-desc">70%+ win rate</div>
+                </div>
+
+                <div class="achievement">
+                    <div class="achievement-icon" style="opacity: 0.3;">🔥</div>
+                    <div class="achievement-name">Hot Streak</div>
+                    <div class="achievement-desc">20 wins in a row</div>
+                </div>
+
+                <div class="achievement">
+                    <div class="achievement-icon" style="opacity: 0.3;">💎</div>
+                    <div class="achievement-name">Diamond Hands</div>
+                    <div class="achievement-desc">$10K total profit</div>
+                </div>
+
+                <div class="achievement">
+                    <div class="achievement-icon" style="opacity: 0.3;">🚀</div>
+                    <div class="achievement-name">Moonshot</div>
+                    <div class="achievement-desc">$1K single trade</div>
+                </div>
+
+                <div class="achievement">
+                    <div class="achievement-icon" style="opacity: 0.3;">⭐</div>
+                    <div class="achievement-name">Year Master</div>
+                    <div class="achievement-desc">365 days trading</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>
