@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade Journal - Trade Notion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f3f4f6;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 260px;
+            background: #1f2937;
+            color: white;
+            padding: 2rem 0;
+            overflow-y: auto;
+        }
+
+        .logo {
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .logo h2 {
+            color: #4F46E5;
+            font-size: 1.5rem;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-section-title {
+            padding: 0 1.5rem;
+            color: #9ca3af;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            color: #d1d5db;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: #374151;
+            color: white;
+            border-left: 3px solid #4F46E5;
+        }
+
+        .nav-icon {
+            font-size: 1.25rem;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 2rem;
+        }
+
+        .header {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #1f2937;
+            font-size: 1.75rem;
+        }
+
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #4F46E5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4338CA;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .filters {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 0.625rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #4F46E5;
+        }
+
+        .trades-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .trades-header {
+            padding: 1.5rem;
+            border-bottom: 2px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .trades-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .trades-table th {
+            text-align: left;
+            padding: 1rem 1.5rem;
+            background: #f9fafb;
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .trades-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .trades-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge.win {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .badge.loss {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .badge.long {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .badge.short {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .action-btn {
+            padding: 0.4rem 0.8rem;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6b7280;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+
+        .pagination {
+            padding: 1.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .page-btn:hover,
+        .page-btn.active {
+            background: #4F46E5;
+            color: white;
+            border-color: #4F46E5;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+
+            .main-content {
+                margin-left: 70px;
+            }
+
+            .nav-item span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <h2>Trade Notion</h2>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="/dashboard.html" class="nav-item">
+                <span class="nav-icon">📊</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="/trades.html" class="nav-item active">
+                <span class="nav-icon">📝</span>
+                <span>Trade Journal</span>
+            </a>
+            <a href="/analytics.html" class="nav-item">
+                <span class="nav-icon">📈</span>
+                <span>Analytics</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Tools</div>
+            <a href="/calendar.html" class="nav-item">
+                <span class="nav-icon">📅</span>
+                <span>Calendar</span>
+            </a>
+            <a href="/reports.html" class="nav-item">
+                <span class="nav-icon">📄</span>
+                <span>Reports</span>
+            </a>
+            <a href="/goals.html" class="nav-item">
+                <span class="nav-icon">🎯</span>
+                <span>Goals</span>
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Account</div>
+            <a href="/settings.html" class="nav-item">
+                <span class="nav-icon">⚙️</span>
+                <span>Settings</span>
+            </a>
+            <a href="#" class="nav-item" onclick="logout()">
+                <span class="nav-icon">🚪</span>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Trade Journal</h1>
+            <button class="btn btn-primary" onclick="window.location.href='/new-trade.html'">+ Add New Trade</button>
+        </div>
+
+        <div class="filters">
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label>Symbol</label>
+                    <input type="text" placeholder="Search symbol...">
+                </div>
+                <div class="filter-group">
+                    <label>Type</label>
+                    <select>
+                        <option value="">All Types</option>
+                        <option value="long">Long</option>
+                        <option value="short">Short</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Status</label>
+                    <select>
+                        <option value="">All Status</option>
+                        <option value="win">Win</option>
+                        <option value="loss">Loss</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Date Range</label>
+                    <select>
+                        <option value="">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="trades-container">
+            <div class="trades-header">
+                <h2 style="font-size: 1.25rem;">All Trades</h2>
+                <button class="btn btn-secondary">Export CSV</button>
+            </div>
+
+            <table class="trades-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Symbol</th>
+                        <th>Type</th>
+                        <th>Entry</th>
+                        <th>Exit</th>
+                        <th>Shares</th>
+                        <th>P&L</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Jan 24, 2026</td>
+                        <td><strong>AAPL</strong></td>
+                        <td><span class="badge long">Long</span></td>
+                        <td>$225.50</td>
+                        <td>$227.95</td>
+                        <td>100</td>
+                        <td style="color: #059669; font-weight: 600;">+$245.00</td>
+                        <td><span class="badge win">Win</span></td>
+                        <td><button class="action-btn">View</button></td>
+                    </tr>
+                    <tr>
+                        <td>Jan 23, 2026</td>
+                        <td><strong>TSLA</strong></td>
+                        <td><span class="badge short">Short</span></td>
+                        <td>$245.00</td>
+                        <td>$246.20</td>
+                        <td>100</td>
+                        <td style="color: #dc2626; font-weight: 600;">-$120.00</td>
+                        <td><span class="badge loss">Loss</span></td>
+                        <td><button class="action-btn">View</button></td>
+                    </tr>
+                    <tr>
+                        <td>Jan 22, 2026</td>
+                        <td><strong>MSFT</strong></td>
+                        <td><span class="badge long">Long</span></td>
+                        <td>$420.00</td>
+                        <td>$421.80</td>
+                        <td>100</td>
+                        <td style="color: #059669; font-weight: 600;">+$180.00</td>
+                        <td><span class="badge win">Win</span></td>
+                        <td><button class="action-btn">View</button></td>
+                    </tr>
+                    <tr>
+                        <td>Jan 21, 2026</td>
+                        <td><strong>NVDA</strong></td>
+                        <td><span class="badge long">Long</span></td>
+                        <td>$875.00</td>
+                        <td>$878.20</td>
+                        <td>100</td>
+                        <td style="color: #059669; font-weight: 600;">+$320.00</td>
+                        <td><span class="badge win">Win</span></td>
+                        <td><button class="action-btn">View</button></td>
+                    </tr>
+                    <tr>
+                        <td>Jan 20, 2026</td>
+                        <td><strong>AMZN</strong></td>
+                        <td><span class="badge short">Short</span></td>
+                        <td>$178.50</td>
+                        <td>$179.46</td>
+                        <td>100</td>
+                        <td style="color: #dc2626; font-weight: 600;">-$96.00</td>
+                        <td><span class="badge loss">Loss</span></td>
+                        <td><button class="action-btn">View</button></td>
+                    </tr>
+                    <tr>
+                        <td>Jan 19, 2026</td>
+                        <td><strong>GOOGL</strong></td>
+                        <td><span class="badge long">Long</span></td>
+                        <td>$155.00</td>
+                        <td>$157.25</td>
+                        <td>50</td>
+                        <td style="color: #059669; font-weight: 600;">+$112.50</td>
+                        <td><span class="badge win">Win</span></td>
+                        <td><button class="action-btn">View</button></td>
+                    </tr>
+                    <tr>
+                        <td>Jan 18, 2026</td>
+                        <td><strong>META</strong></td>
+                        <td><span class="badge long">Long</span></td>
+                        <td>$485.00</td>
+                        <td>$487.80</td>
+                        <td>25</td>
+                        <td style="color: #059669; font-weight: 600;">+$70.00</td>
+                        <td><span class="badge win">Win</span></td>
+                        <td><button class="action-btn">View</button></td>
+                    </tr>
+                    <tr>
+                        <td>Jan 17, 2026</td>
+                        <td><strong>AMD</strong></td>
+                        <td><span class="badge short">Short</span></td>
+                        <td>$165.00</td>
+                        <td>$166.15</td>
+                        <td>75</td>
+                        <td style="color: #dc2626; font-weight: 600;">-$86.25</td>
+                        <td><span class="badge loss">Loss</span></td>
+                        <td><button class="action-btn">View</button></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="pagination">
+                <button class="page-btn active">1</button>
+                <button class="page-btn">2</button>
+                <button class="page-btn">3</button>
+                <button class="page-btn">4</button>
+                <button class="page-btn">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>
