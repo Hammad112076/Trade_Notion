@@ -251,38 +251,48 @@
     </div>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const errorMessage = document.getElementById('errorMessage');
+        
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('Form submitted');
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const errorMessage = document.getElementById('errorMessage');
 
-            try {
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
 
-                const data = await response.json();
+            const data = await response.json();
+            console.log('Login response:', data);
 
-                if (response.ok) {
-                    // Store token
-                    localStorage.setItem('token', data.token);
-                    // Redirect to dashboard
-                    window.location.href = '/dashboard.html';
-                } else {
-                    errorMessage.textContent = data.message || 'Login failed. Please try again.';
-                    errorMessage.style.display = 'block';
-                }
-            } catch (error) {
-                errorMessage.textContent = 'An error occurred. Please try again.';
+            if (response.ok) {
+                console.log('Login successful! Token:', data.token);
+                // Store token
+                localStorage.setItem('token', data.token);
+                console.log('Token stored, redirecting...');
+                
+                // Force redirect with multiple methods
+                setTimeout(() => {
+                    window.location.replace('/dashboard.html');
+                }, 100);
+            } else {
+                console.log('Login failed:', data.message);
+                errorMessage.textContent = data.message || 'Login failed. Please try again.';
                 errorMessage.style.display = 'block';
             }
-        });
-    </script>
+        } catch (error) {
+            console.error('Error during login:', error);
+            errorMessage.textContent = 'An error occurred. Please try again.';
+            errorMessage.style.display = 'block';
+        }
+    });
+</script>
 </body>
 </html>

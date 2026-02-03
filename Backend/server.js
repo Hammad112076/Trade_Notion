@@ -32,8 +32,8 @@ app.get("/", (req, res) => {
 });
 
 // Login route
-app.get("/login", (req, res) => {
-  res.sendFile(path.join(htmlDir, "login.html"));
+app.get("/Login", (req, res) => {
+  res.sendFile(path.join(htmlDir, "Login.html"));
 });
 
 // Register route
