@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -80,10 +82,41 @@ app.get("/settings", (req, res) => {
   res.sendFile(path.join(htmlDir, "settings.html"));
 });
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/tradenotion")
-  .then(() => console.log("✅ MongoDB connected locally"))
-  .catch(err => console.error("❌ MongoDB connection error:", err));
+// MongoDB Atlas connection
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://hammadshahzad861_db_user:L7nkzZnwYs5AmnNg@cluster1.u10tbzm.mongodb.net/tradenotion?retryWrites=true&w=majority&appName=Cluster1";
+
+mongoose.connect(MONGODB_URI, {
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+})
+  .then(() => {
+    console.log("✅ MongoDB Atlas connected successfully");
+    console.log("📊 Database: tradenotion");
+  })
+  .catch(err => {
+    console.error("❌ MongoDB connection error:", err.message);
+    process.exit(1);
+  });
+
+// Handle MongoDB connection events
+mongoose.connection.on('connected', () => {
+  console.log('🔗 Mongoose connected to MongoDB Atlas');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ Mongoose connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('🔌 Mongoose disconnected from MongoDB Atlas');
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  await mongoose.connection.close();
+  console.log('👋 MongoDB connection closed through app termination');
+  process.exit(0);
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
