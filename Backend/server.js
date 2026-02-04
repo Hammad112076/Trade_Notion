@@ -81,7 +81,7 @@ app.get("/settings", (req, res) => {
 });
 
 // MongoDB connection
-mongoose.connect("mongodb://localhost:27017/tradenotion")
+mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/tradenotion")
   .then(() => console.log("✅ MongoDB connected locally"))
   .catch(err => console.error("❌ MongoDB connection error:", err));
 
