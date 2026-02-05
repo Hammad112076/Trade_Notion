@@ -1,14 +1,13 @@
-require('dotenv').config();
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 
-// Import routes
+// Import routes (REMOVED uploadRoutes)
 const authRoutes = require("./routes/auth");
 const tradeRoutes = require("./routes/trades");
 const goalRoutes = require("./routes/goals");
+const settingsRoutes = require("./routes/settings");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,10 +16,11 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// API Routes
+// API Routes (REMOVED upload route)
 app.use("/api/auth", authRoutes);
 app.use("/api/trades", tradeRoutes);
 app.use("/api/goals", goalRoutes);
+app.use("/api/settings", settingsRoutes);
 
 // Define the HTML directory path
 const htmlDir = path.join(__dirname, "..", "Frontend", "frontend", "src", "HTML");
@@ -34,7 +34,7 @@ app.get("/", (req, res) => {
 });
 
 // Login route
-app.get("/Login", (req, res) => {
+app.get("/login", (req, res) => {
   res.sendFile(path.join(htmlDir, "Login.html"));
 });
 
@@ -81,6 +81,7 @@ app.get("/goals", (req, res) => {
 app.get("/settings", (req, res) => {
   res.sendFile(path.join(htmlDir, "settings.html"));
 });
+
 
 // MongoDB Atlas connection
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://hammadshahzad861_db_user:L7nkzZnwYs5AmnNg@cluster1.u10tbzm.mongodb.net/tradenotion?retryWrites=true&w=majority&appName=Cluster1";

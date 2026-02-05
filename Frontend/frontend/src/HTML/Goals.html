@@ -202,7 +202,7 @@
 
         .goal-details {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 1rem;
             padding-top: 1rem;
             border-top: 2px solid #f3f4f6;
@@ -248,56 +248,98 @@
             background: #e5e7eb;
         }
 
-        .achievements {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        .action-btn.delete {
+            background: #fee2e2;
+            color: #dc2626;
         }
 
-        .achievements-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #1f2937;
+        .action-btn.delete:hover {
+            background: #fecaca;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 1.5rem;
         }
 
-        .achievements-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .achievement {
-            text-align: center;
-            padding: 1rem;
-            border-radius: 8px;
-            background: #f9fafb;
-            transition: transform 0.3s;
-        }
-
-        .achievement:hover {
-            transform: scale(1.05);
-        }
-
-        .achievement.unlocked {
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
-        }
-
-        .achievement-icon {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .achievement-name {
-            font-size: 0.875rem;
+        .modal-title {
+            font-size: 1.5rem;
             font-weight: 600;
             color: #1f2937;
-            margin-bottom: 0.25rem;
         }
 
-        .achievement-desc {
-            font-size: 0.75rem;
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4F46E5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
             color: #6b7280;
         }
 
@@ -370,224 +412,59 @@
     <div class="main-content">
         <div class="header">
             <h1>Trading Goals</h1>
-            <button class="btn btn-primary">+ Create New Goal</button>
+            <button class="btn btn-primary" onclick="openCreateModal()">+ Create New Goal</button>
         </div>
 
-        <div class="goals-grid">
-            <div class="goal-card">
-                <div class="goal-header">
-                    <div class="goal-info">
-                        <h3>Reach $10,000 Profit</h3>
-                        <p>Target Date: March 31, 2026</p>
-                    </div>
-                    <div class="goal-status status-active">Active</div>
-                </div>
-
-                <div class="goal-progress">
-                    <div class="progress-header">
-                        <span class="progress-label">Progress</span>
-                        <span class="progress-value">$7,250 / $10,000</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 72.5%"></div>
-                    </div>
-                </div>
-
-                <div class="goal-details">
-                    <div class="detail-item">
-                        <span class="detail-label">Time Remaining</span>
-                        <span class="detail-value">64 days</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Daily Target</span>
-                        <span class="detail-value">$42.97</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Completion</span>
-                        <span class="detail-value" style="color: #4F46E5;">72.5%</span>
-                    </div>
-                </div>
-
-                <div class="goal-actions">
-                    <button class="action-btn">✏️ Edit</button>
-                    <button class="action-btn">📊 View Details</button>
-                    <button class="action-btn">⏸️ Pause</button>
-                </div>
-            </div>
-
-            <div class="goal-card">
-                <div class="goal-header">
-                    <div class="goal-info">
-                        <h3>Maintain 70% Win Rate</h3>
-                        <p>Target Date: June 30, 2026</p>
-                    </div>
-                    <div class="goal-status status-active">Active</div>
-                </div>
-
-                <div class="goal-progress">
-                    <div class="progress-header">
-                        <span class="progress-label">Current Win Rate</span>
-                        <span class="progress-value">68.5% / 70%</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 97.9%"></div>
-                    </div>
-                </div>
-
-                <div class="goal-details">
-                    <div class="detail-item">
-                        <span class="detail-label">Wins Needed</span>
-                        <span class="detail-value">3 more</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Total Trades</span>
-                        <span class="detail-value">127</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Status</span>
-                        <span class="detail-value" style="color: #f59e0b;">Almost There</span>
-                    </div>
-                </div>
-
-                <div class="goal-actions">
-                    <button class="action-btn">✏️ Edit</button>
-                    <button class="action-btn">📊 View Details</button>
-                    <button class="action-btn">⏸️ Pause</button>
-                </div>
-            </div>
-
-            <div class="goal-card">
-                <div class="goal-header">
-                    <div class="goal-info">
-                        <h3>100 Consecutive Days Trading</h3>
-                        <p>Started: October 18, 2025</p>
-                    </div>
-                    <div class="goal-status status-completed">Completed</div>
-                </div>
-
-                <div class="goal-progress">
-                    <div class="progress-header">
-                        <span class="progress-label">Days Completed</span>
-                        <span class="progress-value">100 / 100</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 100%; background: linear-gradient(90deg, #059669, #10b981);"></div>
-                    </div>
-                </div>
-
-                <div class="goal-details">
-                    <div class="detail-item">
-                        <span class="detail-label">Completed On</span>
-                        <span class="detail-value">Jan 25, 2026</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Longest Streak</span>
-                        <span class="detail-value">100 days</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Achievement</span>
-                        <span class="detail-value" style="color: #059669;">🏆 Unlocked</span>
-                    </div>
-                </div>
-
-                <div class="goal-actions">
-                    <button class="action-btn">👁️ View</button>
-                    <button class="action-btn">🔄 Set New Goal</button>
-                </div>
-            </div>
-
-            <div class="goal-card">
-                <div class="goal-header">
-                    <div class="goal-info">
-                        <h3>Max Drawdown Under 5%</h3>
-                        <p>Ongoing Goal</p>
-                    </div>
-                    <div class="goal-status status-active">Active</div>
-                </div>
-
-                <div class="goal-progress">
-                    <div class="progress-header">
-                        <span class="progress-label">Current Drawdown</span>
-                        <span class="progress-value">2.8% / 5%</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 44%; background: linear-gradient(90deg, #059669, #10b981);"></div>
-                    </div>
-                </div>
-
-                <div class="goal-details">
-                    <div class="detail-item">
-                        <span class="detail-label">Days Maintained</span>
-                        <span class="detail-value">87 days</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Status</span>
-                        <span class="detail-value" style="color: #059669;">On Track</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Best Month</span>
-                        <span class="detail-value">1.2%</span>
-                    </div>
-                </div>
-
-                <div class="goal-actions">
-                    <button class="action-btn">✏️ Edit</button>
-                    <button class="action-btn">📊 View Details</button>
-                </div>
-            </div>
+        <div id="goalsContainer" class="goals-grid">
+            <div class="loading">Loading your goals...</div>
         </div>
+    </div>
 
-        <div class="achievements">
-            <h2 class="achievements-title">Achievements & Milestones</h2>
-            <div class="achievements-grid">
-                <div class="achievement unlocked">
-                    <div class="achievement-icon">🏆</div>
-                    <div class="achievement-name">Consistency King</div>
-                    <div class="achievement-desc">100 days trading</div>
-                </div>
-
-                <div class="achievement unlocked">
-                    <div class="achievement-icon">💰</div>
-                    <div class="achievement-name">First $1K</div>
-                    <div class="achievement-desc">Earned $1,000 profit</div>
-                </div>
-
-                <div class="achievement unlocked">
-                    <div class="achievement-icon">📈</div>
-                    <div class="achievement-name">Winning Streak</div>
-                    <div class="achievement-desc">10 wins in a row</div>
-                </div>
-
-                <div class="achievement unlocked">
-                    <div class="achievement-icon">🎯</div>
-                    <div class="achievement-name">Accuracy Expert</div>
-                    <div class="achievement-desc">70%+ win rate</div>
-                </div>
-
-                <div class="achievement">
-                    <div class="achievement-icon" style="opacity: 0.3;">🔥</div>
-                    <div class="achievement-name">Hot Streak</div>
-                    <div class="achievement-desc">20 wins in a row</div>
-                </div>
-
-                <div class="achievement">
-                    <div class="achievement-icon" style="opacity: 0.3;">💎</div>
-                    <div class="achievement-name">Diamond Hands</div>
-                    <div class="achievement-desc">$10K total profit</div>
-                </div>
-
-                <div class="achievement">
-                    <div class="achievement-icon" style="opacity: 0.3;">🚀</div>
-                    <div class="achievement-name">Moonshot</div>
-                    <div class="achievement-desc">$1K single trade</div>
-                </div>
-
-                <div class="achievement">
-                    <div class="achievement-icon" style="opacity: 0.3;">⭐</div>
-                    <div class="achievement-name">Year Master</div>
-                    <div class="achievement-desc">365 days trading</div>
-                </div>
+    <!-- Create/Edit Goal Modal -->
+    <div id="goalModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Create New Goal</h2>
+                <button class="close-btn" onclick="closeModal()">×</button>
             </div>
+
+            <form id="goalForm">
+                <div class="form-group">
+                    <label>Goal Title</label>
+                    <input type="text" id="goalTitle" required placeholder="e.g., Reach $10,000 Profit">
+                </div>
+
+                <div class="form-group">
+                    <label>Goal Type</label>
+                    <select id="goalType" required>
+                        <option value="profit">Profit Target ($)</option>
+                        <option value="winRate">Win Rate (%)</option>
+                        <option value="consistency">Consistency (days)</option>
+                        <option value="drawdown">Max Drawdown (%)</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Target Value</label>
+                    <input type="number" id="targetValue" required placeholder="10000">
+                </div>
+
+                <div class="form-group">
+                    <label>Target Date (Optional)</label>
+                    <input type="date" id="targetDate">
+                </div>
+
+                <div class="form-group">
+                    <label>Description (Optional)</label>
+                    <input type="text" id="goalDescription" placeholder="Why is this goal important?">
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="action-btn" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Goal</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -601,6 +478,232 @@
             localStorage.removeItem('token');
             window.location.href = '/Login.html';
         }
+
+        let editingGoalId = null;
+
+        async function loadGoals() {
+            try {
+                const response = await fetch('/api/goals', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayGoals(data.goals);
+                }
+            } catch (error) {
+                console.error('Error loading goals:', error);
+            }
+        }
+
+        function displayGoals(goals) {
+            const container = document.getElementById('goalsContainer');
+
+            if (goals.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No goals yet</h3>
+                        <p>Create your first trading goal to start tracking your progress!</p>
+                        <button class="btn btn-primary" onclick="openCreateModal()" style="margin-top: 1rem;">+ Create Goal</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = goals.map(goal => {
+                const progress = ((goal.currentValue / goal.targetValue) * 100).toFixed(1);
+                const statusClass = goal.status === 'completed' ? 'status-completed' : 
+                                  goal.status === 'paused' ? 'status-paused' : 'status-active';
+
+                let unitDisplay = '';
+                if (goal.unit === 'dollar') unitDisplay = '$';
+                else if (goal.unit === 'percent') unitDisplay = '%';
+                else if (goal.unit === 'days') unitDisplay = ' days';
+                else if (goal.unit === 'trades') unitDisplay = ' trades';
+
+                const targetDate = goal.targetDate ? new Date(goal.targetDate).toLocaleDateString() : 'No deadline';
+
+                return `
+                    <div class="goal-card">
+                        <div class="goal-header">
+                            <div class="goal-info">
+                                <h3>${goal.title}</h3>
+                                <p>${goal.description || 'No description'}</p>
+                            </div>
+                            <div class="goal-status ${statusClass}">${goal.status.charAt(0).toUpperCase() + goal.status.slice(1)}</div>
+                        </div>
+
+                        <div class="goal-progress">
+                            <div class="progress-header">
+                                <span class="progress-label">Progress</span>
+                                <span class="progress-value">${goal.currentValue}${unitDisplay} / ${goal.targetValue}${unitDisplay}</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${Math.min(progress, 100)}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="goal-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Target Date</span>
+                                <span class="detail-value">${targetDate}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Completion</span>
+                                <span class="detail-value" style="color: #4F46E5;">${progress}%</span>
+                            </div>
+                        </div>
+
+                        <div class="goal-actions">
+                            <button class="action-btn" onclick="updateProgress('${goal._id}', ${goal.currentValue}, ${goal.targetValue}, '${goal.unit}')">Update Progress</button>
+                            <button class="action-btn" onclick="editGoal('${goal._id}')">Edit</button>
+                            <button class="action-btn delete" onclick="deleteGoal('${goal._id}')">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openCreateModal() {
+            editingGoalId = null;
+            document.getElementById('modalTitle').textContent = 'Create New Goal';
+            document.getElementById('goalForm').reset();
+            document.getElementById('goalModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('goalModal').classList.remove('active');
+        }
+
+        async function editGoal(id) {
+            try {
+                const response = await fetch(`/api/goals/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const goal = data.goal;
+
+                    editingGoalId = id;
+                    document.getElementById('modalTitle').textContent = 'Edit Goal';
+                    document.getElementById('goalTitle').value = goal.title;
+                    document.getElementById('goalType').value = goal.type;
+                    document.getElementById('targetValue').value = goal.targetValue;
+                    document.getElementById('targetDate').value = goal.targetDate ? goal.targetDate.split('T')[0] : '';
+                    document.getElementById('goalDescription').value = goal.description || '';
+                    
+                    document.getElementById('goalModal').classList.add('active');
+                }
+            } catch (error) {
+                console.error('Error loading goal:', error);
+            }
+        }
+
+        async function updateProgress(id, currentValue, targetValue, unit) {
+            let unitDisplay = '';
+            if (unit === 'dollar') unitDisplay = '$';
+            else if (unit === 'percent') unitDisplay = '%';
+            else if (unit === 'days') unitDisplay = ' days';
+            else if (unit === 'trades') unitDisplay = ' trades';
+
+            const newValue = prompt(`Current: ${currentValue}${unitDisplay}\nTarget: ${targetValue}${unitDisplay}\n\nEnter new progress value:`, currentValue);
+            
+            if (newValue === null) return;
+
+            try {
+                const response = await fetch(`/api/goals/${id}/progress`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ currentValue: parseFloat(newValue) })
+                });
+
+                if (response.ok) {
+                    alert('Progress updated!');
+                    loadGoals();
+                } else {
+                    alert('Failed to update progress');
+                }
+            } catch (error) {
+                console.error('Error updating progress:', error);
+                alert('Error updating progress');
+            }
+        }
+
+        async function deleteGoal(id) {
+            if (!confirm('Are you sure you want to delete this goal?')) return;
+
+            try {
+                const response = await fetch(`/api/goals/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    alert('Goal deleted!');
+                    loadGoals();
+                } else {
+                    alert('Failed to delete goal');
+                }
+            } catch (error) {
+                console.error('Error deleting goal:', error);
+                alert('Error deleting goal');
+            }
+        }
+
+        document.getElementById('goalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const goalData = {
+                title: document.getElementById('goalTitle').value,
+                type: document.getElementById('goalType').value,
+                targetValue: parseFloat(document.getElementById('targetValue').value),
+                targetDate: document.getElementById('targetDate').value || null,
+                description: document.getElementById('goalDescription').value || null,
+                unit: getUnitFromType(document.getElementById('goalType').value)
+            };
+
+            try {
+                const url = editingGoalId ? `/api/goals/${editingGoalId}` : '/api/goals';
+                const method = editingGoalId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(goalData)
+                });
+
+                if (response.ok) {
+                    alert(editingGoalId ? 'Goal updated!' : 'Goal created!');
+                    closeModal();
+                    loadGoals();
+                } else {
+                    alert('Failed to save goal');
+                }
+            } catch (error) {
+                console.error('Error saving goal:', error);
+                alert('Error saving goal');
+            }
+        });
+
+        function getUnitFromType(type) {
+            switch(type) {
+                case 'profit': return 'dollar';
+                case 'winRate': return 'percent';
+                case 'consistency': return 'days';
+                case 'drawdown': return 'percent';
+                default: return 'trades';
+            }
+        }
+
+        // Load goals on page load
+        loadGoals();
     </script>
 </body>
 </html>

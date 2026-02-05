@@ -170,41 +170,6 @@
             color: #6b7280;
         }
 
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .chart-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .chart-header {
-            margin-bottom: 1.5rem;
-        }
-
-        .chart-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1f2937;
-        }
-
-        .chart-placeholder {
-            height: 300px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-        }
-
         .performance-table {
             width: 100%;
             background: white;
@@ -257,6 +222,18 @@
             font-weight: 600;
         }
 
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 width: 70px;
@@ -268,10 +245,6 @@
 
             .nav-item span {
                 display: none;
-            }
-
-            .charts-grid {
-                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -332,11 +305,10 @@
             <h1>Performance Analytics</h1>
             <p style="color: #6b7280; margin-top: 0.25rem;">Deep dive into your trading performance</p>
             <div class="date-selector">
-                <button class="date-btn">7 Days</button>
-                <button class="date-btn active">30 Days</button>
-                <button class="date-btn">90 Days</button>
-                <button class="date-btn">YTD</button>
-                <button class="date-btn">All Time</button>
+                <button class="date-btn" onclick="filterByDate('')">All Time</button>
+                <button class="date-btn" onclick="filterByDate('week')">7 Days</button>
+                <button class="date-btn active" onclick="filterByDate('month')">30 Days</button>
+                <button class="date-btn" onclick="filterByDate('quarter')">90 Days</button>
             </div>
         </div>
 
@@ -346,8 +318,8 @@
                     <span class="metric-title">Total P&L</span>
                     <div class="metric-icon green">💰</div>
                 </div>
-                <div class="metric-value">$12,450.75</div>
-                <div class="metric-description">+$1,850 this month</div>
+                <div class="metric-value" id="totalPL">Loading...</div>
+                <div class="metric-description" id="plDesc">Calculating...</div>
             </div>
 
             <div class="metric-card">
@@ -355,8 +327,8 @@
                     <span class="metric-title">Win Rate</span>
                     <div class="metric-icon blue">🎯</div>
                 </div>
-                <div class="metric-value">68.5%</div>
-                <div class="metric-description">87 wins / 127 total trades</div>
+                <div class="metric-value" id="winRate">Loading...</div>
+                <div class="metric-description" id="winRateDesc">Calculating...</div>
             </div>
 
             <div class="metric-card">
@@ -364,8 +336,8 @@
                     <span class="metric-title">Profit Factor</span>
                     <div class="metric-icon purple">⚡</div>
                 </div>
-                <div class="metric-value">2.15</div>
-                <div class="metric-description">Excellent risk-reward ratio</div>
+                <div class="metric-value" id="profitFactor">Loading...</div>
+                <div class="metric-description" id="profitFactorDesc">Calculating...</div>
             </div>
 
             <div class="metric-card">
@@ -373,7 +345,7 @@
                     <span class="metric-title">Avg Win</span>
                     <div class="metric-icon green">📈</div>
                 </div>
-                <div class="metric-value">$245.50</div>
+                <div class="metric-value" id="avgWin">Loading...</div>
                 <div class="metric-description">Average winning trade</div>
             </div>
 
@@ -382,7 +354,7 @@
                     <span class="metric-title">Avg Loss</span>
                     <div class="metric-icon red">📉</div>
                 </div>
-                <div class="metric-value">$132.75</div>
+                <div class="metric-value" id="avgLoss">Loading...</div>
                 <div class="metric-description">Average losing trade</div>
             </div>
 
@@ -391,38 +363,8 @@
                     <span class="metric-title">Expectancy</span>
                     <div class="metric-icon teal">💡</div>
                 </div>
-                <div class="metric-value">$98.04</div>
+                <div class="metric-value" id="expectancy">Loading...</div>
                 <div class="metric-description">Expected value per trade</div>
-            </div>
-        </div>
-
-        <div class="charts-grid">
-            <div class="chart-card">
-                <div class="chart-header">
-                    <h2 class="chart-title">Equity Curve</h2>
-                </div>
-                <div class="chart-placeholder">Equity Growth Chart</div>
-            </div>
-
-            <div class="chart-card">
-                <div class="chart-header">
-                    <h2 class="chart-title">Win/Loss Distribution</h2>
-                </div>
-                <div class="chart-placeholder">Win/Loss Pie Chart</div>
-            </div>
-
-            <div class="chart-card">
-                <div class="chart-header">
-                    <h2 class="chart-title">P&L by Day of Week</h2>
-                </div>
-                <div class="chart-placeholder">Day of Week Bar Chart</div>
-            </div>
-
-            <div class="chart-card">
-                <div class="chart-header">
-                    <h2 class="chart-title">Monthly Performance</h2>
-                </div>
-                <div class="chart-placeholder">Monthly Bar Chart</div>
             </div>
         </div>
 
@@ -430,66 +372,9 @@
             <div class="table-header">
                 <h2 class="table-title">Symbol Performance Breakdown</h2>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>Trades</th>
-                        <th>Win Rate</th>
-                        <th>Avg P&L</th>
-                        <th>Total P&L</th>
-                        <th>Best Trade</th>
-                        <th>Worst Trade</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>AAPL</strong></td>
-                        <td>23</td>
-                        <td>73.9%</td>
-                        <td class="stat-positive">+$185.50</td>
-                        <td class="stat-positive">+$4,266.50</td>
-                        <td class="stat-positive">+$520.00</td>
-                        <td class="stat-negative">-$180.00</td>
-                    </tr>
-                    <tr>
-                        <td><strong>TSLA</strong></td>
-                        <td>18</td>
-                        <td>61.1%</td>
-                        <td class="stat-positive">+$142.30</td>
-                        <td class="stat-positive">+$2,561.40</td>
-                        <td class="stat-positive">+$680.00</td>
-                        <td class="stat-negative">-$320.00</td>
-                    </tr>
-                    <tr>
-                        <td><strong>NVDA</strong></td>
-                        <td>15</td>
-                        <td>80.0%</td>
-                        <td class="stat-positive">+$225.80</td>
-                        <td class="stat-positive">+$3,387.00</td>
-                        <td class="stat-positive">+$890.00</td>
-                        <td class="stat-negative">-$210.00</td>
-                    </tr>
-                    <tr>
-                        <td><strong>MSFT</strong></td>
-                        <td>12</td>
-                        <td>66.7%</td>
-                        <td class="stat-positive">+$156.25</td>
-                        <td class="stat-positive">+$1,875.00</td>
-                        <td class="stat-positive">+$420.00</td>
-                        <td class="stat-negative">-$165.00</td>
-                    </tr>
-                    <tr>
-                        <td><strong>AMZN</strong></td>
-                        <td>10</td>
-                        <td>60.0%</td>
-                        <td class="stat-positive">+$98.50</td>
-                        <td class="stat-positive">+$985.00</td>
-                        <td class="stat-positive">+$350.00</td>
-                        <td class="stat-negative">-$190.00</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div id="symbolTableContainer">
+                <div class="loading">Loading symbol data...</div>
+            </div>
         </div>
     </div>
 
@@ -503,6 +388,157 @@
             localStorage.removeItem('token');
             window.location.href = '/Login.html';
         }
+
+        let currentFilter = 'month';
+
+        async function filterByDate(range) {
+            currentFilter = range;
+            
+            // Update active button
+            document.querySelectorAll('.date-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            loadAnalytics();
+        }
+
+        async function loadAnalytics() {
+            try {
+                let url = '/api/trades/stats/overview';
+                if (currentFilter) {
+                    url += `?dateRange=${currentFilter}`;
+                }
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const stats = data.stats;
+
+                    // Total P&L
+                    const totalPL = parseFloat(stats.totalPL);
+                    document.getElementById('totalPL').textContent = `$${totalPL.toFixed(2)}`;
+                    document.getElementById('totalPL').style.color = totalPL >= 0 ? '#059669' : '#dc2626';
+                    document.getElementById('plDesc').textContent = `${stats.wins} wins / ${stats.losses} losses`;
+
+                    // Win Rate
+                    document.getElementById('winRate').textContent = `${stats.winRate}%`;
+                    document.getElementById('winRateDesc').textContent = `${stats.wins} wins / ${stats.totalTrades} trades`;
+
+                    // Profit Factor
+                    document.getElementById('profitFactor').textContent = stats.profitFactor;
+                    document.getElementById('profitFactorDesc').textContent = parseFloat(stats.profitFactor) > 1 ? 'Profitable system' : 'Needs improvement';
+
+                    // Avg Win
+                    document.getElementById('avgWin').textContent = `$${stats.avgWin}`;
+
+                    // Avg Loss
+                    document.getElementById('avgLoss').textContent = `$${stats.avgLoss}`;
+
+                    // Expectancy
+                    document.getElementById('expectancy').textContent = `$${stats.expectancy}`;
+                }
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+
+            loadSymbolBreakdown();
+        }
+
+        async function loadSymbolBreakdown() {
+            try {
+                let url = '/api/trades';
+                if (currentFilter) {
+                    url += `?dateRange=${currentFilter}`;
+                }
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const trades = data.trades;
+
+                    if (trades.length === 0) {
+                        document.getElementById('symbolTableContainer').innerHTML = `
+                            <div class="empty-state">
+                                <p>No trades data available</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    // Group by symbol
+                    const symbolStats = {};
+                    trades.forEach(trade => {
+                        const symbol = trade.symbol;
+                        if (!symbolStats[symbol]) {
+                            symbolStats[symbol] = {
+                                trades: [],
+                                wins: 0,
+                                losses: 0,
+                                totalPL: 0
+                            };
+                        }
+                        
+                        symbolStats[symbol].trades.push(trade);
+                        symbolStats[symbol].totalPL += parseFloat(trade.profitLoss);
+                        
+                        if (trade.result === 'win') {
+                            symbolStats[symbol].wins++;
+                        } else if (trade.result === 'loss') {
+                            symbolStats[symbol].losses++;
+                        }
+                    });
+
+                    // Build table
+                    const tableHTML = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Trades</th>
+                                    <th>Win Rate</th>
+                                    <th>Total P&L</th>
+                                    <th>Best Trade</th>
+                                    <th>Worst Trade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(symbolStats).map(([symbol, stats]) => {
+                                    const winRate = ((stats.wins / stats.trades.length) * 100).toFixed(1);
+                                    const bestTrade = Math.max(...stats.trades.map(t => parseFloat(t.profitLoss)));
+                                    const worstTrade = Math.min(...stats.trades.map(t => parseFloat(t.profitLoss)));
+                                    const totalPL = stats.totalPL;
+
+                                    return `
+                                        <tr>
+                                            <td><strong>${symbol}</strong></td>
+                                            <td>${stats.trades.length}</td>
+                                            <td>${winRate}%</td>
+                                            <td class="${totalPL >= 0 ? 'stat-positive' : 'stat-negative'}">
+                                                ${totalPL >= 0 ? '+' : ''}$${totalPL.toFixed(2)}
+                                            </td>
+                                            <td class="stat-positive">+$${bestTrade.toFixed(2)}</td>
+                                            <td class="stat-negative">$${worstTrade.toFixed(2)}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    `;
+
+                    document.getElementById('symbolTableContainer').innerHTML = tableHTML;
+                }
+            } catch (error) {
+                console.error('Error loading symbol breakdown:', error);
+            }
+        }
+
+        // Initial load
+        loadAnalytics();
     </script>
 </body>
 </html>

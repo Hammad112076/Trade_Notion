@@ -16,7 +16,6 @@
             background: #f3f4f6;
         }
 
-        /* Sidebar */
         .sidebar {
             position: fixed;
             left: 0;
@@ -73,13 +72,11 @@
             font-size: 1.25rem;
         }
 
-        /* Main Content */
         .main-content {
             margin-left: 260px;
             padding: 2rem;
         }
 
-        /* Header */
         .header {
             background: white;
             padding: 1.5rem 2rem;
@@ -96,12 +93,6 @@
             font-size: 1.75rem;
         }
 
-        .header-actions {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
         .btn {
             padding: 0.625rem 1.25rem;
             border: none;
@@ -109,6 +100,8 @@
             cursor: pointer;
             font-weight: 500;
             transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .btn-primary {
@@ -123,8 +116,7 @@
         .user-menu {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
+            gap: 1rem;
         }
 
         .user-avatar {
@@ -139,7 +131,6 @@
             font-weight: bold;
         }
 
-        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -201,7 +192,6 @@
             color: #dc2626;
         }
 
-        /* Content Grid */
         .content-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -240,7 +230,6 @@
             text-decoration: underline;
         }
 
-        /* Recent Trades Table */
         .trades-table {
             width: 100%;
             border-collapse: collapse;
@@ -281,7 +270,6 @@
             color: #dc2626;
         }
 
-        /* Quick Actions */
         .quick-actions {
             display: flex;
             flex-direction: column;
@@ -298,6 +286,8 @@
             text-align: left;
             font-weight: 500;
             color: #374151;
+            text-decoration: none;
+            display: block;
         }
 
         .quick-action-btn:hover {
@@ -305,17 +295,16 @@
             background: white;
         }
 
-        /* Chart Placeholder */
-        .chart-placeholder {
-            height: 300px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.25rem;
-            font-weight: 600;
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
         }
 
         @media (max-width: 1024px) {
@@ -336,15 +325,10 @@
             .nav-item span {
                 display: none;
             }
-
-            .logo h2 {
-                font-size: 1rem;
-            }
         }
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
     <div class="sidebar">
         <div class="logo">
             <h2>Trade Notion</h2>
@@ -395,31 +379,26 @@
         </div>
     </div>
 
-    <!-- Main Content -->
     <div class="main-content">
-        <!-- Header -->
         <div class="header">
             <div>
-                <h1>Welcome back, Trader!</h1>
+                <h1>Welcome back, <span id="userName">Trader</span>!</h1>
                 <p style="color: #6b7280; margin-top: 0.25rem;">Here's your trading overview</p>
             </div>
-            <div class="header-actions">
-                <button class="btn btn-primary" onclick="window.location.href='/new-trade.html'">+ Add Trade</button>
-                <div class="user-menu">
-                    <div class="user-avatar">JD</div>
-                </div>
+            <div class="user-menu">
+                <a href="/new-trade.html" class="btn btn-primary">+ Add Trade</a>
+                <div class="user-avatar" id="userAvatar">T</div>
             </div>
         </div>
 
-        <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-header">
                     <span class="stat-title">Total P&L</span>
                     <div class="stat-icon green">💰</div>
                 </div>
-                <div class="stat-value">$12,450</div>
-                <div class="stat-change positive">↑ 12.5% this month</div>
+                <div class="stat-value" id="totalPL">$0.00</div>
+                <div class="stat-change" id="plChange">Loading...</div>
             </div>
 
             <div class="stat-card">
@@ -427,8 +406,8 @@
                     <span class="stat-title">Win Rate</span>
                     <div class="stat-icon blue">📊</div>
                 </div>
-                <div class="stat-value">68.5%</div>
-                <div class="stat-change positive">↑ 3.2% from last month</div>
+                <div class="stat-value" id="winRate">0%</div>
+                <div class="stat-change" id="winRateDetail">Loading...</div>
             </div>
 
             <div class="stat-card">
@@ -436,126 +415,183 @@
                     <span class="stat-title">Total Trades</span>
                     <div class="stat-icon purple">📝</div>
                 </div>
-                <div class="stat-value">127</div>
-                <div class="stat-change positive">↑ 15 this month</div>
+                <div class="stat-value" id="totalTrades">0</div>
+                <div class="stat-change" id="tradesDetail">Loading...</div>
             </div>
 
             <div class="stat-card">
                 <div class="stat-header">
-                    <span class="stat-title">Avg Win/Loss</span>
+                    <span class="stat-title">Profit Factor</span>
                     <div class="stat-icon orange">⚖️</div>
                 </div>
-                <div class="stat-value">1.85</div>
-                <div class="stat-change positive">↑ 0.15 improvement</div>
+                <div class="stat-value" id="profitFactor">0.00</div>
+                <div class="stat-change" id="profitFactorDetail">Loading...</div>
             </div>
         </div>
 
-        <!-- Content Grid -->
         <div class="content-grid">
-            <!-- Recent Trades -->
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">Recent Trades</h2>
                     <a href="/trades.html" class="card-action">View all →</a>
                 </div>
-                <table class="trades-table">
-                    <thead>
-                        <tr>
-                            <th>Symbol</th>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>P&L</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>AAPL</strong></td>
-                            <td>Jan 24, 2026</td>
-                            <td>Long</td>
-                            <td style="color: #059669;">+$245.50</td>
-                            <td><span class="badge win">Win</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>TSLA</strong></td>
-                            <td>Jan 23, 2026</td>
-                            <td>Short</td>
-                            <td style="color: #dc2626;">-$120.00</td>
-                            <td><span class="badge loss">Loss</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>MSFT</strong></td>
-                            <td>Jan 22, 2026</td>
-                            <td>Long</td>
-                            <td style="color: #059669;">+$180.25</td>
-                            <td><span class="badge win">Win</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>NVDA</strong></td>
-                            <td>Jan 21, 2026</td>
-                            <td>Long</td>
-                            <td style="color: #059669;">+$320.00</td>
-                            <td><span class="badge win">Win</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>AMZN</strong></td>
-                            <td>Jan 20, 2026</td>
-                            <td>Short</td>
-                            <td style="color: #dc2626;">-$95.75</td>
-                            <td><span class="badge loss">Loss</span></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div id="recentTradesContainer">
+                    <div class="loading">Loading trades...</div>
+                </div>
             </div>
 
-            <!-- Quick Actions -->
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">Quick Actions</h2>
                 </div>
                 <div class="quick-actions">
-                    <button class="quick-action-btn" onclick="window.location.href='/new-trade.html'">
-                        📝 Log New Trade
-                    </button>
-                    <button class="quick-action-btn" onclick="window.location.href='/analytics.html'">
-                        📊 View Analytics
-                    </button>
-                    <button class="quick-action-btn" onclick="window.location.href='/reports.html'">
-                        📄 Generate Report
-                    </button>
-                    <button class="quick-action-btn" onclick="window.location.href='/goals.html'">
-                        🎯 Set Goals
-                    </button>
-                    <button class="quick-action-btn" onclick="window.location.href='/settings.html'">
-                        ⚙️ Account Settings
-                    </button>
+                    <a href="/new-trade.html" class="quick-action-btn">📝 Log New Trade</a>
+                    <a href="/analytics.html" class="quick-action-btn">📊 View Analytics</a>
+                    <a href="/reports.html" class="quick-action-btn">📄 Generate Report</a>
+                    <a href="/goals.html" class="quick-action-btn">🎯 Set Goals</a>
+                    <a href="/settings.html" class="quick-action-btn">⚙️ Account Settings</a>
                 </div>
-            </div>
-        </div>
-
-        <!-- Performance Chart -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">Performance Overview</h2>
-                <a href="/analytics.html" class="card-action">Detailed analytics →</a>
-            </div>
-            <div class="chart-placeholder">
-                Chart Visualization Coming Soon
             </div>
         </div>
     </div>
 
     <script>
-        // Check if user is logged in
         const token = localStorage.getItem('token');
         if (!token) {
-            window.location.href = '/index.html';
+            window.location.href = '/Login.html';
         }
 
         function logout() {
             localStorage.removeItem('token');
-            window.location.href = '/index.html';
+            window.location.href = '/Login.html';
         }
+
+        // Fetch user info
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const userName = data.user.name.split(' ')[0];
+                    document.getElementById('userName').textContent = userName;
+                    document.getElementById('userAvatar').textContent = userName.charAt(0).toUpperCase();
+                }
+            } catch (error) {
+                console.error('Error loading user:', error);
+            }
+        }
+
+        // Fetch stats
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/trades/stats/overview', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const stats = data.stats;
+
+                    // Total P&L
+                    const totalPL = parseFloat(stats.totalPL);
+                    document.getElementById('totalPL').textContent = `$${totalPL.toFixed(2)}`;
+                    document.getElementById('totalPL').style.color = totalPL >= 0 ? '#059669' : '#dc2626';
+                    document.getElementById('plChange').textContent = `${stats.wins} wins / ${stats.losses} losses`;
+                    document.getElementById('plChange').className = totalPL >= 0 ? 'stat-change positive' : 'stat-change negative';
+
+                    // Win Rate
+                    document.getElementById('winRate').textContent = `${stats.winRate}%`;
+                    document.getElementById('winRateDetail').textContent = `${stats.wins} wins / ${stats.totalTrades} trades`;
+
+                    // Total Trades
+                    document.getElementById('totalTrades').textContent = stats.totalTrades;
+                    document.getElementById('tradesDetail').textContent = `All time performance`;
+
+                    // Profit Factor
+                    document.getElementById('profitFactor').textContent = stats.profitFactor;
+                    document.getElementById('profitFactorDetail').textContent = `Expectancy: $${stats.expectancy}`;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Fetch recent trades
+        async function loadRecentTrades() {
+            try {
+                const response = await fetch('/api/trades?limit=5', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const trades = data.trades;
+
+                    if (trades.length === 0) {
+                        document.getElementById('recentTradesContainer').innerHTML = `
+                            <div class="empty-state">
+                                <p>No trades yet. Start by adding your first trade!</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    const tableHTML = `
+                        <table class="trades-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Symbol</th>
+                                    <th>Type</th>
+                                    <th>P&L</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${trades.slice(0, 5).map(trade => {
+                                    const date = new Date(trade.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                                    const pl = parseFloat(trade.profitLoss);
+                                    const plColor = pl >= 0 ? '#059669' : '#dc2626';
+                                    
+                                    return `
+                                        <tr>
+                                            <td>${date}</td>
+                                            <td><strong>${trade.symbol}</strong></td>
+                                            <td>${trade.tradeType.charAt(0).toUpperCase() + trade.tradeType.slice(1)}</td>
+                                            <td style="color: ${plColor}; font-weight: 600;">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}</td>
+                                            <td><span class="badge ${trade.status}">${trade.status.charAt(0).toUpperCase() + trade.status.slice(1)}</span></td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    `;
+
+                    document.getElementById('recentTradesContainer').innerHTML = tableHTML;
+                }
+            } catch (error) {
+                console.error('Error loading trades:', error);
+                document.getElementById('recentTradesContainer').innerHTML = `
+                    <div class="empty-state">
+                        <p>Error loading trades. Please refresh the page.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Load all data
+        loadUserInfo();
+        loadStats();
+        loadRecentTrades();
     </script>
 </body>
 </html>

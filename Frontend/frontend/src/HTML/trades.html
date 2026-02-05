@@ -82,9 +82,6 @@
             padding: 1.5rem 2rem;
             border-radius: 10px;
             margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
@@ -105,6 +102,8 @@
         .btn-primary {
             background: #4F46E5;
             color: white;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .btn-primary:hover {
@@ -229,10 +228,20 @@
             cursor: pointer;
             font-size: 0.875rem;
             transition: all 0.3s;
+            margin-right: 0.5rem;
         }
 
         .action-btn:hover {
             background: #e5e7eb;
+        }
+
+        .action-btn.delete {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .action-btn.delete:hover {
+            background: #fecaca;
         }
 
         .empty-state {
@@ -241,38 +250,10 @@
             color: #6b7280;
         }
 
-        .empty-state-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-        }
-
-        .empty-state h3 {
-            font-size: 1.25rem;
-            margin-bottom: 0.5rem;
-            color: #374151;
-        }
-
-        .pagination {
-            padding: 1.5rem;
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .page-btn {
-            padding: 0.5rem 1rem;
-            border: 2px solid #e5e7eb;
-            background: white;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .page-btn:hover,
-        .page-btn.active {
-            background: #4F46E5;
-            color: white;
-            border-color: #4F46E5;
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
         }
 
         @media (max-width: 768px) {
@@ -344,18 +325,18 @@
     <div class="main-content">
         <div class="header">
             <h1>Trade Journal</h1>
-            <button class="btn btn-primary" onclick="window.location.href='/new-trade.html'">+ Add New Trade</button>
+            <a href="/new-trade.html" class="btn btn-primary">+ Add New Trade</a>
         </div>
 
         <div class="filters">
             <div class="filters-grid">
                 <div class="filter-group">
                     <label>Symbol</label>
-                    <input type="text" placeholder="Search symbol...">
+                    <input type="text" id="symbolFilter" placeholder="Search symbol...">
                 </div>
                 <div class="filter-group">
                     <label>Type</label>
-                    <select>
+                    <select id="typeFilter">
                         <option value="">All Types</option>
                         <option value="long">Long</option>
                         <option value="short">Short</option>
@@ -363,7 +344,7 @@
                 </div>
                 <div class="filter-group">
                     <label>Status</label>
-                    <select>
+                    <select id="statusFilter">
                         <option value="">All Status</option>
                         <option value="win">Win</option>
                         <option value="loss">Loss</option>
@@ -371,12 +352,11 @@
                 </div>
                 <div class="filter-group">
                     <label>Date Range</label>
-                    <select>
+                    <select id="dateFilter">
                         <option value="">All Time</option>
                         <option value="today">Today</option>
                         <option value="week">This Week</option>
                         <option value="month">This Month</option>
-                        <option value="custom">Custom Range</option>
                     </select>
                 </div>
             </div>
@@ -384,122 +364,12 @@
 
         <div class="trades-container">
             <div class="trades-header">
-                <h2 style="font-size: 1.25rem;">All Trades</h2>
+                <h2 style="font-size: 1.25rem;">All Trades (<span id="tradeCount">0</span>)</h2>
                 <button class="btn btn-secondary">Export CSV</button>
             </div>
 
-            <table class="trades-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Symbol</th>
-                        <th>Type</th>
-                        <th>Entry</th>
-                        <th>Exit</th>
-                        <th>Shares</th>
-                        <th>P&L</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Jan 24, 2026</td>
-                        <td><strong>AAPL</strong></td>
-                        <td><span class="badge long">Long</span></td>
-                        <td>$225.50</td>
-                        <td>$227.95</td>
-                        <td>100</td>
-                        <td style="color: #059669; font-weight: 600;">+$245.00</td>
-                        <td><span class="badge win">Win</span></td>
-                        <td><button class="action-btn">View</button></td>
-                    </tr>
-                    <tr>
-                        <td>Jan 23, 2026</td>
-                        <td><strong>TSLA</strong></td>
-                        <td><span class="badge short">Short</span></td>
-                        <td>$245.00</td>
-                        <td>$246.20</td>
-                        <td>100</td>
-                        <td style="color: #dc2626; font-weight: 600;">-$120.00</td>
-                        <td><span class="badge loss">Loss</span></td>
-                        <td><button class="action-btn">View</button></td>
-                    </tr>
-                    <tr>
-                        <td>Jan 22, 2026</td>
-                        <td><strong>MSFT</strong></td>
-                        <td><span class="badge long">Long</span></td>
-                        <td>$420.00</td>
-                        <td>$421.80</td>
-                        <td>100</td>
-                        <td style="color: #059669; font-weight: 600;">+$180.00</td>
-                        <td><span class="badge win">Win</span></td>
-                        <td><button class="action-btn">View</button></td>
-                    </tr>
-                    <tr>
-                        <td>Jan 21, 2026</td>
-                        <td><strong>NVDA</strong></td>
-                        <td><span class="badge long">Long</span></td>
-                        <td>$875.00</td>
-                        <td>$878.20</td>
-                        <td>100</td>
-                        <td style="color: #059669; font-weight: 600;">+$320.00</td>
-                        <td><span class="badge win">Win</span></td>
-                        <td><button class="action-btn">View</button></td>
-                    </tr>
-                    <tr>
-                        <td>Jan 20, 2026</td>
-                        <td><strong>AMZN</strong></td>
-                        <td><span class="badge short">Short</span></td>
-                        <td>$178.50</td>
-                        <td>$179.46</td>
-                        <td>100</td>
-                        <td style="color: #dc2626; font-weight: 600;">-$96.00</td>
-                        <td><span class="badge loss">Loss</span></td>
-                        <td><button class="action-btn">View</button></td>
-                    </tr>
-                    <tr>
-                        <td>Jan 19, 2026</td>
-                        <td><strong>GOOGL</strong></td>
-                        <td><span class="badge long">Long</span></td>
-                        <td>$155.00</td>
-                        <td>$157.25</td>
-                        <td>50</td>
-                        <td style="color: #059669; font-weight: 600;">+$112.50</td>
-                        <td><span class="badge win">Win</span></td>
-                        <td><button class="action-btn">View</button></td>
-                    </tr>
-                    <tr>
-                        <td>Jan 18, 2026</td>
-                        <td><strong>META</strong></td>
-                        <td><span class="badge long">Long</span></td>
-                        <td>$485.00</td>
-                        <td>$487.80</td>
-                        <td>25</td>
-                        <td style="color: #059669; font-weight: 600;">+$70.00</td>
-                        <td><span class="badge win">Win</span></td>
-                        <td><button class="action-btn">View</button></td>
-                    </tr>
-                    <tr>
-                        <td>Jan 17, 2026</td>
-                        <td><strong>AMD</strong></td>
-                        <td><span class="badge short">Short</span></td>
-                        <td>$165.00</td>
-                        <td>$166.15</td>
-                        <td>75</td>
-                        <td style="color: #dc2626; font-weight: 600;">-$86.25</td>
-                        <td><span class="badge loss">Loss</span></td>
-                        <td><button class="action-btn">View</button></td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="pagination">
-                <button class="page-btn active">1</button>
-                <button class="page-btn">2</button>
-                <button class="page-btn">3</button>
-                <button class="page-btn">4</button>
-                <button class="page-btn">Next →</button>
+            <div id="tradesTableContainer">
+                <div class="loading">Loading trades...</div>
             </div>
         </div>
     </div>
@@ -514,6 +384,147 @@
             localStorage.removeItem('token');
             window.location.href = '/Login.html';
         }
+
+        let allTrades = [];
+
+        // Load trades
+        async function loadTrades() {
+            try {
+                const symbolFilter = document.getElementById('symbolFilter').value;
+                const typeFilter = document.getElementById('typeFilter').value;
+                const statusFilter = document.getElementById('statusFilter').value;
+                const dateFilter = document.getElementById('dateFilter').value;
+
+                let url = '/api/trades?';
+                if (symbolFilter) url += `symbol=${symbolFilter}&`;
+                if (typeFilter) url += `tradeType=${typeFilter}&`;
+                if (statusFilter) url += `status=${statusFilter}&`;
+                if (dateFilter) url += `dateRange=${dateFilter}&`;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    allTrades = data.trades;
+                    displayTrades(allTrades);
+                } else {
+                    document.getElementById('tradesTableContainer').innerHTML = `
+                        <div class="empty-state">
+                            <p>Error loading trades. Please refresh the page.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading trades:', error);
+                document.getElementById('tradesTableContainer').innerHTML = `
+                    <div class="empty-state">
+                        <p>Error loading trades. Please refresh the page.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayTrades(trades) {
+            document.getElementById('tradeCount').textContent = trades.length;
+
+            if (trades.length === 0) {
+                document.getElementById('tradesTableContainer').innerHTML = `
+                    <div class="empty-state">
+                        <h3>No trades yet</h3>
+                        <p>Start by adding your first trade!</p>
+                        <a href="/new-trade.html" class="btn btn-primary" style="margin-top: 1rem;">+ Add Trade</a>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableHTML = `
+                <table class="trades-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Symbol</th>
+                            <th>Type</th>
+                            <th>Entry</th>
+                            <th>Exit</th>
+                            <th>Shares</th>
+                            <th>P&L</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${trades.map(trade => {
+                            const date = new Date(trade.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            const pl = parseFloat(trade.profitLoss);
+                            const plColor = pl >= 0 ? '#059669' : '#dc2626';
+                            
+                            return `
+                                <tr>
+                                    <td>${date}</td>
+                                    <td><strong>${trade.symbol}</strong></td>
+                                    <td><span class="badge ${trade.tradeType}">${trade.tradeType.charAt(0).toUpperCase() + trade.tradeType.slice(1)}</span></td>
+                                    <td>$${trade.entryPrice.toFixed(2)}</td>
+                                    <td>$${trade.exitPrice.toFixed(2)}</td>
+                                    <td>${trade.shares}</td>
+                                    <td style="color: ${plColor}; font-weight: 600;">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}</td>
+                                    <td><span class="badge ${trade.status}">${trade.status.charAt(0).toUpperCase() + trade.status.slice(1)}</span></td>
+                                    <td>
+                                        <button class="action-btn" onclick="viewTrade('${trade._id}')">View</button>
+                                        <button class="action-btn delete" onclick="deleteTrade('${trade._id}')">Delete</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById('tradesTableContainer').innerHTML = tableHTML;
+        }
+
+        function viewTrade(id) {
+            // For now, just show an alert. You can implement a modal or detail page later
+            alert('Trade details page coming soon! Trade ID: ' + id);
+        }
+
+        async function deleteTrade(id) {
+            if (!confirm('Are you sure you want to delete this trade?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/trades/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    alert('Trade deleted successfully!');
+                    loadTrades(); // Reload the list
+                } else {
+                    alert('Failed to delete trade. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error deleting trade:', error);
+                alert('An error occurred. Please try again.');
+            }
+        }
+
+        // Filter event listeners
+        document.getElementById('symbolFilter').addEventListener('input', loadTrades);
+        document.getElementById('typeFilter').addEventListener('change', loadTrades);
+        document.getElementById('statusFilter').addEventListener('change', loadTrades);
+        document.getElementById('dateFilter').addEventListener('change', loadTrades);
+
+        // Initial load
+        loadTrades();
     </script>
 </body>
 </html>

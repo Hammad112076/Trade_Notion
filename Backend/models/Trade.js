@@ -6,17 +6,44 @@ const tradeSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  // Basic Trade Info
   symbol: {
     type: String,
     required: [true, 'Please provide a symbol'],
     uppercase: true,
     trim: true
   },
-  tradeType: {
+  date: {
+    type: Date,
+    required: true,
+    default: Date.now
+  },
+  tradingDay: {
+    type: String, // e.g., "Day 1", "Day 45", etc.
+    default: null
+  },
+  
+  // Trade Direction & Type
+  direction: {
     type: String,
     required: true,
     enum: ['long', 'short']
   },
+  
+  // Session
+  session: {
+    type: String,
+    enum: ['pre-market', 'morning', 'midday', 'afternoon', 'power-hour', 'after-hours'],
+    default: null
+  },
+  
+  // Model/Strategy (User can create custom ones)
+  model: {
+    type: String,
+    required: true
+  },
+  
+  // Trade Execution
   entryPrice: {
     type: Number,
     required: [true, 'Please provide entry price']
@@ -30,21 +57,22 @@ const tradeSchema = new mongoose.Schema({
     required: [true, 'Please provide number of shares'],
     min: 1
   },
+  
+  // P&L
   profitLoss: {
     type: Number,
     required: true
   },
-  status: {
-    type: String,
-    enum: ['win', 'loss', 'breakeven'],
-    required: true
+  cumulativePL: {
+    type: Number,
+    default: 0
   },
-  date: {
-    type: Date,
-    required: true,
-    default: Date.now
+  
+  // Risk/Reward
+  riskRewardRatio: {
+    type: String, // e.g., "1:2", "1:3"
+    default: null
   },
-  // Risk Management
   stopLoss: {
     type: Number
   },
@@ -54,18 +82,46 @@ const tradeSchema = new mongoose.Schema({
   riskAmount: {
     type: Number
   },
-  riskRewardRatio: {
-    type: String
-  },
-  // Strategy & Notes
-  strategy: {
+  
+  // Result
+  result: {
     type: String,
-    enum: ['momentum', 'breakout', 'reversal', 'scalping', 'swing', 'other']
+    enum: ['win', 'loss', 'breakeven'],
+    required: true
   },
-  marketCondition: {
+  
+  // Confidence & Emotions
+  confidenceLevel: {
+    type: Number, // 1-10 scale
+    min: 1,
+    max: 10,
+    default: null
+  },
+  emotionBefore: {
     type: String,
-    enum: ['trending', 'ranging', 'volatile', 'calm']
+    enum: ['confident', 'anxious', 'excited', 'fearful', 'calm', 'greedy', 'disciplined', 'impulsive', 'neutral'],
+    default: null
   },
+  emotionAfter: {
+    type: String,
+    enum: ['satisfied', 'disappointed', 'regretful', 'proud', 'frustrated', 'relieved', 'angry', 'neutral'],
+    default: null
+  },
+  
+  // Mistakes & Analysis
+  mistakeTag: [{
+    type: String // User can add multiple mistake tags
+  }],
+  whatWentRight: {
+    type: String,
+    maxlength: 2000
+  },
+  whatWentWrongI: {
+    type: String,
+    maxlength: 2000
+  },
+  
+  // Additional Notes
   preTradeNotes: {
     type: String,
     maxlength: 2000
@@ -74,15 +130,19 @@ const tradeSchema = new mongoose.Schema({
     type: String,
     maxlength: 2000
   },
-  emotionalState: {
+  
+  // Market Conditions
+  marketCondition: {
     type: String,
-    enum: ['confident', 'anxious', 'greedy', 'fearful', 'disciplined', 'impulsive']
+    enum: ['trending', 'ranging', 'volatile', 'calm']
   },
+  
   // Screenshots/Images
   screenshots: [{
     type: String
   }],
-  // Tags
+  
+  // Additional tags
   tags: [{
     type: String
   }]
@@ -91,28 +151,26 @@ const tradeSchema = new mongoose.Schema({
 });
 
 // Calculate P&L before saving
-tradeSchema.pre('save', function(next) {
-  if (this.tradeType === 'long') {
+tradeSchema.pre('save', function() {
+  if (this.direction === 'long') {
     this.profitLoss = (this.exitPrice - this.entryPrice) * this.shares;
   } else {
     this.profitLoss = (this.entryPrice - this.exitPrice) * this.shares;
   }
   
-  // Determine status
+  // Determine result
   if (this.profitLoss > 0) {
-    this.status = 'win';
+    this.result = 'win';
   } else if (this.profitLoss < 0) {
-    this.status = 'loss';
+    this.result = 'loss';
   } else {
-    this.status = 'breakeven';
+    this.result = 'breakeven';
   }
-  
-  next();
 });
 
 // Indexes for better query performance
 tradeSchema.index({ user: 1, date: -1 });
 tradeSchema.index({ user: 1, symbol: 1 });
-tradeSchema.index({ user: 1, status: 1 });
+tradeSchema.index({ user: 1, result: 1 });
 
 module.exports = mongoose.model('Trade', tradeSchema);
