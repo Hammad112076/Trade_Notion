@@ -117,6 +117,18 @@ function parseMoney(v) {
   return isNaN(n) ? 0 : n;
 }
 
+// Always store dates as UTC midnight so getUTCDay() is reliable on the frontend.
+// Handles both ISO "2025-06-23" and locale strings like "June 23, 2025".
+function normalizeToUTC(dateStr) {
+  if (!dateStr) return null;
+  const s = String(dateStr).trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return new Date(Date.UTC(+iso[1], +iso[2] - 1, +iso[3]));
+  const d = new Date(s);
+  if (isNaN(d)) return null;
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+}
+
 // @route   POST /api/trades
 // @desc    Create new trade
 // @access  Private
@@ -137,7 +149,7 @@ router.post('/', async (req, res) => {
     const tradeData = {
       user:             req.user._id,
       symbol,
-      date,
+      date:             normalizeToUTC(date),
       direction:        dir,
       model:            modelField || strategy || null,
       ...(entry !== null && { entryPrice: entry }),
@@ -181,7 +193,7 @@ router.put('/:id', async (req, res) => {
 
     const update = {
       ...(symbol    && { symbol: symbol.toUpperCase() }),
-      ...(date      && { date }),
+      ...(date      && { date: normalizeToUTC(date) }),
       direction:       dir,
       model:           modelField || strategy,
       ...(shares != null && { shares: parseFloat(shares) || null }),

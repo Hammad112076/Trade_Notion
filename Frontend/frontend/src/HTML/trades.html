@@ -593,9 +593,16 @@
 
         async function saveEdit() {
             if (!editingId) return;
+            const saveBtn = document.querySelector('.btn-save-modal');
             const pl  = parseFloat(document.getElementById('editPL').value) || 0;
+            const sym = document.getElementById('editSymbol').value.trim();
+            if (!sym) {
+                const msg = document.getElementById('editMsg');
+                msg.textContent = '❌ Symbol is required'; msg.style.color = '#dc2626'; msg.style.display = 'block';
+                return;
+            }
             const body = {
-                symbol:    document.getElementById('editSymbol').value.trim(),
+                symbol:    sym,
                 date:      document.getElementById('editDate').value,
                 direction: document.getElementById('editDirection').value,
                 strategy:  document.getElementById('editStrategy').value.trim(),
@@ -609,6 +616,7 @@
                 }
             };
 
+            saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
             try {
                 const res = await fetch(`/api/trades/${editingId}`, { method:'PUT', headers: jsonHeader, body: JSON.stringify(body) });
                 const d   = await res.json();
@@ -617,10 +625,12 @@
                     const msg = document.getElementById('editMsg');
                     msg.textContent = '❌ ' + (d.message || 'Failed to save');
                     msg.style.color = '#dc2626'; msg.style.display = 'block';
+                    saveBtn.disabled = false; saveBtn.textContent = 'Save Changes';
                 }
             } catch (e) {
                 const msg = document.getElementById('editMsg');
                 msg.textContent = '❌ Network error'; msg.style.color = '#dc2626'; msg.style.display = 'block';
+                saveBtn.disabled = false; saveBtn.textContent = 'Save Changes';
             }
         }
 
@@ -685,7 +695,7 @@
                 result:    find('result','status','outcome','trade/result'),
                 session:   find('session','trade/session'),
                 confidence:find('confidencelevel','confidence'),
-                emotionB:  find('emotionbefore','emotioneefore'),
+                emotionB:  find('emotionbefore'),
                 emotionA:  find('emotionafter'),
                 wentRight: find('whatwentright'),
                 wentWrong: find('whatwentwrong'),

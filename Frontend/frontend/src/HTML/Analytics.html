@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics - Trade Notion</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -17,293 +14,172 @@
         }
 
         .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 260px;
-            background: #1f2937;
-            color: white;
-            padding: 2rem 0;
-            overflow-y: auto;
+            position: fixed; left: 0; top: 0; bottom: 0; width: 260px;
+            background: #1f2937; color: white; padding: 2rem 0; overflow-y: auto;
         }
-
-        .logo {
-            padding: 0 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .logo h2 {
-            color: #4F46E5;
-            font-size: 1.5rem;
-        }
-
-        .nav-section {
-            margin-bottom: 2rem;
-        }
-
+        .logo { padding: 0 1.5rem; margin-bottom: 2rem; }
+        .logo h2 { color: #4F46E5; font-size: 1.5rem; }
+        .nav-section { margin-bottom: 2rem; }
         .nav-section-title {
-            padding: 0 1.5rem;
-            color: #9ca3af;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
+            padding: 0 1.5rem; color: #9ca3af; font-size: 0.75rem;
+            font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem;
         }
-
         .nav-item {
-            padding: 0.75rem 1.5rem;
-            color: #d1d5db;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            transition: all 0.3s;
+            padding: 0.75rem 1.5rem; color: #d1d5db; text-decoration: none;
+            display: flex; align-items: center; gap: 0.75rem; transition: all 0.3s;
         }
+        .nav-item:hover, .nav-item.active {
+            background: #374151; color: white; border-left: 3px solid #4F46E5;
+        }
+        .nav-icon { font-size: 1.25rem; }
 
-        .nav-item:hover,
-        .nav-item.active {
-            background: #374151;
-            color: white;
-            border-left: 3px solid #4F46E5;
-        }
-
-        .nav-icon {
-            font-size: 1.25rem;
-        }
-
-        .main-content {
-            margin-left: 260px;
-            padding: 2rem;
-        }
+        .main-content { margin-left: 260px; padding: 2rem; }
 
         .header {
-            background: white;
-            padding: 1.5rem 2rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            background: white; padding: 1.5rem 2rem; border-radius: 10px;
+            margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
+        .header h1 { color: #1f2937; font-size: 1.75rem; margin-bottom: 0.25rem; }
 
-        .header h1 {
-            color: #1f2937;
-            font-size: 1.75rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .date-selector {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
+        .date-selector { display: flex; gap: 1rem; margin-top: 1rem; }
         .date-btn {
-            padding: 0.5rem 1rem;
-            border: 2px solid #e5e7eb;
-            background: white;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 0.9rem;
+            padding: 0.5rem 1rem; border: 2px solid #e5e7eb; background: white;
+            border-radius: 6px; cursor: pointer; transition: all 0.3s; font-size: 0.9rem;
+        }
+        .date-btn:hover, .date-btn.active {
+            background: #4F46E5; color: white; border-color: #4F46E5;
         }
 
-        .date-btn:hover,
-        .date-btn.active {
-            background: #4F46E5;
-            color: white;
-            border-color: #4F46E5;
-        }
-
+        /* ── Metric cards ── */
         .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem; margin-bottom: 2rem;
         }
-
         .metric-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 10px;
+            background: white; padding: 1.5rem; border-radius: 10px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-
-        .metric-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .metric-title {
-            color: #6b7280;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
+        .metric-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .metric-title { color: #6b7280; font-size: 0.875rem; font-weight: 500; }
         .metric-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
+            width: 40px; height: 40px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
         }
-
-        .metric-icon.blue { background: #dbeafe; color: #2563eb; }
-        .metric-icon.green { background: #d1fae5; color: #059669; }
+        .metric-icon.blue   { background: #dbeafe; color: #2563eb; }
+        .metric-icon.green  { background: #d1fae5; color: #059669; }
         .metric-icon.purple { background: #e9d5ff; color: #7c3aed; }
         .metric-icon.orange { background: #fed7aa; color: #ea580c; }
-        .metric-icon.red { background: #fee2e2; color: #dc2626; }
-        .metric-icon.teal { background: #ccfbf1; color: #0d9488; }
+        .metric-icon.red    { background: #fee2e2; color: #dc2626; }
+        .metric-icon.teal   { background: #ccfbf1; color: #0d9488; }
+        .metric-value { font-size: 2rem; font-weight: bold; color: #1f2937; margin-bottom: 0.25rem; }
+        .metric-description { font-size: 0.875rem; color: #6b7280; }
 
-        .metric-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #1f2937;
-            margin-bottom: 0.25rem;
+        /* ── Charts ── */
+        .charts-row {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 1.5rem; margin-bottom: 2rem;
         }
-
-        .metric-description {
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-
-        .performance-table {
-            width: 100%;
-            background: white;
-            border-radius: 10px;
+        .chart-card {
+            background: white; padding: 1.5rem; border-radius: 10px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            overflow: hidden;
         }
-
-        .table-header {
-            padding: 1.5rem;
-            border-bottom: 2px solid #f3f4f6;
+        .chart-card-full {
+            background: white; padding: 1.5rem; border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 2rem;
         }
+        .chart-title { font-size: 1.1rem; font-weight: 600; color: #1f2937; margin-bottom: 0.25rem; }
+        .chart-subtitle { font-size: 0.8rem; color: #6b7280; margin-bottom: 1rem; }
 
-        .table-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1f2937;
+        /* ── Streak cards ── */
+        .streak-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem; margin-bottom: 2rem;
         }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .streak-card {
+            background: white; padding: 1.25rem; border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;
         }
+        .streak-label {
+            font-size: 0.7rem; color: #6b7280; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;
+        }
+        .streak-value { font-size: 2rem; font-weight: bold; color: #1f2937; }
+        .streak-value.win   { color: #059669; }
+        .streak-value.loss  { color: #dc2626; }
+        .streak-value.neutral { color: #4F46E5; }
 
+        /* ── Tables ── */
+        .performance-table {
+            width: 100%; background: white; border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 2rem;
+        }
+        .table-header { padding: 1.5rem; border-bottom: 2px solid #f3f4f6; }
+        .table-title { font-size: 1.25rem; font-weight: 600; color: #1f2937; }
+        .table-subtitle { font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem; }
+        table { width: 100%; border-collapse: collapse; }
         th {
-            text-align: left;
-            padding: 1rem 1.5rem;
-            background: #f9fafb;
-            color: #6b7280;
-            font-weight: 600;
-            font-size: 0.875rem;
+            text-align: left; padding: 1rem 1.5rem; background: #f9fafb;
+            color: #6b7280; font-weight: 600; font-size: 0.875rem;
         }
+        td { padding: 0.875rem 1.5rem; border-bottom: 1px solid #f3f4f6; }
+        tr:hover { background: #f9fafb; }
+        .stat-positive { color: #059669; font-weight: 600; }
+        .stat-negative { color: #dc2626; font-weight: 600; }
 
-        td {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #f3f4f6;
+        /* ── Quant badges & score bar ── */
+        .quant-badge {
+            display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px;
+            font-size: 0.75rem; font-weight: 700; letter-spacing: 0.03em;
         }
+        .quant-badge.trade { background: #d1fae5; color: #059669; }
+        .quant-badge.watch { background: #fef3c7; color: #d97706; }
+        .quant-badge.avoid { background: #fee2e2; color: #dc2626; }
 
-        tr:hover {
-            background: #f9fafb;
+        .score-bar-wrap { display: flex; align-items: center; gap: 0.5rem; }
+        .score-bar-bg {
+            flex: 1; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden;
         }
+        .score-bar-fill { height: 100%; border-radius: 3px; background: #4F46E5; }
 
-        .stat-positive {
-            color: #059669;
-            font-weight: 600;
-        }
+        .loading  { text-align: center; padding: 3rem; color: #6b7280; }
+        .empty-state { text-align: center; padding: 3rem; color: #6b7280; }
 
-        .stat-negative {
-            color: #dc2626;
-            font-weight: 600;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 3rem;
-            color: #6b7280;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #6b7280;
-        }
-
+        @media (max-width: 1100px) { .charts-row { grid-template-columns: 1fr; } }
         @media (max-width: 768px) {
-            .sidebar {
-                width: 70px;
-            }
-
-            .main-content {
-                margin-left: 70px;
-            }
-
-            .nav-item span {
-                display: none;
-            }
+            .sidebar { width: 70px; }
+            .main-content { margin-left: 70px; }
+            .nav-item span { display: none; }
         }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <div class="logo">
-            <h2>Trade Notion</h2>
-        </div>
-
+        <div class="logo"><h2>Trade Notion</h2></div>
         <div class="nav-section">
             <div class="nav-section-title">Main</div>
-            <a href="/dashboard.html" class="nav-item">
-                <span class="nav-icon">📊</span>
-                <span>Dashboard</span>
-            </a>
-            <a href="/trades.html" class="nav-item">
-                <span class="nav-icon">📝</span>
-                <span>Trade Journal</span>
-            </a>
-            <a href="/analytics.html" class="nav-item active">
-                <span class="nav-icon">📈</span>
-                <span>Analytics</span>
-            </a>
+            <a href="/dashboard.html" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+            <a href="/trades.html"    class="nav-item"><span class="nav-icon">📝</span><span>Trade Journal</span></a>
+            <a href="/analytics.html" class="nav-item active"><span class="nav-icon">📈</span><span>Analytics</span></a>
         </div>
-
         <div class="nav-section">
             <div class="nav-section-title">Tools</div>
-            <a href="/calendar.html" class="nav-item">
-                <span class="nav-icon">📅</span>
-                <span>Calendar</span>
-            </a>
-            <a href="/reports.html" class="nav-item">
-                <span class="nav-icon">📄</span>
-                <span>Reports</span>
-            </a>
-            <a href="/goals.html" class="nav-item">
-                <span class="nav-icon">🎯</span>
-                <span>Goals</span>
-            </a>
+            <a href="/calendar.html" class="nav-item"><span class="nav-icon">📅</span><span>Calendar</span></a>
+            <a href="/reports.html"  class="nav-item"><span class="nav-icon">📄</span><span>Reports</span></a>
+            <a href="/goals.html"    class="nav-item"><span class="nav-icon">🎯</span><span>Goals</span></a>
         </div>
-
         <div class="nav-section">
             <div class="nav-section-title">Account</div>
-            <a href="/settings.html" class="nav-item">
-                <span class="nav-icon">⚙️</span>
-                <span>Settings</span>
-            </a>
-            <a href="#" class="nav-item" onclick="logout()">
-                <span class="nav-icon">🚪</span>
-                <span>Logout</span>
-            </a>
+            <a href="/settings.html" class="nav-item"><span class="nav-icon">⚙️</span><span>Settings</span></a>
+            <a href="#" class="nav-item" onclick="logout()"><span class="nav-icon">🚪</span><span>Logout</span></a>
         </div>
     </div>
 
     <div class="main-content">
+
+        <!-- Header -->
         <div class="header">
             <h1>Performance Analytics</h1>
-            <p style="color: #6b7280; margin-top: 0.25rem;">Deep dive into your trading performance</p>
+            <p style="color:#6b7280;">Deep dive into your trading performance</p>
             <div class="date-selector">
                 <button class="date-btn" onclick="filterByDate('', this)">All Time</button>
                 <button class="date-btn" onclick="filterByDate('week', this)">7 Days</button>
@@ -312,231 +188,476 @@
             </div>
         </div>
 
+        <!-- Summary metrics -->
         <div class="metrics-grid">
             <div class="metric-card">
-                <div class="metric-header">
-                    <span class="metric-title">Total P&L</span>
-                    <div class="metric-icon green">💰</div>
-                </div>
+                <div class="metric-header"><span class="metric-title">Total P&L</span><div class="metric-icon green">💰</div></div>
                 <div class="metric-value" id="totalPL">Loading...</div>
                 <div class="metric-description" id="plDesc">Calculating...</div>
             </div>
-
             <div class="metric-card">
-                <div class="metric-header">
-                    <span class="metric-title">Win Rate</span>
-                    <div class="metric-icon blue">🎯</div>
-                </div>
+                <div class="metric-header"><span class="metric-title">Win Rate</span><div class="metric-icon blue">🎯</div></div>
                 <div class="metric-value" id="winRate">Loading...</div>
                 <div class="metric-description" id="winRateDesc">Calculating...</div>
             </div>
-
             <div class="metric-card">
-                <div class="metric-header">
-                    <span class="metric-title">Profit Factor</span>
-                    <div class="metric-icon purple">⚡</div>
-                </div>
+                <div class="metric-header"><span class="metric-title">Profit Factor</span><div class="metric-icon purple">⚡</div></div>
                 <div class="metric-value" id="profitFactor">Loading...</div>
                 <div class="metric-description" id="profitFactorDesc">Calculating...</div>
             </div>
-
             <div class="metric-card">
-                <div class="metric-header">
-                    <span class="metric-title">Avg Win</span>
-                    <div class="metric-icon green">📈</div>
-                </div>
+                <div class="metric-header"><span class="metric-title">Avg Win</span><div class="metric-icon green">📈</div></div>
                 <div class="metric-value" id="avgWin">Loading...</div>
                 <div class="metric-description">Average winning trade</div>
             </div>
-
             <div class="metric-card">
-                <div class="metric-header">
-                    <span class="metric-title">Avg Loss</span>
-                    <div class="metric-icon red">📉</div>
-                </div>
+                <div class="metric-header"><span class="metric-title">Avg Loss</span><div class="metric-icon red">📉</div></div>
                 <div class="metric-value" id="avgLoss">Loading...</div>
                 <div class="metric-description">Average losing trade</div>
             </div>
-
             <div class="metric-card">
-                <div class="metric-header">
-                    <span class="metric-title">Expectancy</span>
-                    <div class="metric-icon teal">💡</div>
-                </div>
+                <div class="metric-header"><span class="metric-title">Expectancy</span><div class="metric-icon teal">💡</div></div>
                 <div class="metric-value" id="expectancy">Loading...</div>
                 <div class="metric-description">Expected value per trade</div>
             </div>
         </div>
 
+        <!-- Equity Curve + Drawdown -->
+        <div class="charts-row">
+            <div class="chart-card">
+                <div class="chart-title">Equity Curve</div>
+                <div class="chart-subtitle">Cumulative P&L over time (chronological)</div>
+                <canvas id="equityChart" height="160"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">Drawdown</div>
+                <div class="chart-subtitle">Decline from running peak P&L</div>
+                <canvas id="drawdownChart" height="160"></canvas>
+            </div>
+        </div>
+
+        <!-- Best days to trade -->
+        <div class="performance-table">
+            <div class="table-header">
+                <h2 class="table-title">Best Days to Trade</h2>
+                <p class="table-subtitle">Ranked by how consistently you win — not just win rate, but how reliable that win rate really is</p>
+            </div>
+            <div id="dayTableContainer"><div class="loading">Loading...</div></div>
+        </div>
+
+        <!-- Streak summary -->
+        <div style="margin-bottom:0.75rem;">
+            <span style="font-size:1.1rem;font-weight:600;color:#1f2937;">Win / Loss Streak Analysis</span>
+        </div>
+        <div class="streak-grid" id="streakGrid">
+            <div class="streak-card"><div class="streak-label">Max Win Streak</div><div class="streak-value win" id="maxWinStreak">—</div></div>
+            <div class="streak-card"><div class="streak-label">Max Loss Streak</div><div class="streak-value loss" id="maxLossStreak">—</div></div>
+            <div class="streak-card"><div class="streak-label">Avg Win Streak</div><div class="streak-value win" id="avgWinStreak">—</div></div>
+            <div class="streak-card"><div class="streak-label">Avg Loss Streak</div><div class="streak-value loss" id="avgLossStreak">—</div></div>
+            <div class="streak-card"><div class="streak-label">Current Streak</div><div class="streak-value neutral" id="currentStreak">—</div></div>
+        </div>
+
+        <!-- Rolling 20-trade Avg P&L -->
+        <div class="chart-card-full">
+            <div class="chart-title">Rolling Performance (20-trade window)</div>
+            <div class="chart-subtitle">Avg P&L per trade on a 20-trade rolling basis — reveals regime shifts</div>
+            <canvas id="rollingChart" height="100"></canvas>
+        </div>
+
+        <!-- Symbol breakdown -->
         <div class="performance-table">
             <div class="table-header">
                 <h2 class="table-title">Symbol Performance Breakdown</h2>
             </div>
-            <div id="symbolTableContainer">
-                <div class="loading">Loading symbol data...</div>
-            </div>
+            <div id="symbolTableContainer"><div class="loading">Loading symbol data...</div></div>
         </div>
-    </div>
+
+    </div><!-- /main-content -->
 
     <script>
-        const token = localStorage.getItem('token');
-        if (!token) {
-            window.location.href = '/Login.html';
-        }
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/Login.html';
 
-        function logout() {
-            localStorage.removeItem('token');
-            window.location.href = '/Login.html';
-        }
+    function logout() { localStorage.removeItem('token'); window.location.href = '/Login.html'; }
 
-        let currentFilter = 'month';
+    let currentFilter = 'month';
+    let equityChartInst = null, drawdownChartInst = null, rollingChartInst = null;
 
-        function filterByDate(range, btn) {
-            currentFilter = range;
-            document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            loadAnalytics();
-        }
-
-        async function loadAnalytics() {
-            try {
-                let url = '/api/trades/stats/overview';
-                if (currentFilter) {
-                    url += `?dateRange=${currentFilter}`;
-                }
-
-                const response = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const stats = data.stats;
-
-                    // Total P&L
-                    const totalPL = parseFloat(stats.totalPL);
-                    document.getElementById('totalPL').textContent = `$${totalPL.toFixed(2)}`;
-                    document.getElementById('totalPL').style.color = totalPL >= 0 ? '#059669' : '#dc2626';
-                    document.getElementById('plDesc').textContent = `${stats.wins} wins / ${stats.losses} losses`;
-
-                    // Win Rate
-                    document.getElementById('winRate').textContent = `${stats.winRate}%`;
-                    document.getElementById('winRateDesc').textContent = `${stats.wins} wins / ${stats.totalTrades} trades`;
-
-                    // Profit Factor
-                    const pfVal = parseFloat(stats.profitFactor);
-                    document.getElementById('profitFactor').textContent = pfVal.toFixed(2);
-                    document.getElementById('profitFactorDesc').textContent = pfVal > 1 ? 'Profitable system' : pfVal === 1 ? 'Break even' : pfVal === 0 ? 'No data' : 'Needs improvement';
-
-                    // Avg Win
-                    document.getElementById('avgWin').textContent = `$${stats.avgWin}`;
-
-                    // Avg Loss
-                    document.getElementById('avgLoss').textContent = `$${stats.avgLoss}`;
-
-                    // Expectancy
-                    document.getElementById('expectancy').textContent = `$${stats.expectancy}`;
-                }
-            } catch (error) {
-                console.error('Error loading analytics:', error);
-            }
-
-            loadSymbolBreakdown();
-        }
-
-        async function loadSymbolBreakdown() {
-            try {
-                let url = '/api/trades';
-                if (currentFilter) {
-                    url += `?dateRange=${currentFilter}`;
-                }
-
-                const response = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const trades = data.trades;
-
-                    if (trades.length === 0) {
-                        document.getElementById('symbolTableContainer').innerHTML = `
-                            <div class="empty-state">
-                                <p>No trades data available</p>
-                            </div>
-                        `;
-                        return;
-                    }
-
-                    // Group by symbol
-                    const symbolStats = {};
-                    trades.forEach(trade => {
-                        const symbol = trade.symbol;
-                        if (!symbolStats[symbol]) {
-                            symbolStats[symbol] = {
-                                trades: [],
-                                wins: 0,
-                                losses: 0,
-                                totalPL: 0
-                            };
-                        }
-                        
-                        symbolStats[symbol].trades.push(trade);
-                        symbolStats[symbol].totalPL += parseFloat(trade.profitLoss);
-                        
-                        if (trade.result === 'win') {
-                            symbolStats[symbol].wins++;
-                        } else if (trade.result === 'loss') {
-                            symbolStats[symbol].losses++;
-                        }
-                    });
-
-                    // Build table
-                    const tableHTML = `
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Symbol</th>
-                                    <th>Trades</th>
-                                    <th>Win Rate</th>
-                                    <th>Total P&L</th>
-                                    <th>Best Trade</th>
-                                    <th>Worst Trade</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${Object.entries(symbolStats).map(([symbol, stats]) => {
-                                    const winRate = ((stats.wins / stats.trades.length) * 100).toFixed(1);
-                                    const bestTrade = Math.max(...stats.trades.map(t => parseFloat(t.profitLoss)));
-                                    const worstTrade = Math.min(...stats.trades.map(t => parseFloat(t.profitLoss)));
-                                    const totalPL = stats.totalPL;
-
-                                    return `
-                                        <tr>
-                                            <td><strong>${symbol}</strong></td>
-                                            <td>${stats.trades.length}</td>
-                                            <td>${winRate}%</td>
-                                            <td class="${totalPL >= 0 ? 'stat-positive' : 'stat-negative'}">
-                                                ${totalPL >= 0 ? '+' : ''}$${totalPL.toFixed(2)}
-                                            </td>
-                                            <td class="stat-positive">+$${bestTrade.toFixed(2)}</td>
-                                            <td class="stat-negative">$${worstTrade.toFixed(2)}</td>
-                                        </tr>
-                                    `;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    `;
-
-                    document.getElementById('symbolTableContainer').innerHTML = tableHTML;
-                }
-            } catch (error) {
-                console.error('Error loading symbol breakdown:', error);
-            }
-        }
-
-        // Initial load
+    function filterByDate(range, btn) {
+        currentFilter = range;
+        document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
         loadAnalytics();
+    }
+
+    // ── Summary stats ──────────────────────────────────────────────────────────
+    async function loadAnalytics() {
+        try {
+            let url = '/api/trades/stats/overview' + (currentFilter ? `?dateRange=${currentFilter}` : '');
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                const { stats } = await res.json();
+                const totalPL = parseFloat(stats.totalPL);
+                document.getElementById('totalPL').textContent = `$${totalPL.toFixed(2)}`;
+                document.getElementById('totalPL').style.color = totalPL >= 0 ? '#059669' : '#dc2626';
+                document.getElementById('plDesc').textContent = `${stats.wins} wins / ${stats.losses} losses`;
+
+                document.getElementById('winRate').textContent = `${stats.winRate}%`;
+                document.getElementById('winRateDesc').textContent = `${stats.wins} wins / ${stats.totalTrades} trades`;
+
+                const pfVal = parseFloat(stats.profitFactor);
+                document.getElementById('profitFactor').textContent = pfVal.toFixed(2);
+                document.getElementById('profitFactorDesc').textContent =
+                    pfVal > 1 ? 'Profitable system' : pfVal === 1 ? 'Break even' : pfVal === 0 ? 'No data' : 'Needs improvement';
+
+                document.getElementById('avgWin').textContent = `$${stats.avgWin}`;
+                document.getElementById('avgLoss').textContent = `$${stats.avgLoss}`;
+                document.getElementById('expectancy').textContent = `$${stats.expectancy}`;
+            }
+        } catch (e) { console.error('Stats error:', e); }
+
+        loadTradeData();
+    }
+
+    // ── All trade data (drives all charts + tables) ────────────────────────────
+    async function loadTradeData() {
+        try {
+            let url = '/api/trades' + (currentFilter ? `?dateRange=${currentFilter}` : '');
+            const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!res.ok) return;
+            const { trades } = await res.json();
+
+            if (!trades.length) {
+                ['symbolTableContainer','dayTableContainer'].forEach(id => {
+                    document.getElementById(id).innerHTML = '<div class="empty-state"><p>No trades in this period</p></div>';
+                });
+                clearCharts();
+                return;
+            }
+
+            // Sort chronologically for time-based charts
+            const sorted = [...trades].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            buildEquityCurve(sorted);
+            buildDrawdown(sorted);
+            buildRollingChart(sorted);
+            buildStreakAnalysis(sorted);
+            buildDayAnalysis(sorted);
+            buildSymbolTable(trades);
+        } catch (e) { console.error('Trade data error:', e); }
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    function clearCharts() {
+        [['equityChartInst','equityChart'],['drawdownChartInst','drawdownChart'],['rollingChartInst','rollingChart']].forEach(([inst, id]) => {
+            if (window[inst]) { window[inst].destroy(); window[inst] = null; }
+        });
+    }
+
+    function minmax(arr) {
+        const clean = arr.filter(v => isFinite(v));
+        if (!clean.length) return arr.map(() => 0);
+        const mn = Math.min(...clean), mx = Math.max(...clean);
+        if (mx === mn) return arr.map(() => 0.5);
+        return arr.map(v => isFinite(v) ? (v - mn) / (mx - mn) : 0);
+    }
+
+    // Wilson 95% CI lower bound for a proportion
+    function wilsonLow(wins, n) {
+        if (n === 0) return 0;
+        const z = 1.96, p = wins / n;
+        const denom = 1 + z * z / n;
+        const center = (p + z * z / (2 * n)) / denom;
+        const margin = (z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / denom;
+        return Math.max(0, center - margin) * 100;
+    }
+
+    // ── 1. Equity Curve ────────────────────────────────────────────────────────
+    function buildEquityCurve(sorted) {
+        const pl = sorted.map(t => parseFloat(t.profitLoss) || 0);
+        const cum = []; let sum = 0;
+        pl.forEach(v => { sum += v; cum.push(+sum.toFixed(2)); });
+
+        const labels = sorted.map((t, i) => `#${i + 1}`);
+        const ctx = document.getElementById('equityChart').getContext('2d');
+
+        if (equityChartInst) equityChartInst.destroy();
+        equityChartInst = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Cumulative P&L',
+                    data: cum,
+                    borderColor: cum[cum.length - 1] >= 0 ? '#059669' : '#dc2626',
+                    backgroundColor: cum[cum.length - 1] >= 0 ? 'rgba(5,150,105,0.08)' : 'rgba(220,38,38,0.08)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: cum.length > 80 ? 0 : 3,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: { callback: v => `$${v}` }
+                    }
+                }
+            }
+        });
+    }
+
+    // ── 2. Drawdown ────────────────────────────────────────────────────────────
+    function buildDrawdown(sorted) {
+        const pl = sorted.map(t => parseFloat(t.profitLoss) || 0);
+        let sum = 0, peak = 0;
+        const dd = pl.map(v => {
+            sum += v;
+            if (sum > peak) peak = sum;
+            return +( (sum - peak).toFixed(2) );
+        });
+
+        const labels = sorted.map((_, i) => `#${i + 1}`);
+        const ctx = document.getElementById('drawdownChart').getContext('2d');
+
+        if (drawdownChartInst) drawdownChartInst.destroy();
+        drawdownChartInst = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Drawdown',
+                    data: dd,
+                    borderColor: '#dc2626',
+                    backgroundColor: 'rgba(220,38,38,0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.2,
+                    pointRadius: dd.length > 80 ? 0 : 3,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: { callback: v => `$${v}` }
+                    }
+                }
+            }
+        });
+    }
+
+    // ── 3. Rolling 20-trade avg P&L ───────────────────────────────────────────
+    function buildRollingChart(sorted) {
+        const pl = sorted.map(t => parseFloat(t.profitLoss) || 0);
+        const WIN = 20;
+        const rolling = pl.map((_, i) => {
+            if (i < WIN - 1) return null;
+            const slice = pl.slice(i - WIN + 1, i + 1);
+            return +(slice.reduce((a, b) => a + b, 0) / WIN).toFixed(2);
+        });
+
+        const labels = sorted.map((_, i) => `#${i + 1}`);
+        const ctx = document.getElementById('rollingChart').getContext('2d');
+
+        if (rollingChartInst) rollingChartInst.destroy();
+        rollingChartInst = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Rolling Avg P&L (20 trades)',
+                    data: rolling,
+                    borderColor: '#4F46E5',
+                    backgroundColor: 'rgba(79,70,229,0.07)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    spanGaps: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: { callback: v => `$${v}` }
+                    }
+                }
+            }
+        });
+    }
+
+    // ── 4. Streak analysis ────────────────────────────────────────────────────
+    function buildStreakAnalysis(sorted) {
+        const seq = sorted.map(t => t.result === 'win' ? 'W' : 'L');
+        const winStreaks = [], lossStreaks = [];
+        let cur = seq[0], len = 1;
+
+        for (let i = 1; i < seq.length; i++) {
+            if (seq[i] === cur) { len++; }
+            else {
+                (cur === 'W' ? winStreaks : lossStreaks).push(len);
+                cur = seq[i]; len = 1;
+            }
+        }
+        if (cur) (cur === 'W' ? winStreaks : lossStreaks).push(len);
+
+        const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '—';
+
+        document.getElementById('maxWinStreak').textContent  = winStreaks.length  ? Math.max(...winStreaks)  : '0';
+        document.getElementById('maxLossStreak').textContent = lossStreaks.length ? Math.max(...lossStreaks) : '0';
+        document.getElementById('avgWinStreak').textContent  = avg(winStreaks);
+        document.getElementById('avgLossStreak').textContent = avg(lossStreaks);
+
+        // Current streak
+        const last = seq[seq.length - 1];
+        let count = 0;
+        for (let i = seq.length - 1; i >= 0 && seq[i] === last; i--) count++;
+        const el = document.getElementById('currentStreak');
+        el.textContent = `${count}${last}`;
+        el.className = `streak-value ${last === 'W' ? 'win' : 'loss'}`;
+    }
+
+    // ── 5. Day-of-week quant table ─────────────────────────────────────────────
+    function buildDayAnalysis(sorted) {
+        const DAY = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+        const groups = {};
+        DAY.forEach(d => { groups[d] = []; });
+
+        const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        // +12h before getUTCDay(): handles dates stored as local midnight in any UTC±12 timezone
+        const tradeDay = d => DAY_NAMES[new Date(new Date(d).getTime() + 12 * 60 * 60 * 1000).getUTCDay()];
+        sorted.forEach(t => {
+            const day = tradeDay(t.date);
+            if (!groups[day]) groups[day] = [];
+            groups[day].push(parseFloat(t.profitLoss) || 0);
+        });
+
+        const rows = DAY.map(day => {
+            const pls = groups[day];
+            const n = pls.length;
+            if (n === 0) return null;
+            const wins = pls.filter(v => v > 0).length;
+            const winRate = (wins / n) * 100;
+            const ci = wilsonLow(wins, n);
+            const avgPL = pls.reduce((a,b)=>a+b,0) / n;
+            // Median P&L — robust to outlier trades (used for score, not display)
+            const sorted = [...pls].sort((a,b)=>a-b);
+            const medPL = n % 2 === 1 ? sorted[(n-1)/2] : (sorted[n/2-1] + sorted[n/2]) / 2;
+            const variance = pls.reduce((s,v)=>s+(v-avgPL)**2,0) / Math.max(n-1,1);
+            const std = Math.sqrt(variance);
+            const sharpe = std > 0 ? avgPL / std : 0;
+            return { day, n, winRate, ci, avgPL, medPL, std, sharpe };
+        }).filter(Boolean);
+
+        if (!rows.length) {
+            document.getElementById('dayTableContainer').innerHTML = '<div class="empty-state"><p>Not enough data</p></div>';
+            return;
+        }
+
+        // Risk-adjusted median: medPL / std — same concept as R-multiples (normalises by volatility).
+        // Monday's huge std ($124) collapses its edge score even if medPL looks large.
+        const riskAdjMed = rows.map(r => r.std > 0 ? r.medPL / r.std : 0);
+
+        // Weights: reliability (CI) 60%, risk-adj edge 25%, stability (Sharpe) 15%
+        const normCI = minmax(rows.map(r => r.ci));
+        const normAR = minmax(riskAdjMed);
+        const normSH = minmax(rows.map(r => r.sharpe));
+        const scored = rows.map((r, i) => ({
+            ...r,
+            score: +(0.60 * normCI[i] + 0.25 * normAR[i] + 0.15 * normSH[i]).toFixed(3)
+        })).sort((a, b) => b.score - a.score);
+
+        const badge = s => s >= 0.6 ? 'trade' : s >= 0.35 ? 'watch' : 'avoid';
+        const badgeLabel = s => s >= 0.6 ? 'TRADE' : s >= 0.35 ? 'WATCH' : 'AVOID';
+
+        const html = `<table>
+            <thead><tr>
+                <th>Day</th>
+                <th>Trades</th>
+                <th>Win Rate</th>
+                <th title="How reliable your win rate is — accounts for sample size">Consistency</th>
+                <th>Avg P&L</th>
+                <th title="Overall score combining consistency, edge, and stability">Score</th>
+                <th>Signal</th>
+            </tr></thead>
+            <tbody>
+            ${scored.map(r => `<tr>
+                <td><strong>${r.day}</strong></td>
+                <td>${r.n}</td>
+                <td>${r.winRate.toFixed(1)}%</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <div style="flex:1;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;">
+                      <div style="width:${r.ci.toFixed(0)}%;height:100%;border-radius:3px;background:${r.ci>=50?'#059669':r.ci>=45?'#d97706':'#dc2626'}"></div>
+                    </div>
+                    <span style="font-size:0.8rem;color:${r.ci>=50?'#059669':r.ci>=45?'#d97706':'#dc2626'};font-weight:600;min-width:2.5rem;">${r.ci.toFixed(0)}%</span>
+                  </div>
+                </td>
+                <td class="${r.avgPL>=0?'stat-positive':'stat-negative'}">${r.avgPL>=0?'+':''}$${r.avgPL.toFixed(2)}</td>
+                <td>
+                  <div class="score-bar-wrap">
+                    <div class="score-bar-bg"><div class="score-bar-fill" style="width:${(r.score*100).toFixed(0)}%"></div></div>
+                    <span style="font-size:0.8rem;font-weight:600;color:#374151;min-width:2rem;">${(r.score*10).toFixed(1)}/10</span>
+                  </div>
+                </td>
+                <td><span class="quant-badge ${badge(r.score)}">${badgeLabel(r.score)}</span></td>
+            </tr>`).join('')}
+            </tbody>
+        </table>`;
+
+        document.getElementById('dayTableContainer').innerHTML = html;
+    }
+
+    // ── 6. Symbol table ────────────────────────────────────────────────────────
+    function buildSymbolTable(trades) {
+        const symStats = {};
+        trades.forEach(t => {
+            if (!symStats[t.symbol]) symStats[t.symbol] = { trades: [], wins: 0, totalPL: 0 };
+            symStats[t.symbol].trades.push(t);
+            symStats[t.symbol].totalPL += parseFloat(t.profitLoss) || 0;
+            if (t.result === 'win') symStats[t.symbol].wins++;
+        });
+
+        const html = `<table>
+            <thead><tr>
+                <th>Symbol</th><th>Trades</th><th>Win Rate</th>
+                <th>Total P&L</th><th>Best Trade</th><th>Worst Trade</th>
+            </tr></thead>
+            <tbody>
+            ${Object.entries(symStats).map(([sym, s]) => {
+                const wr = ((s.wins / s.trades.length)*100).toFixed(1);
+                const best  = Math.max(...s.trades.map(t => parseFloat(t.profitLoss)));
+                const worst = Math.min(...s.trades.map(t => parseFloat(t.profitLoss)));
+                return `<tr>
+                    <td><strong>${sym}</strong></td>
+                    <td>${s.trades.length}</td>
+                    <td>${wr}%</td>
+                    <td class="${s.totalPL>=0?'stat-positive':'stat-negative'}">${s.totalPL>=0?'+':''}$${s.totalPL.toFixed(2)}</td>
+                    <td class="stat-positive">+$${best.toFixed(2)}</td>
+                    <td class="stat-negative">$${worst.toFixed(2)}</td>
+                </tr>`;
+            }).join('')}
+            </tbody>
+        </table>`;
+
+        document.getElementById('symbolTableContainer').innerHTML = html;
+    }
+
+    // Initial load
+    loadAnalytics();
     </script>
 </body>
 </html>

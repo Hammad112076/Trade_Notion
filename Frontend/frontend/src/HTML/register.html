@@ -330,7 +330,8 @@
         // Form submission
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
+            const btn = document.querySelector('.btn-register');
             const fullName = document.getElementById('fullName').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
@@ -339,29 +340,29 @@
             const errorMessage = document.getElementById('errorMessage');
             const successMessage = document.getElementById('successMessage');
 
-            // Hide previous messages
             errorMessage.style.display = 'none';
             successMessage.style.display = 'none';
 
-            // Validate passwords match
             if (password !== confirmPassword) {
                 errorMessage.textContent = 'Passwords do not match!';
                 errorMessage.style.display = 'block';
                 return;
             }
 
+            if (password.length < 8) {
+                errorMessage.textContent = 'Password must be at least 8 characters.';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Creating account…';
+
             try {
                 const response = await fetch('/api/auth/register', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        name: fullName,
-                        email, 
-                        password,
-                        tradingExperience
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: fullName, email, password, tradingExperience })
                 });
 
                 const data = await response.json();
@@ -369,16 +370,19 @@
                 if (response.ok) {
                     successMessage.textContent = 'Account created successfully! Redirecting to login...';
                     successMessage.style.display = 'block';
-                    setTimeout(() => {
-                        window.location.href = '/index.html';
-                    }, 2000);
+                    btn.textContent = 'Redirecting…';
+                    setTimeout(() => { window.location.href = '/Login.html'; }, 2000);
                 } else {
                     errorMessage.textContent = data.message || 'Registration failed. Please try again.';
                     errorMessage.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Create Account';
                 }
             } catch (error) {
                 errorMessage.textContent = 'An error occurred. Please try again.';
                 errorMessage.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
             }
         });
     </script>
