@@ -40,7 +40,7 @@ const tradeSchema = new mongoose.Schema({
   // Model/Strategy (User can create custom ones)
   model: {
     type: String,
-    required: true
+    default: null
   },
   
   // Trade Execution
@@ -52,8 +52,7 @@ const tradeSchema = new mongoose.Schema({
   },
   shares: {
     type: Number,
-    required: [true, 'Please provide number of shares'],
-    min: 1
+    default: null
   },
   
   // P&L

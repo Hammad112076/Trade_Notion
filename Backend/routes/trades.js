@@ -97,6 +97,26 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Enum allow-lists for sanitization
+const VALID_SESSIONS    = ['pre-market','morning','midday','afternoon','power-hour','after-hours'];
+const VALID_EMOTION_B   = ['confident','anxious','excited','fearful','calm','greedy','disciplined','impulsive','neutral'];
+const VALID_EMOTION_A   = ['satisfied','disappointed','regretful','proud','frustrated','relieved','angry','neutral'];
+const VALID_RESULTS     = ['win','loss','breakeven'];
+const VALID_CONDITIONS  = ['trending','ranging','volatile','calm'];
+
+function sanitizeEnum(value, allowed) {
+  if (!value) return null;
+  const v = value.toString().toLowerCase().trim();
+  return allowed.includes(v) ? v : null;
+}
+
+// Strip currency symbols and % so "$182" or "-$182.00" parses correctly
+function parseMoney(v) {
+  if (v == null) return 0;
+  const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
 // @route   POST /api/trades
 // @desc    Create new trade
 // @access  Private
@@ -105,35 +125,35 @@ router.post('/', async (req, res) => {
     const { symbol, tradeType, direction, date, entryPrice, exitPrice, shares,
             profitLoss, status, result, strategy, model: modelField, notes = {} } = req.body;
 
-    // Calculate P&L and result if not provided
     const entry = entryPrice != null ? parseFloat(entryPrice) : null;
     const exit  = exitPrice  != null ? parseFloat(exitPrice)  : null;
     const qty   = shares     != null ? parseFloat(shares)     : null;
-    const dir   = direction || tradeType || 'long';
-    const pl    = parseFloat(profitLoss) || 0;
-    const resolvedResult = result || status || (pl > 0 ? 'win' : pl < 0 ? 'loss' : 'breakeven');
+    const rawDir = (direction || tradeType || 'long').toLowerCase();
+    const dir    = rawDir === 'short' || rawDir === 'sell' ? 'short' : 'long';
+    const pl     = parseMoney(profitLoss);
+    const resolvedResult = sanitizeEnum(result || status, VALID_RESULTS)
+                        || (pl > 0 ? 'win' : pl < 0 ? 'loss' : 'breakeven');
 
     const tradeData = {
       user:             req.user._id,
       symbol,
       date,
       direction:        dir,
-      model:            modelField || strategy,
+      model:            modelField || strategy || null,
       ...(entry !== null && { entryPrice: entry }),
       ...(exit  !== null && { exitPrice:  exit  }),
       ...(qty   !== null && { shares:     qty   }),
       profitLoss:       pl,
       result:           resolvedResult,
-      // flatten notes fields
-      tradingDay:       notes.tradingDay       || null,
-      session:          notes.session          || null,
-      riskRewardRatio:  notes.riskRewardRatio  || null,
-      confidenceLevel:  notes.confidenceLevel  || null,
-      emotionBefore:    notes.emotionBefore    ? notes.emotionBefore.toLowerCase() : null,
-      emotionAfter:     notes.emotionAfter     ? notes.emotionAfter.toLowerCase()  : null,
-      mistakeTag:       notes.mistakeTags      || [],
-      whatWentRight:    notes.whatWentRight    || null,
-      whatWentWrongI:   notes.whatWentWrong    || null,
+      tradingDay:       notes.tradingDay                                           || null,
+      session:          sanitizeEnum(notes.session, VALID_SESSIONS),
+      riskRewardRatio:  notes.riskRewardRatio                                      || null,
+      confidenceLevel:  notes.confidenceLevel                                      || null,
+      emotionBefore:    sanitizeEnum(notes.emotionBefore, VALID_EMOTION_B),
+      emotionAfter:     sanitizeEnum(notes.emotionAfter,  VALID_EMOTION_A),
+      mistakeTag:       notes.mistakeTags || [],
+      whatWentRight:    notes.whatWentRight  || null,
+      whatWentWrongI:   notes.whatWentWrong  || null,
     };
 
     const trade = await Trade.create(tradeData);
@@ -145,6 +165,51 @@ router.post('/', async (req, res) => {
   } catch (error) {
     console.error('Error creating trade:', error);
     res.status(400).json({ message: error.message || 'Error creating trade' });
+  }
+});
+
+// @route   PUT /api/trades/:id
+// @desc    Update a trade
+// @access  Private
+router.put('/:id', async (req, res) => {
+  try {
+    const { symbol, date, direction, tradeType, shares, profitLoss, result, status, strategy, model: modelField, notes = {} } = req.body;
+
+    const pl  = parseFloat(profitLoss) || 0;
+    const dir = direction || tradeType || 'long';
+    const resolvedResult = result || status || (pl > 0 ? 'win' : pl < 0 ? 'loss' : 'breakeven');
+
+    const update = {
+      ...(symbol    && { symbol: symbol.toUpperCase() }),
+      ...(date      && { date }),
+      direction:       dir,
+      model:           modelField || strategy,
+      ...(shares != null && { shares: parseFloat(shares) || null }),
+      profitLoss:      pl,
+      result:          resolvedResult,
+      ...(notes.tradingDay      !== undefined && { tradingDay:     notes.tradingDay      || null }),
+      ...(notes.session         !== undefined && { session:        notes.session         || null }),
+      ...(notes.riskRewardRatio !== undefined && { riskRewardRatio:notes.riskRewardRatio || null }),
+      ...(notes.confidenceLevel !== undefined && { confidenceLevel:notes.confidenceLevel || null }),
+      ...(notes.emotionBefore   !== undefined && { emotionBefore:  notes.emotionBefore   ? notes.emotionBefore.toLowerCase()  : null }),
+      ...(notes.emotionAfter    !== undefined && { emotionAfter:   notes.emotionAfter    ? notes.emotionAfter.toLowerCase()   : null }),
+      ...(notes.mistakeTags     !== undefined && { mistakeTag:     notes.mistakeTags     || [] }),
+      ...(notes.whatWentRight   !== undefined && { whatWentRight:  notes.whatWentRight   || null }),
+      ...(notes.whatWentWrong   !== undefined && { whatWentWrongI: notes.whatWentWrong   || null }),
+    };
+
+    const trade = await Trade.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id },
+      update,
+      { new: true, runValidators: false }
+    );
+
+    if (!trade) return res.status(404).json({ message: 'Trade not found' });
+
+    res.json({ success: true, trade });
+  } catch (error) {
+    console.error('Error updating trade:', error);
+    res.status(500).json({ message: 'Error updating trade', error: error.message });
   }
 });
 
