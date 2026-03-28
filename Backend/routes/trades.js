@@ -33,7 +33,7 @@ router.get('/stats/overview', async (req, res) => {
 
     const avgWin  = winningTrades.length > 0 ? (totalWins  / winningTrades.length).toFixed(2) : '0.00';
     const avgLoss = losingTrades.length  > 0 ? (totalLosses / losingTrades.length).toFixed(2) : '0.00';
-    const profitFactor = totalLosses > 0 ? (totalWins / totalLosses).toFixed(2) : totalWins > 0 ? '∞' : '0.00';
+    const profitFactor = totalLosses > 0 ? (totalWins / totalLosses).toFixed(2) : '0.00';
     const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : '0.0';
     const wr = totalTrades > 0 ? wins / totalTrades : 0;
     const expectancy = ((wr * parseFloat(avgWin)) - ((1 - wr) * parseFloat(avgLoss))).toFixed(2);

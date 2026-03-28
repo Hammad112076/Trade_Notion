@@ -424,8 +424,9 @@
                     document.getElementById('winRateDesc').textContent = `${stats.wins} wins / ${stats.totalTrades} trades`;
 
                     // Profit Factor
-                    document.getElementById('profitFactor').textContent = stats.profitFactor;
-                    document.getElementById('profitFactorDesc').textContent = parseFloat(stats.profitFactor) > 1 ? 'Profitable system' : 'Needs improvement';
+                    const pfVal = parseFloat(stats.profitFactor);
+                    document.getElementById('profitFactor').textContent = pfVal.toFixed(2);
+                    document.getElementById('profitFactorDesc').textContent = pfVal > 1 ? 'Profitable system' : pfVal === 1 ? 'Break even' : pfVal === 0 ? 'No data' : 'Needs improvement';
 
                     // Avg Win
                     document.getElementById('avgWin').textContent = `$${stats.avgWin}`;

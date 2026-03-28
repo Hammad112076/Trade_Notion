@@ -515,7 +515,7 @@
                     document.getElementById('tradesDetail').textContent = `All time performance`;
 
                     // Profit Factor
-                    document.getElementById('profitFactor').textContent = stats.profitFactor;
+                    document.getElementById('profitFactor').textContent = parseFloat(stats.profitFactor).toFixed(2);
                     document.getElementById('profitFactorDetail').textContent = `Expectancy: $${stats.expectancy}`;
                 }
             } catch (error) {
@@ -566,9 +566,9 @@
                                         <tr>
                                             <td>${date}</td>
                                             <td><strong>${trade.symbol}</strong></td>
-                                            <td>${trade.tradeType.charAt(0).toUpperCase() + trade.tradeType.slice(1)}</td>
+                                            <td>${(trade.direction || '').charAt(0).toUpperCase() + (trade.direction || '').slice(1)}</td>
                                             <td style="color: ${plColor}; font-weight: 600;">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}</td>
-                                            <td><span class="badge ${trade.status}">${trade.status.charAt(0).toUpperCase() + trade.status.slice(1)}</span></td>
+                                            <td><span class="badge ${trade.result}">${(trade.result || '').charAt(0).toUpperCase() + (trade.result || '').slice(1)}</span></td>
                                         </tr>
                                     `;
                                 }).join('')}
