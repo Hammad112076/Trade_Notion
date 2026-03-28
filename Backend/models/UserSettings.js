@@ -14,6 +14,9 @@ const userSettingsSchema = new mongoose.Schema({
   customMistakeTags: [{
     type: String,
     trim: true
+  }],
+  customFields: [{
+    type: mongoose.Schema.Types.Mixed
   }]
 }, {
   timestamps: true

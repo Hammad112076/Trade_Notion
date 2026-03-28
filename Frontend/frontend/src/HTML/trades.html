@@ -448,31 +448,29 @@
                         <tr>
                             <th>Date</th>
                             <th>Symbol</th>
-                            <th>Type</th>
-                            <th>Entry</th>
-                            <th>Exit</th>
+                            <th>Direction</th>
                             <th>Shares</th>
                             <th>P&L</th>
-                            <th>Status</th>
+                            <th>Result</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${trades.map(trade => {
                             const date = new Date(trade.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                            const pl = parseFloat(trade.profitLoss);
+                            const pl = parseFloat(trade.profitLoss) || 0;
                             const plColor = pl >= 0 ? '#059669' : '#dc2626';
-                            
+                            const dir = trade.direction || trade.tradeType || '—';
+                            const result = trade.result || trade.status || '—';
+
                             return `
                                 <tr>
                                     <td>${date}</td>
                                     <td><strong>${trade.symbol}</strong></td>
-                                    <td><span class="badge ${trade.tradeType}">${trade.tradeType.charAt(0).toUpperCase() + trade.tradeType.slice(1)}</span></td>
-                                    <td>$${trade.entryPrice.toFixed(2)}</td>
-                                    <td>$${trade.exitPrice.toFixed(2)}</td>
-                                    <td>${trade.shares}</td>
+                                    <td><span class="badge ${dir}">${dir.charAt(0).toUpperCase() + dir.slice(1)}</span></td>
+                                    <td>${trade.shares || '—'}</td>
                                     <td style="color: ${plColor}; font-weight: 600;">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}</td>
-                                    <td><span class="badge ${trade.status}">${trade.status.charAt(0).toUpperCase() + trade.status.slice(1)}</span></td>
+                                    <td><span class="badge ${result}">${result.charAt(0).toUpperCase() + result.slice(1)}</span></td>
                                     <td>
                                         <button class="action-btn" onclick="viewTrade('${trade._id}')">View</button>
                                         <button class="action-btn delete" onclick="deleteTrade('${trade._id}')">Delete</button>

@@ -4,809 +4,669 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Trade - Trade Notion</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg: #f7f7f5;
+            --surface: #ffffff;
+            --border: #e8e8e4;
+            --text-primary: #37352f;
+            --text-secondary: #787774;
+            --text-placeholder: #b3b0ad;
+            --accent: #2f80ed;
+            --accent-hover: #1a6fd4;
+            --tag-bg: #f1f1ef;
+            --danger: #e03e3e;
+            --success: #0f9b58;
+            --radius: 6px;
         }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text-primary); font-size:14px; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f3f4f6;
+        /* sidebar */
+        .sidebar { position:fixed; left:0; top:0; bottom:0; width:240px; background:#1f2937; color:white; padding:2rem 0; overflow-y:auto; }
+        .logo { padding:0 1.5rem; margin-bottom:2rem; }
+        .logo h2 { color:#4F46E5; font-size:1.4rem; font-family:'DM Mono',monospace; }
+        .nav-section { margin-bottom:1.5rem; }
+        .nav-section-title { padding:0 1.5rem; color:#9ca3af; font-size:0.7rem; font-weight:600; text-transform:uppercase; margin-bottom:0.4rem; letter-spacing:.08em; }
+        .nav-item { padding:.6rem 1.5rem; color:#d1d5db; text-decoration:none; display:flex; align-items:center; gap:.65rem; transition:all .2s; font-size:.875rem; }
+        .nav-item:hover,.nav-item.active { background:#374151; color:white; border-left:3px solid #4F46E5; }
+        .nav-icon { font-size:1.1rem; }
+
+        /* layout */
+        .main-content { margin-left:240px; padding:3rem 4rem; }
+        .page-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2.5rem; }
+        .page-title { font-family:'DM Mono',monospace; font-size:2rem; font-weight:500; letter-spacing:-.03em; }
+        .page-subtitle { color:var(--text-secondary); margin-top:4px; font-size:13px; }
+        .back-btn { padding:.5rem 1rem; background:var(--surface); color:var(--text-secondary); border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; font-size:13px; text-decoration:none; transition:all .2s; font-family:'DM Sans',sans-serif; }
+        .back-btn:hover { border-color:var(--text-primary); color:var(--text-primary); }
+
+        /* alerts */
+        .alert { padding:.75rem 1rem; border-radius:var(--radius); margin-bottom:1.25rem; font-size:13px; display:none; }
+        .alert-success { background:#f0fdf4; color:var(--success); border:1px solid #bbf7d0; }
+        .alert-error   { background:#fef2f2; color:var(--danger);  border:1px solid #fecaca; }
+
+        /* blocks */
+        .form-block { background:var(--surface); border:1px solid var(--border); border-radius:8px; margin-bottom:1.25rem; overflow:hidden; }
+        .block-header { padding:1rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:.5rem; }
+        .block-header h2 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-secondary); }
+        .block-body { padding:1.25rem 1.5rem; }
+
+        /* property rows */
+        .prop-row { display:flex; align-items:flex-start; padding:3px 0; border-radius:4px; transition:background .15s; }
+        .prop-row:hover { background:var(--bg); }
+        .prop-label { width:200px; min-width:200px; display:flex; align-items:center; gap:6px; padding:8px 6px 8px 4px; color:var(--text-secondary); font-size:13px; font-weight:500; user-select:none; }
+        .prop-label .type-icon { font-size:13px; opacity:.7; }
+        .prop-label .req { color:var(--danger); margin-left:2px; font-size:11px; }
+        .prop-value { flex:1; padding:2px 0; }
+
+        .prop-value input[type="text"],
+        .prop-value input[type="number"],
+        .prop-value input[type="date"],
+        .prop-value select,
+        .prop-value textarea {
+            width:100%; padding:7px 8px; border:1px solid transparent; border-radius:4px;
+            font-size:13px; font-family:'DM Sans',sans-serif; background:transparent;
+            color:var(--text-primary); transition:border-color .15s,background .15s; outline:none;
         }
+        .prop-value input:hover,.prop-value select:hover,.prop-value textarea:hover { border-color:var(--border); background:var(--bg); }
+        .prop-value input:focus,.prop-value select:focus,.prop-value textarea:focus { border-color:var(--accent); background:#fff; box-shadow:0 0 0 2px rgba(47,128,237,.12); }
+        .prop-value textarea { resize:vertical; min-height:72px; line-height:1.5; }
 
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 260px;
-            background: #1f2937;
-            color: white;
-            padding: 2rem 0;
-            overflow-y: auto;
-        }
+        .radio-row { display:flex; align-items:center; gap:1.25rem; padding:8px; }
+        .radio-option { display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; }
+        .radio-option input { width:auto; accent-color:var(--accent); }
 
-        .logo {
-            padding: 0 1.5rem;
-            margin-bottom: 2rem;
-        }
+        .range-wrap { padding:8px; display:flex; align-items:center; gap:12px; }
+        .range-wrap input[type="range"] { flex:1; accent-color:var(--accent); }
+        .range-badge { font-family:'DM Mono',monospace; font-size:12px; color:var(--accent); background:#eff6ff; padding:2px 8px; border-radius:12px; min-width:32px; text-align:center; }
 
-        .logo h2 {
-            color: #4F46E5;
-            font-size: 1.5rem;
-        }
+        #calculatedPL { font-family:'DM Mono',monospace; font-weight:500; }
+        .pl-hint { font-size:11px; color:var(--text-placeholder); padding:2px 8px 0; }
 
-        .nav-section {
-            margin-bottom: 2rem;
-        }
+        .tag-input-wrap input { margin-bottom:6px; }
+        .tags-list { display:flex; flex-wrap:wrap; gap:5px; padding:0 8px 4px; }
+        .tag-chip { display:flex; align-items:center; gap:4px; padding:3px 10px; background:var(--tag-bg); border-radius:4px; font-size:12px; border:1px solid var(--border); }
+        .tag-chip .rm { cursor:pointer; color:var(--text-secondary); font-size:14px; line-height:1; }
+        .tag-chip .rm:hover { color:var(--danger); }
 
-        .nav-section-title {
-            padding: 0 1.5rem;
-            color: #9ca3af;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
-        }
+        .model-add-row { display:flex; gap:6px; margin-top:6px; padding:0 8px; }
+        .model-add-row input { flex:1; }
+        .model-add-row button { padding:6px 12px; background:var(--accent); color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-family:'DM Sans',sans-serif; white-space:nowrap; }
+        .model-add-row button:hover { background:var(--accent-hover); }
 
-        .nav-item {
-            padding: 0.75rem 1.5rem;
-            color: #d1d5db;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            transition: all 0.3s;
-        }
+        /* custom fields section */
+        .custom-fields-header { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.5rem; border-bottom:1px solid var(--border); }
+        .custom-fields-header h2 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-secondary); }
+        .add-field-btn { display:flex; align-items:center; gap:5px; padding:5px 10px; background:transparent; border:1px dashed var(--border); border-radius:5px; cursor:pointer; font-size:12px; color:var(--text-secondary); font-family:'DM Sans',sans-serif; transition:all .2s; }
+        .add-field-btn:hover { border-color:var(--accent); color:var(--accent); background:#f0f7ff; }
 
-        .nav-item:hover,
-        .nav-item.active {
-            background: #374151;
-            color: white;
-            border-left: 3px solid #4F46E5;
-        }
+        .custom-prop-row { display:flex; align-items:flex-start; padding:3px 0; border-radius:4px; transition:background .15s; position:relative; }
+        .custom-prop-row:hover { background:var(--bg); }
+        .custom-prop-row:hover .field-actions { opacity:1; }
+        .field-actions { position:absolute; right:0; top:50%; transform:translateY(-50%); display:flex; gap:2px; opacity:0; transition:opacity .15s; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:2px; }
+        .field-action-btn { padding:3px 6px; border:none; background:transparent; cursor:pointer; font-size:12px; border-radius:3px; color:var(--text-secondary); transition:all .15s; }
+        .field-action-btn:hover { background:var(--tag-bg); color:var(--danger); }
 
-        .nav-icon {
-            font-size: 1.25rem;
-        }
+        .empty-custom { padding:2rem 1.5rem; text-align:center; color:var(--text-placeholder); font-size:13px; }
+        .empty-custom span { display:block; font-size:24px; margin-bottom:6px; }
 
-        .main-content {
-            margin-left: 260px;
-            padding: 2rem;
-        }
+        /* modal */
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:100; align-items:center; justify-content:center; }
+        .modal-overlay.open { display:flex; }
+        .modal { background:var(--surface); border-radius:10px; box-shadow:0 20px 60px rgba(0,0,0,.18); width:420px; padding:1.75rem; animation:popIn .18s ease; }
+        @keyframes popIn { from{transform:scale(.95);opacity:0} to{transform:scale(1);opacity:1} }
+        .modal h3 { font-size:15px; font-weight:600; margin-bottom:1.25rem; }
+        .modal-field { margin-bottom:1rem; }
+        .modal-field label { display:block; font-size:12px; color:var(--text-secondary); margin-bottom:4px; font-weight:500; }
+        .modal-field input,.modal-field select { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text-primary); outline:none; }
+        .modal-field input:focus,.modal-field select:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(47,128,237,.12); }
 
-        .header {
-            background: white;
-            padding: 1.5rem 2rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        #dropdownOptionsWrap { display:none; }
+        .dropdown-opt-row { display:flex; gap:6px; margin-bottom:6px; }
+        .dropdown-opt-row input { flex:1; }
+        .dropdown-opt-row button { padding:6px 8px; border:1px solid var(--border); border-radius:4px; background:transparent; cursor:pointer; font-size:13px; color:var(--danger); }
 
-        .header h1 {
-            color: #1f2937;
-            font-size: 1.75rem;
-        }
+        .type-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:.25rem; }
+        .type-option { display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 6px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:11px; color:var(--text-secondary); transition:all .15s; user-select:none; text-align:center; }
+        .type-option .ti { font-size:18px; }
+        .type-option:hover { border-color:var(--accent); color:var(--accent); background:#f0f7ff; }
+        .type-option.selected { border-color:var(--accent); color:var(--accent); background:#eff6ff; font-weight:600; }
 
-        .back-btn {
-            padding: 0.625rem 1.25rem;
-            background: #f3f4f6;
-            color: #374151;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
+        .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:1.5rem; }
+        .modal-actions button { padding:7px 16px; border-radius:var(--radius); font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif; border:none; }
+        .btn-cancel-modal { background:var(--tag-bg); color:var(--text-primary); }
+        .btn-cancel-modal:hover { background:var(--border); }
+        .btn-add-modal { background:var(--accent); color:#fff; }
+        .btn-add-modal:hover { background:var(--accent-hover); }
 
-        .back-btn:hover {
-            background: #e5e7eb;
-        }
+        /* footer */
+        .form-footer { display:flex; justify-content:flex-end; gap:10px; padding:1.25rem 1.5rem; border-top:1px solid var(--border); background:var(--surface); border-radius:0 0 8px 8px; margin-top:-1.25rem; }
+        .btn-save { padding:8px 24px; background:var(--accent); color:#fff; border:none; border-radius:var(--radius); cursor:pointer; font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; transition:background .2s; }
+        .btn-save:hover { background:var(--accent-hover); }
+        .btn-save:disabled { background:#b3b0ad; cursor:not-allowed; }
+        .btn-discard { padding:8px 16px; background:transparent; color:var(--text-secondary); border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; font-size:13px; font-family:'DM Sans',sans-serif; transition:all .2s; }
+        .btn-discard:hover { border-color:var(--text-primary); color:var(--text-primary); }
 
-        .form-container {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            max-width: 1200px;
-        }
-
-        .form-section {
-            margin-bottom: 2rem;
-        }
-
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #f3f4f6;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .form-group.full-width {
-            grid-column: 1 / -1;
-        }
-
-        label {
-            color: #374151;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-
-        label span {
-            color: #dc2626;
-        }
-
-        input, select, textarea {
-            padding: 0.75rem;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-            font-family: inherit;
-        }
-
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #4F46E5;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .radio-group {
-            display: flex;
-            gap: 1.5rem;
-        }
-
-        .radio-option {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .radio-option input[type="radio"] {
-            width: auto;
-        }
-
-        .calculated-value {
-            padding: 0.75rem;
-            background: #f9fafb;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            color: #1f2937;
-        }
-
-        .add-custom-btn {
-            padding: 0.5rem 1rem;
-            background: #4F46E5;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.875rem;
-            margin-top: 0.5rem;
-        }
-
-        .add-custom-btn:hover {
-            background: #4338CA;
-        }
-
-        .custom-tags-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
-
-        .tag-item {
-            padding: 0.5rem 1rem;
-            background: #eff6ff;
-            color: #2563eb;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .tag-item .remove {
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 2px solid #f3f4f6;
-        }
-
-        .btn {
-            padding: 0.75rem 2rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: #4F46E5;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #4338CA;
-        }
-
-        .btn-primary:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
-
-        .btn-secondary {
-            background: #f3f4f6;
-            color: #374151;
-        }
-
-        .btn-secondary:hover {
-            background: #e5e7eb;
-        }
-
-        .success-message, .error-message {
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            display: none;
-        }
-
-        .success-message {
-            background: #d1fae5;
-            color: #059669;
-        }
-
-        .error-message {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        .confidence-slider {
-            width: 100%;
-        }
-
-        .confidence-value {
-            text-align: center;
-            font-weight: 600;
-            color: #4F46E5;
-            margin-top: 0.5rem;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 70px;
-            }
-
-            .main-content {
-                margin-left: 70px;
-            }
-
-            .nav-item span {
-                display: none;
-            }
+        @media(max-width:900px){
+            .sidebar{width:60px;}
+            .main-content{margin-left:60px;padding:2rem 1.5rem;}
+            .nav-item span,.logo h2{display:none;}
+            .prop-label{width:140px;min-width:140px;}
         }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="logo">
-            <h2>Trade Notion</h2>
-        </div>
 
-        <div class="nav-section">
-            <div class="nav-section-title">Main</div>
-            <a href="/dashboard.html" class="nav-item">
-                <span class="nav-icon">📊</span>
-                <span>Dashboard</span>
-            </a>
-            <a href="/trades.html" class="nav-item active">
-                <span class="nav-icon">📝</span>
-                <span>Trade Journal</span>
-            </a>
-            <a href="/analytics.html" class="nav-item">
-                <span class="nav-icon">📈</span>
-                <span>Analytics</span>
-            </a>
-        </div>
+<div class="sidebar">
+    <div class="logo"><h2>Trade Notion</h2></div>
+    <div class="nav-section">
+        <div class="nav-section-title">Main</div>
+        <a href="/dashboard.html" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+        <a href="/trades.html" class="nav-item active"><span class="nav-icon">📝</span><span>Trade Journal</span></a>
+        <a href="/analytics.html" class="nav-item"><span class="nav-icon">📈</span><span>Analytics</span></a>
+    </div>
+    <div class="nav-section">
+        <div class="nav-section-title">Tools</div>
+        <a href="/calendar.html" class="nav-item"><span class="nav-icon">📅</span><span>Calendar</span></a>
+        <a href="/reports.html" class="nav-item"><span class="nav-icon">📄</span><span>Reports</span></a>
+        <a href="/goals.html" class="nav-item"><span class="nav-icon">🎯</span><span>Goals</span></a>
+    </div>
+    <div class="nav-section">
+        <div class="nav-section-title">Account</div>
+        <a href="/settings.html" class="nav-item"><span class="nav-icon">⚙️</span><span>Settings</span></a>
+        <a href="#" class="nav-item" onclick="logout()"><span class="nav-icon">🚪</span><span>Logout</span></a>
+    </div>
+</div>
 
-        <div class="nav-section">
-            <div class="nav-section-title">Tools</div>
-            <a href="/calendar.html" class="nav-item">
-                <span class="nav-icon">📅</span>
-                <span>Calendar</span>
-            </a>
-            <a href="/reports.html" class="nav-item">
-                <span class="nav-icon">📄</span>
-                <span>Reports</span>
-            </a>
-            <a href="/goals.html" class="nav-item">
-                <span class="nav-icon">🎯</span>
-                <span>Goals</span>
-            </a>
+<div class="main-content">
+    <div class="page-header">
+        <div>
+            <div class="page-title">Log New Trade</div>
+            <div class="page-subtitle">Fill in the details below — add your own custom fields too.</div>
         </div>
-
-        <div class="nav-section">
-            <div class="nav-section-title">Account</div>
-            <a href="/settings.html" class="nav-item">
-                <span class="nav-icon">⚙️</span>
-                <span>Settings</span>
-            </a>
-            <a href="#" class="nav-item" onclick="logout()">
-                <span class="nav-icon">🚪</span>
-                <span>Logout</span>
-            </a>
-        </div>
+        <a href="/trades.html" class="back-btn">← Back to Journal</a>
     </div>
 
-    <div class="main-content">
-        <div class="header">
-            <h1>Log New Trade</h1>
-            <a href="/trades.html" class="back-btn">← Back to Journal</a>
+    <div id="alertSuccess" class="alert alert-success"></div>
+    <div id="alertError"   class="alert alert-error"></div>
+
+    <form id="tradeForm">
+
+        <!-- Trade Info -->
+        <div class="form-block">
+            <div class="block-header"><h2>🗂 Trade Information</h2></div>
+            <div class="block-body">
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">🔤</span> Symbol <span class="req">*</span></div>
+                    <div class="prop-value"><input type="text" id="symbol" placeholder="e.g. NQ, GBPUSD, AAPL" required></div>
+                </div>
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">📅</span> Date <span class="req">*</span></div>
+                    <div class="prop-value"><input type="date" id="date" required></div>
+                </div>
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">📆</span> Trading Day</div>
+                    <div class="prop-value">
+                        <select id="tradingDay">
+                            <option value="">Auto-detect</option>
+                            <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+                            <option>Thursday</option><option>Friday</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">↔️</span> Direction <span class="req">*</span></div>
+                    <div class="prop-value">
+                        <div class="radio-row">
+                            <label class="radio-option"><input type="radio" name="direction" value="long" checked> Long</label>
+                            <label class="radio-option"><input type="radio" name="direction" value="short"> Short</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">⏰</span> Session</div>
+                    <div class="prop-value">
+                        <select id="session">
+                            <option value="">Select session</option>
+                            <option value="pre-market">Pre-Market</option>
+                            <option value="morning">Morning (9:30–11:30)</option>
+                            <option value="midday">Midday (11:30–2:00)</option>
+                            <option value="afternoon">Afternoon (2:00–3:00)</option>
+                            <option value="power-hour">Power Hour (3:00–4:00)</option>
+                            <option value="after-hours">After Hours</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">🧠</span> Strategy <span class="req">*</span></div>
+                    <div class="prop-value">
+                        <select id="model" required><option value="">Select strategy</option></select>
+                        <div class="model-add-row">
+                            <input type="text" id="newModel" placeholder="Add new strategy…">
+                            <button type="button" onclick="addCustomModel()">+ Add</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="form-container">
-            <div id="successMessage" class="success-message"></div>
-            <div id="errorMessage" class="error-message"></div>
+        <!-- Execution -->
+        <div class="form-block">
+            <div class="block-header"><h2>⚡ Trade Execution</h2></div>
+            <div class="block-body">
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">🔢</span> Shares / Contracts</div>
+                    <div class="prop-value"><input type="number" id="shares" placeholder="e.g. 1"></div>
+                </div>
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">💰</span> P&amp;L <span class="req">*</span></div>
+                    <div class="prop-value">
+                        <input type="number" id="calculatedPL" step="0.01" placeholder="Enter P&L (e.g. 250 or -120)" required>
+                    </div>
+                </div>
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">⚖️</span> R:R Ratio</div>
+                    <div class="prop-value"><input type="text" id="riskReward" placeholder="e.g. 1:2.5"></div>
+                </div>
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">🏆</span> Result <span class="req">*</span></div>
+                    <div class="prop-value">
+                        <select id="result" required>
+                            <option value="">Auto-calculated</option>
+                            <option value="win">Win</option>
+                            <option value="loss">Loss</option>
+                            <option value="breakeven">Breakeven</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            <form id="tradeForm">
-                <!-- Basic Info -->
-                <div class="form-section">
-                    <h2 class="section-title">Trade Information</h2>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Trade/Symbol <span>*</span></label>
-                            <input type="text" id="symbol" placeholder="e.g., AAPL" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Date <span>*</span></label>
-                            <input type="date" id="date" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Trading Day</label>
-                            <select id="tradingDay">
-                                <option value="">Auto-detect from date</option>
-                                <option value="Monday">Monday</option>
-                                <option value="Tuesday">Tuesday</option>
-                                <option value="Wednesday">Wednesday</option>
-                                <option value="Thursday">Thursday</option>
-                                <option value="Friday">Friday</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label>Direction <span>*</span></label>
-                            <div class="radio-group">
-                                <div class="radio-option">
-                                    <input type="radio" id="long" name="direction" value="long" checked>
-                                    <label for="long">Long</label>
-                                </div>
-                                <div class="radio-option">
-                                    <input type="radio" id="short" name="direction" value="short">
-                                    <label for="short">Short</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Session</label>
-                            <select id="session">
-                                <option value="">Select Session</option>
-                                <option value="pre-market">Pre-Market</option>
-                                <option value="morning">Morning (9:30-11:30)</option>
-                                <option value="midday">Midday (11:30-2:00)</option>
-                                <option value="afternoon">Afternoon (2:00-3:00)</option>
-                                <option value="power-hour">Power Hour (3:00-4:00)</option>
-                                <option value="after-hours">After Hours</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Model/Strategy <span>*</span></label>
-                            <select id="model" required>
-                                <option value="">Select or Add Model</option>
-                            </select>
-                            <input type="text" id="newModel" placeholder="Add new model..." style="margin-top: 0.5rem;">
-                            <button type="button" class="add-custom-btn" onclick="addCustomModel()">+ Add Model</button>
+        <!-- Psychology -->
+        <div class="form-block">
+            <div class="block-header"><h2>🧘 Psychology</h2></div>
+            <div class="block-body">
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">🎯</span> Confidence</div>
+                    <div class="prop-value">
+                        <div class="range-wrap">
+                            <input type="range" id="confidenceLevel" min="1" max="10" value="5">
+                            <div class="range-badge" id="confidenceValue">5</div>
                         </div>
                     </div>
                 </div>
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">😶</span> Before</div>
+                    <div class="prop-value">
+                        <select id="emotionBefore">
+                            <option value="">How were you feeling?</option>
+                            <option>Confident</option><option>Anxious</option><option>Excited</option>
+                            <option>Fearful</option><option>Calm</option><option>Greedy</option>
+                            <option>Disciplined</option><option>Impulsive</option><option>Neutral</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">😌</span> After</div>
+                    <div class="prop-value">
+                        <select id="emotionAfter">
+                            <option value="">How did you feel after?</option>
+                            <option>Satisfied</option><option>Disappointed</option><option>Regretful</option>
+                            <option>Proud</option><option>Frustrated</option><option>Relieved</option>
+                            <option>Angry</option><option>Neutral</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                <!-- Trade Execution -->
-                <div class="form-section">
-                    <h2 class="section-title">Trade Execution</h2>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Entry Price <span>*</span></label>
-                            <input type="number" id="entryPrice" step="0.01" placeholder="0.00" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Exit Price <span>*</span></label>
-                            <input type="number" id="exitPrice" step="0.01" placeholder="0.00" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Shares/Contracts <span>*</span></label>
-                            <input type="number" id="shares" placeholder="100" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label>P&L</label>
-                            <div id="calculatedPL" class="calculated-value">$0.00</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>R:R (Risk:Reward)</label>
-                            <input type="text" id="riskReward" placeholder="1:2">
-                        </div>
-
-                        <div class="form-group">
-                            <label>Result <span>*</span></label>
-                            <select id="result" required>
-                                <option value="">Auto-calculated</option>
-                                <option value="win">Win</option>
-                                <option value="loss">Loss</option>
-                                <option value="breakeven">Breakeven</option>
-                            </select>
+        <!-- Review -->
+        <div class="form-block">
+            <div class="block-header"><h2>🔍 Review</h2></div>
+            <div class="block-body">
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">🏷</span> Mistake Tags</div>
+                    <div class="prop-value">
+                        <div class="tag-input-wrap">
+                            <input type="text" id="mistakeTagInput" placeholder="Type a tag and press Enter…">
+                            <div class="tags-list" id="mistakeTagsList"></div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Confidence & Emotions -->
-                <div class="form-section">
-                    <h2 class="section-title">Confidence & Emotions</h2>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Confidence Level (1-10)</label>
-                            <input type="range" id="confidenceLevel" class="confidence-slider" min="1" max="10" value="5">
-                            <div class="confidence-value" id="confidenceValue">5</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Emotion Before</label>
-                            <select id="emotionBefore">
-                                <option value="">Select Emotion</option>
-                                <option value="confident">Confident</option>
-                                <option value="anxious">Anxious</option>
-                                <option value="excited">Excited</option>
-                                <option value="fearful">Fearful</option>
-                                <option value="calm">Calm</option>
-                                <option value="greedy">Greedy</option>
-                                <option value="disciplined">Disciplined</option>
-                                <option value="impulsive">Impulsive</option>
-                                <option value="neutral">Neutral</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Emotion After</label>
-                            <select id="emotionAfter">
-                                <option value="">Select Emotion</option>
-                                <option value="satisfied">Satisfied</option>
-                                <option value="disappointed">Disappointed</option>
-                                <option value="regretful">Regretful</option>
-                                <option value="proud">Proud</option>
-                                <option value="frustrated">Frustrated</option>
-                                <option value="relieved">Relieved</option>
-                                <option value="angry">Angry</option>
-                                <option value="neutral">Neutral</option>
-                            </select>
-                        </div>
-                    </div>
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">✅</span> Went Right</div>
+                    <div class="prop-value"><textarea id="whatWentRight" placeholder="What did you execute well?"></textarea></div>
                 </div>
-
-                <!-- Mistakes & Analysis -->
-                <div class="form-section">
-                    <h2 class="section-title">Mistakes & Analysis</h2>
-                    <div class="form-grid">
-                        <div class="form-group full-width">
-                            <label>Mistake Tags</label>
-                            <input type="text" id="mistakeTagInput" placeholder="Type mistake and press Enter...">
-                            <div class="custom-tags-list" id="mistakeTagsList"></div>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label>What Went Right</label>
-                            <textarea id="whatWentRight" placeholder="What did you do well in this trade?"></textarea>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <label>What Went Wrong</label>
-                            <textarea id="whatWentWrong" placeholder="What mistakes did you make or what could be improved?"></textarea>
-                        </div>
-                    </div>
+                <div class="prop-row">
+                    <div class="prop-label"><span class="type-icon">❌</span> Went Wrong</div>
+                    <div class="prop-value"><textarea id="whatWentWrong" placeholder="What could be improved?"></textarea></div>
                 </div>
+            </div>
+        </div>
 
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/trades.html'">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="submitBtn">Save Trade</button>
+        <!-- Custom Fields -->
+        <div class="form-block">
+            <div class="custom-fields-header">
+                <h2>✦ Custom Fields</h2>
+                <button type="button" class="add-field-btn" onclick="openFieldModal()">+ Add field</button>
+            </div>
+            <div class="block-body" id="customFieldsBody">
+                <div class="empty-custom" id="emptyCustom">
+                    <span>✦</span>
+                    No custom fields yet. Click <strong>+ Add field</strong> to create your own.
                 </div>
-            </form>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="form-footer">
+            <button type="button" class="btn-discard" onclick="window.location.href='/trades.html'">Discard</button>
+            <button type="submit" class="btn-save" id="submitBtn">Save Trade</button>
+        </div>
+
+    </form>
+</div>
+
+<!-- Add Field Modal -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <h3>New custom field</h3>
+        <div class="modal-field">
+            <label>Field name</label>
+            <input type="text" id="newFieldName" placeholder="e.g. Volume, News Catalyst, Screenshot URL…">
+        </div>
+        <div class="modal-field">
+            <label>Field type</label>
+            <div class="type-grid">
+                <div class="type-option selected" data-type="text"     onclick="selectType(this)"><span class="ti">🔤</span>Text</div>
+                <div class="type-option"           data-type="number"   onclick="selectType(this)"><span class="ti">#</span>Number</div>
+                <div class="type-option"           data-type="date"     onclick="selectType(this)"><span class="ti">📅</span>Date</div>
+                <div class="type-option"           data-type="select"   onclick="selectType(this)"><span class="ti">📋</span>Dropdown</div>
+                <div class="type-option"           data-type="checkbox" onclick="selectType(this)"><span class="ti">☑️</span>Checkbox</div>
+                <div class="type-option"           data-type="textarea" onclick="selectType(this)"><span class="ti">📝</span>Long Text</div>
+            </div>
+        </div>
+        <div id="dropdownOptionsWrap" class="modal-field">
+            <label>Dropdown options</label>
+            <div id="dropdownOptionsList"></div>
+            <button type="button" onclick="addDropdownOpt()"
+                style="padding:5px 10px;border:1px dashed var(--border);border-radius:4px;background:transparent;cursor:pointer;font-size:12px;color:var(--text-secondary);font-family:'DM Sans',sans-serif;">
+                + Add option
+            </button>
+        </div>
+        <div class="modal-field">
+            <label>Required?</label>
+            <select id="newFieldRequired">
+                <option value="false">No</option>
+                <option value="true">Yes</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-cancel-modal" onclick="closeFieldModal()">Cancel</button>
+            <button type="button" class="btn-add-modal"    onclick="saveNewField()">Add field</button>
         </div>
     </div>
+</div>
 
-    <script>
-        const token = localStorage.getItem('token');
-        if (!token) {
-            window.location.href = '/Login.html';
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/Login.html';
+function logout() { localStorage.removeItem('token'); window.location.href = '/Login.html'; }
+
+let customModels = [], mistakeTags = [], customFields = [];
+let selectedType = 'text', dropdownOpts = [];
+
+document.getElementById('date').valueAsDate = new Date();
+
+/* ── Settings load ── */
+async function loadSettings() {
+    try {
+        const r = await fetch('/api/settings', { headers: { Authorization: `Bearer ${token}` } });
+        if (r.ok) {
+            const { settings } = await r.json();
+            customModels = settings.customModels  || [];
+            customFields = settings.customFields  || [];
+            updateModelDropdown();
+            renderCustomFields();
         }
+    } catch(e) { console.error(e); }
+}
+loadSettings();
 
-        function logout() {
-            localStorage.removeItem('token');
-            window.location.href = '/Login.html';
-        }
-
-        let customModels = [];
-        let mistakeTags = [];
-
-        // Load user settings and custom models
-        async function loadSettings() {
-            try {
-                const response = await fetch('/api/settings', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    customModels = data.settings.customModels || [];
-                    updateModelDropdown();
-                }
-            } catch (error) {
-                console.error('Error loading settings:', error);
-            }
-        }
-
-        function updateModelDropdown() {
-            const modelSelect = document.getElementById('model');
-            modelSelect.innerHTML = '<option value="">Select or Add Model</option>';
-            
-            // Default models
-            const defaultModels = ['Momentum', 'Breakout', 'Reversal', 'Scalping', 'Swing Trading', 'Day Trading'];
-            defaultModels.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model;
-                option.textContent = model;
-                modelSelect.appendChild(option);
-            });
-            
-            // Custom models
-            if (customModels.length > 0) {
-                const separator = document.createElement('option');
-                separator.disabled = true;
-                separator.textContent = '── Custom Models ──';
-                modelSelect.appendChild(separator);
-                
-                customModels.forEach(model => {
-                    const option = document.createElement('option');
-                    option.value = model;
-                    option.textContent = model;
-                    modelSelect.appendChild(option);
-                });
-            }
-        }
-
-        async function addCustomModel() {
-            const newModelInput = document.getElementById('newModel');
-            const modelName = newModelInput.value.trim();
-            
-            if (!modelName) {
-                alert('Please enter a model name');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/settings/models', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ model: modelName })
-                });
-                
-                if (response.ok) {
-                    customModels.push(modelName);
-                    updateModelDropdown();
-                    document.getElementById('model').value = modelName;
-                    newModelInput.value = '';
-                } else {
-                    alert('Error adding model. Please try again.');
-                }
-            } catch (error) {
-                console.error('Error adding model:', error);
-                alert('Error adding model');
-            }
-        }
-
-        // Mistake tags
-        document.getElementById('mistakeTagInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const tag = e.target.value.trim();
-                if (tag && !mistakeTags.includes(tag)) {
-                    mistakeTags.push(tag);
-                    updateMistakeTagsDisplay();
-                    e.target.value = '';
-                }
-            }
+/* ── Models ── */
+function updateModelDropdown() {
+    const sel = document.getElementById('model');
+    sel.innerHTML = '<option value="">Select strategy</option>';
+    ['Momentum','Breakout','Reversal','Scalping','Swing Trading','Day Trading','ORB','London ORB'].forEach(m => {
+        const o = document.createElement('option'); o.value = o.textContent = m; sel.appendChild(o);
+    });
+    if (customModels.length) {
+        const sep = document.createElement('option'); sep.disabled = true; sep.textContent = '── Custom ──'; sel.appendChild(sep);
+        customModels.forEach(m => { const o = document.createElement('option'); o.value = o.textContent = m; sel.appendChild(o); });
+    }
+}
+async function addCustomModel() {
+    const inp = document.getElementById('newModel');
+    const name = inp.value.trim(); if (!name) return;
+    // Add to dropdown immediately so it works even if API is slow/fails
+    if (!customModels.includes(name)) customModels.push(name);
+    updateModelDropdown();
+    document.getElementById('model').value = name;
+    inp.value = '';
+    // Persist to backend
+    try {
+        const r = await fetch('/api/settings/models', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ model: name })
         });
-
-        function updateMistakeTagsDisplay() {
-            const container = document.getElementById('mistakeTagsList');
-            container.innerHTML = mistakeTags.map(tag => `
-                <div class="tag-item">
-                    ${tag}
-                    <span class="remove" onclick="removeMistakeTag('${tag}')">×</span>
-                </div>
-            `).join('');
+        if (!r.ok) {
+            const d = await r.json().catch(() => ({}));
+            console.error('Failed to save strategy:', d.message || r.status);
         }
+    } catch(e) { console.error('Strategy save error:', e); }
+}
 
-        function removeMistakeTag(tag) {
-            mistakeTags = mistakeTags.filter(t => t !== tag);
-            updateMistakeTagsDisplay();
+/* ── Tags ── */
+document.getElementById('mistakeTagInput').addEventListener('keypress', e => {
+    if (e.key !== 'Enter') return; e.preventDefault();
+    const t = e.target.value.trim();
+    if (t && !mistakeTags.includes(t)) { mistakeTags.push(t); renderTags(); }
+    e.target.value = '';
+});
+function renderTags() {
+    document.getElementById('mistakeTagsList').innerHTML = mistakeTags.map(t =>
+        `<div class="tag-chip">${t}<span class="rm" onclick="removeTag('${t}')">×</span></div>`).join('');
+}
+function removeTag(t) { mistakeTags = mistakeTags.filter(x => x !== t); renderTags(); }
+
+/* ── Confidence ── */
+document.getElementById('confidenceLevel').addEventListener('input', e => {
+    document.getElementById('confidenceValue').textContent = e.target.value;
+});
+
+/* ── P&L ── */
+document.getElementById('calculatedPL').addEventListener('input', colorPL);
+function colorPL() {
+    const el = document.getElementById('calculatedPL');
+    const v  = parseFloat(el.value);
+    el.style.color = isNaN(v) ? '' : v >= 0 ? 'var(--success)' : 'var(--danger)';
+}
+
+/* ══════════════════════════════
+   CUSTOM FIELDS
+   ══════════════════════════════ */
+function openFieldModal() {
+    selectedType = 'text'; dropdownOpts = [];
+    document.getElementById('newFieldName').value = '';
+    document.getElementById('newFieldRequired').value = 'false';
+    document.getElementById('dropdownOptionsWrap').style.display = 'none';
+    document.getElementById('dropdownOptionsList').innerHTML = '';
+    document.querySelectorAll('.type-option').forEach(el => el.classList.remove('selected'));
+    document.querySelector('.type-option[data-type="text"]').classList.add('selected');
+    document.getElementById('modalOverlay').classList.add('open');
+}
+function closeFieldModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeFieldModal(); });
+
+function selectType(el) {
+    document.querySelectorAll('.type-option').forEach(x => x.classList.remove('selected'));
+    el.classList.add('selected'); selectedType = el.dataset.type;
+    document.getElementById('dropdownOptionsWrap').style.display = selectedType === 'select' ? 'block' : 'none';
+}
+
+function addDropdownOpt() {
+    const id = 'dopt_' + Date.now(); dropdownOpts.push({ id, value: '' }); renderDropdownOpts();
+}
+function removeDropdownOpt(id) { dropdownOpts = dropdownOpts.filter(o => o.id !== id); renderDropdownOpts(); }
+function renderDropdownOpts() {
+    document.getElementById('dropdownOptionsList').innerHTML = dropdownOpts.map(o =>
+        `<div class="dropdown-opt-row">
+            <input type="text" placeholder="Option label" value="${o.value}" oninput="updateDropdownOpt('${o.id}',this.value)">
+            <button type="button" onclick="removeDropdownOpt('${o.id}')">✕</button>
+        </div>`).join('');
+}
+function updateDropdownOpt(id, val) { const o = dropdownOpts.find(x => x.id === id); if (o) o.value = val; }
+
+async function saveNewField() {
+    const name = document.getElementById('newFieldName').value.trim();
+    if (!name) { document.getElementById('newFieldName').focus(); return; }
+    if (selectedType === 'select' && !dropdownOpts.some(o => o.value.trim())) {
+        alert('Please add at least one dropdown option.'); return;
+    }
+    const field = {
+        id:       'cf_' + Date.now(),
+        name,
+        type:     selectedType,
+        required: document.getElementById('newFieldRequired').value === 'true',
+        options:  selectedType === 'select' ? dropdownOpts.filter(o => o.value.trim()).map(o => o.value.trim()) : []
+    };
+    customFields.push(field);
+    await persistCustomFields();
+    renderCustomFields();
+    closeFieldModal();
+}
+
+async function deleteCustomField(id) {
+    if (!confirm('Delete this field?')) return;
+    customFields = customFields.filter(f => f.id !== id);
+    await persistCustomFields();
+    renderCustomFields();
+}
+
+async function persistCustomFields() {
+    try {
+        await fetch('/api/settings/custom-fields', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ customFields })
+        });
+    } catch(e) { console.error('Failed to persist custom fields:', e); }
+}
+
+const TYPE_META = {
+    text:     { icon:'🔤', label:'Text'      },
+    number:   { icon:'#',  label:'Number'    },
+    date:     { icon:'📅', label:'Date'      },
+    select:   { icon:'📋', label:'Dropdown'  },
+    checkbox: { icon:'☑️', label:'Checkbox'  },
+    textarea: { icon:'📝', label:'Long Text' },
+};
+
+function buildFieldInput({ id, type, options, required }) {
+    const req = required ? 'required' : '';
+    if (type === 'text')     return `<input type="text"   id="${id}" name="${id}" ${req} placeholder="Enter value…">`;
+    if (type === 'number')   return `<input type="number" id="${id}" name="${id}" step="any" ${req} placeholder="0">`;
+    if (type === 'date')     return `<input type="date"   id="${id}" name="${id}" ${req}>`;
+    if (type === 'textarea') return `<textarea             id="${id}" name="${id}" ${req} placeholder="Enter notes…"></textarea>`;
+    if (type === 'checkbox') return `<div style="padding:8px"><input type="checkbox" id="${id}" name="${id}" style="width:auto;accent-color:var(--accent);transform:scale(1.2)"></div>`;
+    if (type === 'select')   return `<select id="${id}" name="${id}" ${req}><option value="">Select…</option>${options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>`;
+    return '';
+}
+
+function renderCustomFields() {
+    const body = document.getElementById('customFieldsBody');
+    document.getElementById('emptyCustom').style.display = customFields.length ? 'none' : 'block';
+    body.querySelectorAll('.custom-prop-row').forEach(el => el.remove());
+    customFields.forEach(field => {
+        const meta = TYPE_META[field.type] || { icon:'🔤' };
+        const row  = document.createElement('div');
+        row.className = 'custom-prop-row'; row.id = 'row_' + field.id;
+        row.innerHTML = `
+            <div class="prop-label">
+                <span class="type-icon">${meta.icon}</span>
+                ${field.name}${field.required ? '<span class="req">*</span>' : ''}
+            </div>
+            <div class="prop-value">${buildFieldInput(field)}</div>
+            <div class="field-actions">
+                <button class="field-action-btn" type="button" title="Delete" onclick="deleteCustomField('${field.id}')">🗑</button>
+            </div>`;
+        body.appendChild(row);
+    });
+}
+
+/* ── Submit ── */
+document.getElementById('tradeForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    document.getElementById('alertSuccess').style.display =
+    document.getElementById('alertError').style.display   = 'none';
+
+    const pl  = parseFloat(document.getElementById('calculatedPL').value) || 0;
+    const dir = document.querySelector('input[name="direction"]:checked').value;
+
+    const customValues = {};
+    customFields.forEach(f => {
+        const el = document.getElementById(f.id); if (!el) return;
+        customValues[f.name] = f.type === 'checkbox' ? el.checked : el.value;
+    });
+
+    const tradeData = {
+        symbol:     document.getElementById('symbol').value.toUpperCase(),
+        tradeType:  dir,
+        date:       document.getElementById('date').value,
+        shares:     parseInt(document.getElementById('shares').value) || null,
+        profitLoss: pl,
+        status:     pl > 0 ? 'win' : pl < 0 ? 'loss' : 'breakeven',
+        strategy:   document.getElementById('model').value,
+        notes: {
+            tradingDay:      document.getElementById('tradingDay').value    || null,
+            session:         document.getElementById('session').value       || null,
+            riskRewardRatio: document.getElementById('riskReward').value    || null,
+            confidenceLevel: parseInt(document.getElementById('confidenceLevel').value),
+            emotionBefore:   document.getElementById('emotionBefore').value || null,
+            emotionAfter:    document.getElementById('emotionAfter').value  || null,
+            mistakeTags,
+            whatWentRight:   document.getElementById('whatWentRight').value || null,
+            whatWentWrong:   document.getElementById('whatWentWrong').value || null,
+            customFields:    customValues
         }
+    };
 
-        // Confidence slider
-        document.getElementById('confidenceLevel').addEventListener('input', (e) => {
-            document.getElementById('confidenceValue').textContent = e.target.value;
+    try {
+        const r    = await fetch('/api/trades', {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
+            body: JSON.stringify(tradeData)
         });
-
-        // Set today's date
-        document.getElementById('date').valueAsDate = new Date();
-
-        // Calculate P&L
-        function calculatePL() {
-            const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
-            const exitPrice = parseFloat(document.getElementById('exitPrice').value) || 0;
-            const shares = parseFloat(document.getElementById('shares').value) || 0;
-            const direction = document.querySelector('input[name="direction"]:checked').value;
-
-            let pl = 0;
-            if (direction === 'long') {
-                pl = (exitPrice - entryPrice) * shares;
-            } else {
-                pl = (entryPrice - exitPrice) * shares;
-            }
-
-            const plElement = document.getElementById('calculatedPL');
-            plElement.textContent = '$' + pl.toFixed(2);
-            plElement.style.color = pl >= 0 ? '#059669' : '#dc2626';
+        const data = await r.json();
+        if (r.ok) {
+            const s = document.getElementById('alertSuccess');
+            s.textContent = 'Trade saved! Redirecting…'; s.style.display = 'block';
+            setTimeout(() => window.location.href = '/trades.html', 1000);
+        } else {
+            const er = document.getElementById('alertError');
+            er.textContent = data.message || 'Failed to save trade.'; er.style.display = 'block';
+            btn.disabled = false; btn.textContent = 'Save Trade';
         }
-
-        document.getElementById('entryPrice').addEventListener('input', calculatePL);
-        document.getElementById('exitPrice').addEventListener('input', calculatePL);
-        document.getElementById('shares').addEventListener('input', calculatePL);
-        document.querySelectorAll('input[name="direction"]').forEach(radio => {
-            radio.addEventListener('change', calculatePL);
-        });
-
-        // Form submission
-        document.getElementById('tradeForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const submitBtn = document.getElementById('submitBtn');
-            const errorMessage = document.getElementById('errorMessage');
-            const successMessage = document.getElementById('successMessage');
-            
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Saving...';
-            errorMessage.style.display = 'none';
-            successMessage.style.display = 'none';
-            
-            // Calculate P&L
-            const entryPrice = parseFloat(document.getElementById('entryPrice').value);
-            const exitPrice = parseFloat(document.getElementById('exitPrice').value);
-            const shares = parseInt(document.getElementById('shares').value);
-            const direction = document.querySelector('input[name="direction"]:checked').value;
-            
-            let profitLoss = 0;
-            if (direction === 'long') {
-                profitLoss = (exitPrice - entryPrice) * shares;
-            } else {
-                profitLoss = (entryPrice - exitPrice) * shares;
-            }
-            
-            // Auto-determine status
-            let status = 'breakeven';
-            if (profitLoss > 0) status = 'win';
-            else if (profitLoss < 0) status = 'loss';
-            
-            const tradeData = {
-                symbol: document.getElementById('symbol').value.toUpperCase(),
-                tradeType: direction,
-                date: document.getElementById('date').value,
-                entryPrice: entryPrice,
-                exitPrice: exitPrice,
-                shares: shares,
-                profitLoss: profitLoss,
-                status: status,
-                strategy: document.getElementById('model').value,
-                notes: {
-                    tradingDay: document.getElementById('tradingDay').value || null,
-                    session: document.getElementById('session').value || null,
-                    riskRewardRatio: document.getElementById('riskReward').value || null,
-                    confidenceLevel: parseInt(document.getElementById('confidenceLevel').value),
-                    emotionBefore: document.getElementById('emotionBefore').value || null,
-                    emotionAfter: document.getElementById('emotionAfter').value || null,
-                    mistakeTags: mistakeTags,
-                    whatWentRight: document.getElementById('whatWentRight').value || null,
-                    whatWentWrong: document.getElementById('whatWentWrong').value || null
-                }
-            };
-            
-            try {
-                const response = await fetch('/api/trades', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(tradeData)
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    successMessage.textContent = 'Trade saved successfully! Redirecting...';
-                    successMessage.style.display = 'block';
-                    setTimeout(() => {
-                        window.location.href = '/trades.html';
-                    }, 1000);
-                } else {
-                    errorMessage.textContent = data.message || 'Failed to save trade';
-                    errorMessage.style.display = 'block';
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Save Trade';
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                errorMessage.textContent = 'An error occurred. Please try again.';
-                errorMessage.style.display = 'block';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Save Trade';
-            }
-        });
-
-        // Initialize
-        loadSettings();
-    </script>
+    } catch(err) {
+        const er = document.getElementById('alertError');
+        er.textContent = 'An error occurred. Please try again.'; er.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Save Trade';
+    }
+});
+</script>
 </body>
 </html>

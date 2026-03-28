@@ -100,4 +100,26 @@ router.post('/mistake-tags', async (req, res) => {
   }
 });
 
+// @route   POST /api/settings/custom-fields
+// @desc    Save custom fields
+// @access  Private
+router.post('/custom-fields', async (req, res) => {
+  try {
+    const { customFields } = req.body;
+
+    let settings = await UserSettings.findOne({ user: req.user._id });
+
+    if (!settings) {
+      settings = await UserSettings.create({ user: req.user._id, customFields });
+    } else {
+      settings.customFields = customFields;
+      await settings.save();
+    }
+
+    res.json({ success: true, settings });
+  } catch (error) {
+    res.status(500).json({ message: 'Error saving custom fields', error: error.message });
+  }
+});
+
 module.exports = router;

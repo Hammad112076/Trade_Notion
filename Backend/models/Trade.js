@@ -45,12 +45,10 @@ const tradeSchema = new mongoose.Schema({
   
   // Trade Execution
   entryPrice: {
-    type: Number,
-    required: [true, 'Please provide entry price']
+    type: Number
   },
   exitPrice: {
-    type: Number,
-    required: [true, 'Please provide exit price']
+    type: Number
   },
   shares: {
     type: Number,
@@ -150,15 +148,17 @@ const tradeSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Calculate P&L before saving
+// Calculate P&L before saving (only when entry/exit are provided)
 tradeSchema.pre('save', function() {
-  if (this.direction === 'long') {
-    this.profitLoss = (this.exitPrice - this.entryPrice) * this.shares;
-  } else {
-    this.profitLoss = (this.entryPrice - this.exitPrice) * this.shares;
+  if (this.entryPrice != null && this.exitPrice != null && this.shares) {
+    if (this.direction === 'long') {
+      this.profitLoss = (this.exitPrice - this.entryPrice) * this.shares;
+    } else {
+      this.profitLoss = (this.entryPrice - this.exitPrice) * this.shares;
+    }
   }
-  
-  // Determine result
+
+  // Determine result from P&L
   if (this.profitLoss > 0) {
     this.result = 'win';
   } else if (this.profitLoss < 0) {
