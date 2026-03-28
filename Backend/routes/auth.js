@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { protect } = require('../middleware/auth');
 
 // JWT Secret (in production, use environment variable)
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-this-in-production';
@@ -129,6 +130,75 @@ router.get('/me', async (req, res) => {
   } catch (error) {
     console.error('Auth error:', error);
     res.status(401).json({ message: 'Invalid token' });
+  }
+});
+
+// @route   PUT /api/auth/profile
+// @desc    Update profile (name, email, bio, tradingExperience)
+// @access  Private
+router.put('/profile', protect, async (req, res) => {
+  try {
+    const { name, email, tradingExperience, bio } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { name, email, tradingExperience, bio },
+      { new: true, runValidators: true }
+    );
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @route   PUT /api/auth/password
+// @desc    Change password
+// @access  Private
+router.put('/password', protect, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ message: 'Both passwords are required' });
+
+    const user = await User.findById(req.user._id).select('+password');
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) return res.status(400).json({ message: 'Current password is incorrect' });
+
+    user.password = newPassword;
+    await user.save();
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @route   PUT /api/auth/preferences
+// @desc    Update app preferences
+// @access  Private
+router.put('/preferences', protect, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { preferences: req.body },
+      { new: true }
+    );
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// @route   PUT /api/auth/notifications
+// @desc    Update notification preferences
+// @access  Private
+router.put('/notifications', protect, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { notifications: req.body },
+      { new: true }
+    );
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 });
 

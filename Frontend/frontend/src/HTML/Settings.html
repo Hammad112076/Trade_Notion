@@ -383,19 +383,19 @@
 
         <div class="settings-layout">
             <div class="settings-nav">
-                <div class="settings-nav-item active" onclick="showSection('profile')">
+                <div class="settings-nav-item active" onclick="showSection('profile', this)">
                     👤 Profile
                 </div>
-                <div class="settings-nav-item" onclick="showSection('account')">
+                <div class="settings-nav-item" onclick="showSection('account', this)">
                     🔐 Account
                 </div>
-                <div class="settings-nav-item" onclick="showSection('notifications')">
+                <div class="settings-nav-item" onclick="showSection('notifications', this)">
                     🔔 Notifications
                 </div>
-                <div class="settings-nav-item" onclick="showSection('preferences')">
+                <div class="settings-nav-item" onclick="showSection('preferences', this)">
                     🎨 Preferences
                 </div>
-                <div class="settings-nav-item" onclick="showSection('subscription')">
+                <div class="settings-nav-item" onclick="showSection('subscription', this)">
                     💳 Subscription
                 </div>
             </div>
@@ -406,23 +406,24 @@
                     <h2 class="section-title">Profile Information</h2>
                     <p class="section-description">Update your profile details and photo</p>
 
-                    <div class="profile-avatar">JD</div>
+                    <div class="profile-avatar" id="profileAvatar">?</div>
+                    <div id="profileMsg" style="margin-bottom:1rem;font-size:0.9rem;display:none;"></div>
 
                     <div class="form-group">
                         <label>Full Name</label>
-                        <input type="text" value="John Doe">
+                        <input type="text" id="profileName" placeholder="Your name">
                     </div>
 
                     <div class="form-group">
                         <label>Email Address</label>
-                        <input type="email" value="john.doe@example.com">
+                        <input type="email" id="profileEmail" placeholder="your@email.com">
                     </div>
 
                     <div class="form-group">
                         <label>Trading Experience</label>
-                        <select>
+                        <select id="profileExperience">
                             <option value="beginner">Beginner (0-1 year)</option>
-                            <option value="intermediate" selected>Intermediate (1-3 years)</option>
+                            <option value="intermediate">Intermediate (1-3 years)</option>
                             <option value="advanced">Advanced (3-5 years)</option>
                             <option value="expert">Expert (5+ years)</option>
                         </select>
@@ -430,12 +431,11 @@
 
                     <div class="form-group">
                         <label>Bio</label>
-                        <input type="text" placeholder="Tell us about yourself...">
+                        <input type="text" id="profileBio" placeholder="Tell us about yourself...">
                     </div>
 
                     <div class="btn-group">
-                        <button class="btn btn-primary">Save Changes</button>
-                        <button class="btn btn-secondary">Cancel</button>
+                        <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
                     </div>
                 </div>
 
@@ -444,36 +444,26 @@
                     <h2 class="section-title">Account Security</h2>
                     <p class="section-description">Manage your password and security settings</p>
 
+                    <div id="passwordMsg" style="margin-bottom:1rem;font-size:0.9rem;display:none;"></div>
+
                     <div class="form-group">
                         <label>Current Password</label>
-                        <input type="password" placeholder="Enter current password">
+                        <input type="password" id="currentPassword" placeholder="Enter current password">
                     </div>
 
                     <div class="form-group">
                         <label>New Password</label>
-                        <input type="password" placeholder="Enter new password">
+                        <input type="password" id="newPassword" placeholder="Enter new password (min 8 chars)">
                     </div>
 
                     <div class="form-group">
                         <label>Confirm New Password</label>
-                        <input type="password" placeholder="Confirm new password">
+                        <input type="password" id="confirmPassword" placeholder="Confirm new password">
                     </div>
 
                     <div class="btn-group">
-                        <button class="btn btn-primary">Update Password</button>
+                        <button class="btn btn-primary" onclick="savePassword()">Update Password</button>
                     </div>
-
-                    <div class="divider"></div>
-
-                    <h3 style="margin-bottom: 1rem; color: #1f2937;">Two-Factor Authentication</h3>
-                    <p style="color: #6b7280; margin-bottom: 1rem;">Add an extra layer of security to your account</p>
-                    <button class="btn btn-secondary">Enable 2FA</button>
-
-                    <div class="divider"></div>
-
-                    <h3 style="margin-bottom: 1rem; color: #dc2626;">Danger Zone</h3>
-                    <p style="color: #6b7280; margin-bottom: 1rem;">Permanently delete your account and all data</p>
-                    <button class="btn btn-danger">Delete Account</button>
                 </div>
 
                 <!-- Notifications Section -->
@@ -481,13 +471,15 @@
                     <h2 class="section-title">Notification Preferences</h2>
                     <p class="section-description">Choose what updates you want to receive</p>
 
+                    <div id="notifMsg" style="margin-bottom:1rem;font-size:0.9rem;display:none;"></div>
+
                     <div class="toggle-group">
                         <div class="toggle-info">
                             <h4>Email Notifications</h4>
                             <p>Receive updates via email</p>
                         </div>
                         <label class="toggle">
-                            <input type="checkbox" checked>
+                            <input type="checkbox" id="notifEmail">
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -498,7 +490,7 @@
                             <p>Get notified about pending trades</p>
                         </div>
                         <label class="toggle">
-                            <input type="checkbox" checked>
+                            <input type="checkbox" id="notifTradeReminders">
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -509,7 +501,7 @@
                             <p>Receive weekly performance reports</p>
                         </div>
                         <label class="toggle">
-                            <input type="checkbox">
+                            <input type="checkbox" id="notifWeeklySummary">
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -520,13 +512,13 @@
                             <p>Get notified when you reach your goals</p>
                         </div>
                         <label class="toggle">
-                            <input type="checkbox" checked>
+                            <input type="checkbox" id="notifGoalAchievements">
                             <span class="slider"></span>
                         </label>
                     </div>
 
                     <div class="btn-group">
-                        <button class="btn btn-primary">Save Preferences</button>
+                        <button class="btn btn-primary" onclick="saveNotifications()">Save Preferences</button>
                     </div>
                 </div>
 
@@ -535,10 +527,12 @@
                     <h2 class="section-title">App Preferences</h2>
                     <p class="section-description">Customize your Trade Notion experience</p>
 
+                    <div id="prefsMsg" style="margin-bottom:1rem;font-size:0.9rem;display:none;"></div>
+
                     <div class="form-group">
                         <label>Currency</label>
-                        <select>
-                            <option value="usd" selected>USD ($)</option>
+                        <select id="prefCurrency">
+                            <option value="usd">USD ($)</option>
                             <option value="eur">EUR (€)</option>
                             <option value="gbp">GBP (£)</option>
                             <option value="jpy">JPY (¥)</option>
@@ -547,8 +541,8 @@
 
                     <div class="form-group">
                         <label>Date Format</label>
-                        <select>
-                            <option value="mdy" selected>MM/DD/YYYY</option>
+                        <select id="prefDateFormat">
+                            <option value="mdy">MM/DD/YYYY</option>
                             <option value="dmy">DD/MM/YYYY</option>
                             <option value="ymd">YYYY-MM-DD</option>
                         </select>
@@ -556,54 +550,33 @@
 
                     <div class="form-group">
                         <label>Timezone</label>
-                        <select>
-                            <option value="est" selected>Eastern Time (ET)</option>
+                        <select id="prefTimezone">
+                            <option value="est">Eastern Time (ET)</option>
                             <option value="cst">Central Time (CT)</option>
                             <option value="mst">Mountain Time (MT)</option>
                             <option value="pst">Pacific Time (PT)</option>
+                            <option value="gmt">GMT</option>
+                            <option value="bst">British Summer Time (BST)</option>
                         </select>
                     </div>
 
-                    <div class="toggle-group">
-                        <div class="toggle-info">
-                            <h4>Dark Mode</h4>
-                            <p>Switch to dark theme</p>
-                        </div>
-                        <label class="toggle">
-                            <input type="checkbox">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-
                     <div class="btn-group">
-                        <button class="btn btn-primary">Save Preferences</button>
+                        <button class="btn btn-primary" onclick="savePreferences()">Save Preferences</button>
                     </div>
                 </div>
 
                 <!-- Subscription Section -->
                 <div id="subscription" class="settings-section">
-                    <h2 class="section-title">Subscription & Billing</h2>
-                    <p class="section-description">Manage your subscription plan</p>
+                    <h2 class="section-title">Subscription</h2>
+                    <p class="section-description">Your current plan</p>
 
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; color: white; margin-bottom: 2rem;">
-                        <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Pro Plan</h3>
-                        <p style="opacity: 0.9; margin-bottom: 1rem;">Next billing date: February 25, 2026</p>
-                        <p style="font-size: 2rem; font-weight: bold;">$29.00/month</p>
+                    <div id="planCard" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; color: white; margin-bottom: 2rem;">
+                        <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;" id="planName">Loading…</h3>
+                        <p style="opacity: 0.9;" id="planStatus">Checking status…</p>
                     </div>
 
-                    <h3 style="margin-bottom: 1rem; color: #1f2937;">Plan Features</h3>
-                    <ul style="margin-bottom: 2rem; color: #6b7280; line-height: 2;">
-                        <li>✓ Unlimited trades</li>
-                        <li>✓ Advanced analytics</li>
-                        <li>✓ Custom reports</li>
-                        <li>✓ Trade replay</li>
-                        <li>✓ Priority support</li>
-                    </ul>
-
-                    <div class="btn-group">
-                        <button class="btn btn-primary">Upgrade to Elite</button>
-                        <button class="btn btn-danger">Cancel Subscription</button>
-                    </div>
+                    <h3 style="margin-bottom: 1rem; color: #1f2937;">Account Info</h3>
+                    <ul id="accountInfo" style="margin-bottom: 2rem; color: #6b7280; line-height: 2;"></ul>
                 </div>
             </div>
         </div>
@@ -611,32 +584,146 @@
 
     <script>
         const token = localStorage.getItem('token');
-        if (!token) {
-            window.location.href = '/Login.html';
+        if (!token) window.location.href = '/Login.html';
+
+        function logout() { localStorage.removeItem('token'); window.location.href = '/Login.html'; }
+
+        function showSection(id, el) {
+            document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.settings-nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            el.classList.add('active');
         }
 
-        function logout() {
-            localStorage.removeItem('token');
-            window.location.href = '/Login.html';
+        const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+
+        function showMsg(id, text, ok) {
+            const el = document.getElementById(id);
+            el.textContent = text;
+            el.style.color  = ok ? '#059669' : '#dc2626';
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 4000);
         }
 
-        function showSection(sectionId) {
-            // Hide all sections
-            document.querySelectorAll('.settings-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            
-            // Remove active from all nav items
-            document.querySelectorAll('.settings-nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Show selected section
-            document.getElementById(sectionId).classList.add('active');
-            
-            // Add active to clicked nav item
-            event.target.classList.add('active');
+        // ── Load user data ────────────────────────────────────────────────
+        async function loadUser() {
+            try {
+                const r = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+                if (!r.ok) return;
+                const { user } = await r.json();
+
+                // Profile
+                document.getElementById('profileName').value       = user.name        || '';
+                document.getElementById('profileEmail').value      = user.email       || '';
+                document.getElementById('profileBio').value        = user.bio         || '';
+                document.getElementById('profileExperience').value = user.tradingExperience || 'beginner';
+
+                // Avatar initials
+                const initials = (user.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+                document.getElementById('profileAvatar').textContent = initials;
+
+                // Preferences
+                const p = user.preferences || {};
+                document.getElementById('prefCurrency').value   = p.currency   || 'usd';
+                document.getElementById('prefDateFormat').value = p.dateFormat  || 'mdy';
+                document.getElementById('prefTimezone').value   = p.timezone    || 'est';
+
+                // Notifications
+                const n = user.notifications || {};
+                document.getElementById('notifEmail').checked           = n.email           ?? true;
+                document.getElementById('notifTradeReminders').checked  = n.tradeReminders  ?? true;
+                document.getElementById('notifWeeklySummary').checked   = n.weeklySummary   ?? false;
+                document.getElementById('notifGoalAchievements').checked = n.goalAchievements ?? true;
+
+                // Subscription
+                const s = user.subscription || {};
+                const plan = s.plan || 'free';
+                document.getElementById('planName').textContent   = plan.charAt(0).toUpperCase() + plan.slice(1) + ' Plan';
+                document.getElementById('planStatus').textContent = 'Status: ' + (s.status || 'active');
+                document.getElementById('accountInfo').innerHTML  = `
+                    <li>📧 ${user.email}</li>
+                    <li>📅 Member since ${new Date(user.createdAt).toLocaleDateString()}</li>
+                    <li>🕒 Last login: ${user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'N/A'}</li>
+                    <li>📊 ${user.tradingExperience || 'beginner'} trader</li>
+                `;
+            } catch (e) { console.error('Failed to load user:', e); }
         }
+
+        // ── Save profile ──────────────────────────────────────────────────
+        async function saveProfile() {
+            const body = {
+                name:              document.getElementById('profileName').value.trim(),
+                email:             document.getElementById('profileEmail').value.trim(),
+                tradingExperience: document.getElementById('profileExperience').value,
+                bio:               document.getElementById('profileBio').value.trim(),
+            };
+            try {
+                const r = await fetch('/api/auth/profile', { method: 'PUT', headers, body: JSON.stringify(body) });
+                const d = await r.json();
+                if (r.ok) {
+                    const initials = body.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+                    document.getElementById('profileAvatar').textContent = initials;
+                    showMsg('profileMsg', '✅ Profile updated successfully', true);
+                } else {
+                    showMsg('profileMsg', '❌ ' + (d.message || 'Failed to update'), false);
+                }
+            } catch (e) { showMsg('profileMsg', '❌ Network error', false); }
+        }
+
+        // ── Save password ─────────────────────────────────────────────────
+        async function savePassword() {
+            const current  = document.getElementById('currentPassword').value;
+            const newPw    = document.getElementById('newPassword').value;
+            const confirm  = document.getElementById('confirmPassword').value;
+
+            if (!current || !newPw) { showMsg('passwordMsg', '❌ Please fill in all fields', false); return; }
+            if (newPw !== confirm)  { showMsg('passwordMsg', '❌ New passwords do not match', false); return; }
+            if (newPw.length < 8)   { showMsg('passwordMsg', '❌ Password must be at least 8 characters', false); return; }
+
+            try {
+                const r = await fetch('/api/auth/password', { method: 'PUT', headers, body: JSON.stringify({ currentPassword: current, newPassword: newPw }) });
+                const d = await r.json();
+                if (r.ok) {
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value     = '';
+                    document.getElementById('confirmPassword').value = '';
+                    showMsg('passwordMsg', '✅ Password updated successfully', true);
+                } else {
+                    showMsg('passwordMsg', '❌ ' + (d.message || 'Failed to update'), false);
+                }
+            } catch (e) { showMsg('passwordMsg', '❌ Network error', false); }
+        }
+
+        // ── Save notifications ────────────────────────────────────────────
+        async function saveNotifications() {
+            const body = {
+                email:            document.getElementById('notifEmail').checked,
+                tradeReminders:   document.getElementById('notifTradeReminders').checked,
+                weeklySummary:    document.getElementById('notifWeeklySummary').checked,
+                goalAchievements: document.getElementById('notifGoalAchievements').checked,
+            };
+            try {
+                const r = await fetch('/api/auth/notifications', { method: 'PUT', headers, body: JSON.stringify(body) });
+                const d = await r.json();
+                showMsg('notifMsg', r.ok ? '✅ Preferences saved' : '❌ ' + (d.message || 'Failed'), r.ok);
+            } catch (e) { showMsg('notifMsg', '❌ Network error', false); }
+        }
+
+        // ── Save preferences ──────────────────────────────────────────────
+        async function savePreferences() {
+            const body = {
+                currency:   document.getElementById('prefCurrency').value,
+                dateFormat: document.getElementById('prefDateFormat').value,
+                timezone:   document.getElementById('prefTimezone').value,
+            };
+            try {
+                const r = await fetch('/api/auth/preferences', { method: 'PUT', headers, body: JSON.stringify(body) });
+                const d = await r.json();
+                showMsg('prefsMsg', r.ok ? '✅ Preferences saved' : '❌ ' + (d.message || 'Failed'), r.ok);
+            } catch (e) { showMsg('prefsMsg', '❌ Network error', false); }
+        }
+
+        loadUser();
     </script>
 </body>
 </html>
