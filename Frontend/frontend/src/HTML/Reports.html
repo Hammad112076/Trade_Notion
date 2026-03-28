@@ -375,150 +375,84 @@
                     </select>
                 </div>
 
-                <div class="form-group">
-                    <label>Format</label>
-                    <select id="format">
-                        <option value="pdf">PDF Document</option>
-                        <option value="excel">Excel Spreadsheet</option>
-                        <option value="csv">CSV File</option>
-                    </select>
+                <div class="form-group" id="customRangeGroup" style="display:none;">
+                    <label>Start Date</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="form-group" id="customRangeGroup2" style="display:none;">
+                    <label>End Date</label>
+                    <input type="date" id="endDate">
                 </div>
             </div>
-            <button class="btn btn-primary" onclick="generateReport()">📥 Generate Report</button>
+            <div id="generateStatus" style="margin-bottom:1rem;color:#6b7280;font-size:0.9rem;display:none;"></div>
+            <button class="btn btn-primary" id="generateBtn" onclick="generateReport()">📥 Generate & Download CSV</button>
         </div>
 
         <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; color: #1f2937;">Report Templates</h2>
 
         <div class="reports-grid">
-            <div class="report-card">
+            <div class="report-card" onclick="quickGenerate('performance')">
                 <div class="report-header">
                     <div>
                         <div class="report-title">Performance Summary</div>
-                        <div class="report-description">Complete overview of your trading performance including P&L, win rate, and key metrics</div>
+                        <div class="report-description">Win rate, P&L, profit factor, avg win/loss, expectancy</div>
                     </div>
                     <div class="report-icon blue">📊</div>
                 </div>
-                <div class="report-meta">
-                    <span>Most Popular</span>
-                    <span>5-10 pages</span>
-                </div>
+                <div class="report-meta"><span>Most Popular</span><span>Click to generate</span></div>
             </div>
 
-            <div class="report-card">
+            <div class="report-card" onclick="quickGenerate('detailed')">
                 <div class="report-header">
                     <div>
                         <div class="report-title">Detailed Trade Analysis</div>
-                        <div class="report-description">In-depth analysis of each trade with entry/exit details, notes, and screenshots</div>
+                        <div class="report-description">Every trade with symbol, direction, P&L, strategy, and notes</div>
                     </div>
                     <div class="report-icon green">🔍</div>
                 </div>
-                <div class="report-meta">
-                    <span>Comprehensive</span>
-                    <span>15-30 pages</span>
-                </div>
+                <div class="report-meta"><span>Comprehensive</span><span>Click to generate</span></div>
             </div>
 
-            <div class="report-card">
+            <div class="report-card" onclick="quickGenerate('monthly')">
                 <div class="report-header">
                     <div>
                         <div class="report-title">Monthly Overview</div>
-                        <div class="report-description">Month-by-month breakdown of trading activity, profits, and patterns</div>
+                        <div class="report-description">Month-by-month trades, wins, losses, and P&L totals</div>
                     </div>
                     <div class="report-icon purple">📅</div>
                 </div>
-                <div class="report-meta">
-                    <span>Time-based</span>
-                    <span>3-8 pages</span>
-                </div>
+                <div class="report-meta"><span>Time-based</span><span>Click to generate</span></div>
             </div>
 
-            <div class="report-card">
+            <div class="report-card" onclick="quickGenerate('strategy')">
                 <div class="report-header">
                     <div>
                         <div class="report-title">Strategy Breakdown</div>
-                        <div class="report-description">Performance analysis grouped by trading strategy and setup type</div>
+                        <div class="report-description">Performance grouped by each trading strategy</div>
                     </div>
                     <div class="report-icon orange">🎯</div>
                 </div>
-                <div class="report-meta">
-                    <span>Strategy-focused</span>
-                    <span>8-12 pages</span>
-                </div>
+                <div class="report-meta"><span>Strategy-focused</span><span>Click to generate</span></div>
             </div>
 
-            <div class="report-card">
+            <div class="report-card" onclick="quickGenerate('risk')">
                 <div class="report-header">
                     <div>
                         <div class="report-title">Risk Analysis</div>
-                        <div class="report-description">Detailed breakdown of risk metrics, drawdowns, and risk management performance</div>
+                        <div class="report-description">Max drawdown, consecutive losses, largest loss/win</div>
                     </div>
                     <div class="report-icon blue">⚠️</div>
                 </div>
-                <div class="report-meta">
-                    <span>Risk-focused</span>
-                    <span>6-10 pages</span>
-                </div>
+                <div class="report-meta"><span>Risk-focused</span><span>Click to generate</span></div>
             </div>
 
-            <div class="report-card">
-                <div class="report-header">
-                    <div>
-                        <div class="report-title">Tax Summary</div>
-                        <div class="report-description">Year-end summary formatted for tax purposes with all realized gains/losses</div>
-                    </div>
-                    <div class="report-icon green">💰</div>
-                </div>
-                <div class="report-meta">
-                    <span>Tax Season</span>
-                    <span>4-6 pages</span>
-                </div>
-            </div>
         </div>
 
         <div class="recent-reports">
             <h2 class="recent-title">Recently Generated Reports</h2>
-            
-            <div class="report-item">
-                <div class="report-info">
-                    <h4>Performance Summary - January 2026</h4>
-                    <p>Generated on Jan 25, 2026 • PDF • 8 pages</p>
-                </div>
-                <div class="report-actions">
-                    <button class="action-btn">📥 Download</button>
-                    <button class="action-btn">👁️ View</button>
-                </div>
-            </div>
-
-            <div class="report-item">
-                <div class="report-info">
-                    <h4>Strategy Breakdown - Q4 2025</h4>
-                    <p>Generated on Jan 15, 2026 • Excel • 12 pages</p>
-                </div>
-                <div class="report-actions">
-                    <button class="action-btn">📥 Download</button>
-                    <button class="action-btn">👁️ View</button>
-                </div>
-            </div>
-
-            <div class="report-item">
-                <div class="report-info">
-                    <h4>Monthly Overview - December 2025</h4>
-                    <p>Generated on Jan 5, 2026 • PDF • 6 pages</p>
-                </div>
-                <div class="report-actions">
-                    <button class="action-btn">📥 Download</button>
-                    <button class="action-btn">👁️ View</button>
-                </div>
-            </div>
-
-            <div class="report-item">
-                <div class="report-info">
-                    <h4>Tax Summary - 2025 Full Year</h4>
-                    <p>Generated on Dec 31, 2025 • PDF • 5 pages</p>
-                </div>
-                <div class="report-actions">
-                    <button class="action-btn">📥 Download</button>
-                    <button class="action-btn">👁️ View</button>
+            <div id="recentReportsList">
+                <div class="empty-state" style="padding:2rem;text-align:center;color:#6b7280;">
+                    No reports generated yet. Use the form above or click a template to get started.
                 </div>
             </div>
         </div>
@@ -526,22 +460,260 @@
 
     <script>
         const token = localStorage.getItem('token');
-        if (!token) {
-            window.location.href = '/Login.html';
+        if (!token) window.location.href = '/Login.html';
+
+        function logout() { localStorage.removeItem('token'); window.location.href = '/Login.html'; }
+
+        // Show/hide custom date inputs
+        document.getElementById('dateRange').addEventListener('change', function() {
+            const show = this.value === 'custom';
+            document.getElementById('customRangeGroup').style.display  = show ? 'flex' : 'none';
+            document.getElementById('customRangeGroup2').style.display = show ? 'flex' : 'none';
+        });
+
+        // Fetch all trades from API
+        async function fetchTrades() {
+            const r = await fetch('/api/trades', { headers: { Authorization: `Bearer ${token}` } });
+            if (!r.ok) throw new Error('Failed to fetch trades');
+            const data = await r.json();
+            return data.trades || [];
         }
 
-        function logout() {
-            localStorage.removeItem('token');
-            window.location.href = '/Login.html';
+        // Filter trades by selected date range
+        function applyDateFilter(trades, range, start, end) {
+            if (!range || range === 'all') return trades;
+            const now = new Date();
+            const days = { week: 7, month: 30, quarter: 90, year: 365 }[range];
+            const cutoff = range === 'custom' ? new Date(start) : new Date(now - days * 86400000);
+            const endCutoff = range === 'custom' ? new Date(end) : null;
+            return trades.filter(t => {
+                const d = new Date(t.date);
+                if (endCutoff) return d >= cutoff && d <= endCutoff;
+                return d >= cutoff;
+            });
         }
 
-        function generateReport() {
-            const reportType = document.getElementById('reportType').value;
-            const dateRange = document.getElementById('dateRange').value;
-            const format = document.getElementById('format').value;
+        // CSV helpers
+        function esc(v) { return `"${String(v ?? '').replace(/"/g, '""')}"`; }
+        function toCSV(headers, rows) {
+            return [headers.map(esc), ...rows.map(r => r.map(esc))].map(r => r.join(',')).join('\n');
+        }
+        function download(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href = url; a.download = filename; a.click();
+            URL.revokeObjectURL(url);
+        }
 
-            alert(`Generating ${reportType} report for ${dateRange} in ${format} format...`);
-            // In production, this would make an API call to generate the report
+        // ── Report builders ──────────────────────────────────────────────
+
+        function buildPerformance(trades) {
+            const total   = trades.length;
+            const wins    = trades.filter(t => t.result === 'win').length;
+            const losses  = trades.filter(t => t.result === 'loss').length;
+            const be      = total - wins - losses;
+            const totalPL = trades.reduce((s, t) => s + (t.profitLoss || 0), 0);
+            const wTrades = trades.filter(t => t.result === 'win');
+            const lTrades = trades.filter(t => t.result === 'loss');
+            const sumW    = wTrades.reduce((s, t) => s + (t.profitLoss || 0), 0);
+            const sumL    = Math.abs(lTrades.reduce((s, t) => s + (t.profitLoss || 0), 0));
+            const avgWin  = wTrades.length ? (sumW / wTrades.length).toFixed(2) : 0;
+            const avgLoss = lTrades.length  ? (sumL / lTrades.length).toFixed(2)  : 0;
+            const pf      = sumL > 0 ? (sumW / sumL).toFixed(2) : sumW > 0 ? '∞' : '0.00';
+            const wr      = total > 0 ? wins / total : 0;
+            const exp     = ((wr * parseFloat(avgWin)) - ((1 - wr) * parseFloat(avgLoss))).toFixed(2);
+            const best    = total ? Math.max(...trades.map(t => t.profitLoss || 0)).toFixed(2) : 0;
+            const worst   = total ? Math.min(...trades.map(t => t.profitLoss || 0)).toFixed(2) : 0;
+
+            return toCSV(['Metric', 'Value'], [
+                ['Total Trades', total],
+                ['Wins', wins], ['Losses', losses], ['Breakeven', be],
+                ['Win Rate', total ? ((wins / total) * 100).toFixed(1) + '%' : '0%'],
+                ['Total P&L', '$' + totalPL.toFixed(2)],
+                ['Average Win', '$' + avgWin],
+                ['Average Loss', '-$' + avgLoss],
+                ['Profit Factor', pf],
+                ['Expectancy', '$' + exp],
+                ['Best Trade', '$' + best],
+                ['Worst Trade', '$' + worst],
+            ]);
+        }
+
+        function buildDetailed(trades) {
+            const headers = ['Date', 'Symbol', 'Direction', 'Strategy', 'Shares', 'P&L', 'Result',
+                             'Confidence', 'Emotion Before', 'Emotion After', 'What Went Right', 'What Went Wrong'];
+            const rows = trades.map(t => [
+                new Date(t.date).toLocaleDateString(),
+                t.symbol, t.direction || '', t.model || '',
+                t.shares || '', (t.profitLoss || 0).toFixed(2), t.result || '',
+                t.confidenceLevel || '', t.emotionBefore || '', t.emotionAfter || '',
+                t.whatWentRight || '', t.whatWentWrongI || ''
+            ]);
+            return toCSV(headers, rows);
+        }
+
+        function buildMonthly(trades) {
+            const map = {};
+            trades.forEach(t => {
+                const d   = new Date(t.date);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                if (!map[key]) map[key] = { trades: 0, wins: 0, losses: 0, pl: 0 };
+                map[key].trades++;
+                map[key].pl += t.profitLoss || 0;
+                if (t.result === 'win')  map[key].wins++;
+                if (t.result === 'loss') map[key].losses++;
+            });
+            const rows = Object.entries(map).sort().map(([month, s]) => [
+                month, s.trades, s.wins, s.losses,
+                s.trades ? ((s.wins / s.trades) * 100).toFixed(1) + '%' : '0%',
+                '$' + s.pl.toFixed(2)
+            ]);
+            return toCSV(['Month', 'Trades', 'Wins', 'Losses', 'Win Rate', 'Total P&L'], rows);
+        }
+
+        function buildStrategy(trades) {
+            const map = {};
+            trades.forEach(t => {
+                const key = t.model || 'Unknown';
+                if (!map[key]) map[key] = { trades: 0, wins: 0, losses: 0, pl: 0 };
+                map[key].trades++;
+                map[key].pl += t.profitLoss || 0;
+                if (t.result === 'win')  map[key].wins++;
+                if (t.result === 'loss') map[key].losses++;
+            });
+            const rows = Object.entries(map).map(([strat, s]) => [
+                strat, s.trades, s.wins, s.losses,
+                s.trades ? ((s.wins / s.trades) * 100).toFixed(1) + '%' : '0%',
+                '$' + s.pl.toFixed(2),
+                '$' + (s.trades ? (s.pl / s.trades).toFixed(2) : '0.00')
+            ]);
+            return toCSV(['Strategy', 'Trades', 'Wins', 'Losses', 'Win Rate', 'Total P&L', 'Avg P&L'], rows);
+        }
+
+        function buildRisk(trades) {
+            const pls = trades.map(t => t.profitLoss || 0);
+            const best  = pls.length ? Math.max(...pls) : 0;
+            const worst = pls.length ? Math.min(...pls) : 0;
+            // Max drawdown
+            let peak = 0, cum = 0, maxDD = 0;
+            pls.forEach(pl => { cum += pl; if (cum > peak) peak = cum; const dd = peak - cum; if (dd > maxDD) maxDD = dd; });
+            // Consecutive losses/wins
+            let maxLoss = 0, maxWin = 0, curL = 0, curW = 0;
+            trades.forEach(t => {
+                if (t.result === 'loss') { curL++; curW = 0; maxLoss = Math.max(maxLoss, curL); }
+                else if (t.result === 'win') { curW++; curL = 0; maxWin = Math.max(maxWin, curW); }
+                else { curL = 0; curW = 0; }
+            });
+            const avg = pls.length ? (pls.reduce((a, b) => a + b, 0) / pls.length).toFixed(2) : 0;
+            return toCSV(['Metric', 'Value'], [
+                ['Total Trades', trades.length],
+                ['Max Drawdown', '-$' + maxDD.toFixed(2)],
+                ['Max Consecutive Losses', maxLoss],
+                ['Max Consecutive Wins', maxWin],
+                ['Largest Single Win', '$' + best.toFixed(2)],
+                ['Largest Single Loss', '$' + worst.toFixed(2)],
+                ['Average Trade P&L', '$' + avg],
+            ]);
+        }
+
+        function buildTax(trades) {
+            let cum = 0;
+            const sorted = [...trades].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const rows = sorted.map(t => {
+                cum += t.profitLoss || 0;
+                return [
+                    new Date(t.date).toLocaleDateString(),
+                    t.symbol, t.direction || '', t.model || '',
+                    (t.profitLoss || 0).toFixed(2), t.result || '',
+                    cum.toFixed(2)
+                ];
+            });
+            return toCSV(['Date', 'Symbol', 'Direction', 'Strategy', 'P&L', 'Result', 'Cumulative P&L'], rows);
+        }
+
+        const BUILDERS = { performance: buildPerformance, detailed: buildDetailed, monthly: buildMonthly, strategy: buildStrategy, risk: buildRisk, tax: buildTax };
+        const LABELS   = { performance: 'Performance Summary', detailed: 'Detailed Trade Analysis', monthly: 'Monthly Overview', strategy: 'Strategy Breakdown', risk: 'Risk Analysis', tax: 'Tax Summary' };
+
+        // ── Recent reports (session) ──────────────────────────────────────
+        const recentReports = JSON.parse(sessionStorage.getItem('recentReports') || '[]');
+
+        function saveRecent(name, filename, csv) {
+            recentReports.unshift({ name, filename, csv, time: new Date().toLocaleString() });
+            if (recentReports.length > 10) recentReports.pop();
+            sessionStorage.setItem('recentReports', JSON.stringify(recentReports));
+            renderRecent();
+        }
+
+        function renderRecent() {
+            const el = document.getElementById('recentReportsList');
+            if (!recentReports.length) {
+                el.innerHTML = '<div style="padding:2rem;text-align:center;color:#6b7280;">No reports generated yet.</div>';
+                return;
+            }
+            el.innerHTML = recentReports.map((r, i) => `
+                <div class="report-item">
+                    <div class="report-info">
+                        <h4>${r.name}</h4>
+                        <p>Generated ${r.time} • CSV</p>
+                    </div>
+                    <div class="report-actions">
+                        <button class="action-btn" onclick="reDownload(${i})">📥 Download</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        function reDownload(i) { download(recentReports[i].csv, recentReports[i].filename); }
+
+        renderRecent();
+
+        // ── Generate ─────────────────────────────────────────────────────
+        async function generateReport() {
+            const type      = document.getElementById('reportType').value;
+            const range     = document.getElementById('dateRange').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate   = document.getElementById('endDate').value;
+
+            if (range === 'custom' && (!startDate || !endDate)) {
+                alert('Please select both a start and end date for a custom range.'); return;
+            }
+
+            const btn    = document.getElementById('generateBtn');
+            const status = document.getElementById('generateStatus');
+            btn.disabled = true; btn.textContent = 'Generating…';
+            status.style.display = 'block'; status.textContent = 'Fetching your trades…';
+
+            try {
+                const allTrades = await fetchTrades();
+                const trades    = applyDateFilter(allTrades, range, startDate, endDate);
+
+                if (!trades.length) {
+                    status.textContent = 'No trades found for the selected date range.';
+                    btn.disabled = false; btn.textContent = '📥 Generate & Download CSV';
+                    return;
+                }
+
+                status.textContent = `Building report from ${trades.length} trade(s)…`;
+                const csv      = BUILDERS[type](trades);
+                const rangeLabel = range === 'custom' ? `${startDate}_to_${endDate}` : range || 'all-time';
+                const filename = `${type}-report-${rangeLabel}.csv`;
+                const label    = `${LABELS[type]} (${rangeLabel.replace(/-/g, ' ')})`;
+
+                download(csv, filename);
+                saveRecent(label, filename, csv);
+                status.textContent = `✅ ${trades.length} trades exported as ${filename}`;
+            } catch (err) {
+                console.error(err);
+                status.textContent = '❌ Error generating report. Check console for details.';
+            }
+
+            btn.disabled = false; btn.textContent = '📥 Generate & Download CSV';
+        }
+
+        function quickGenerate(type) {
+            document.getElementById('reportType').value = type;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            generateReport();
         }
     </script>
 </body>
