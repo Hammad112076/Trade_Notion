@@ -411,8 +411,8 @@
 
 <script>
 const token = localStorage.getItem('token');
-if (!token) window.location.href = '/Login.html';
-function logout() { localStorage.removeItem('token'); window.location.href = '/Login.html'; }
+if (!token) window.location.href = '/login.html';
+function logout() { localStorage.removeItem('token'); window.location.href = '/login.html'; }
 
 let customModels = [], mistakeTags = [], customFields = [];
 let selectedType = 'text', dropdownOpts = [];

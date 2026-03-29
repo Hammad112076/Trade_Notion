@@ -30,12 +30,12 @@ app.use(express.static(htmlDir));
 
 // Root route - serves home page
 app.get("/", (req, res) => {
-  res.sendFile(path.join(htmlDir, "Home.html"));
+  res.sendFile(path.join(htmlDir, "home.html"));
 });
 
 // Login route
 app.get("/login", (req, res) => {
-  res.sendFile(path.join(htmlDir, "Login.html"));
+  res.sendFile(path.join(htmlDir, "login.html"));
 });
 
 // Register route
@@ -64,7 +64,7 @@ app.get("/analytics", (req, res) => {
 
 // Calendar route
 app.get("/calendar", (req, res) => {
-  res.sendFile(path.join(htmlDir, "Calendar.html"));
+  res.sendFile(path.join(htmlDir, "calendar.html"));
 });
 
 // Reports route
@@ -74,7 +74,7 @@ app.get("/reports", (req, res) => {
 
 // Goals route
 app.get("/goals", (req, res) => {
-  res.sendFile(path.join(htmlDir, "Goals.html"));
+  res.sendFile(path.join(htmlDir, "goals.html"));
 });
 
 // Settings route
