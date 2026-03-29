@@ -138,53 +138,6 @@
             cursor: not-allowed;
         }
 
-        .divider {
-            text-align: center;
-            margin: 1.5rem 0;
-            color: #9ca3af;
-            position: relative;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            width: 45%;
-            height: 1px;
-            background: #e5e7eb;
-        }
-
-        .divider::before {
-            left: 0;
-        }
-
-        .divider::after {
-            right: 0;
-        }
-
-        .social-signup {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .btn-social {
-            flex: 1;
-            padding: 0.875rem;
-            border: 2px solid #e5e7eb;
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 500;
-        }
-
-        .btn-social:hover {
-            border-color: #4F46E5;
-            color: #4F46E5;
-        }
-
         .login-link {
             text-align: center;
             color: #6b7280;
@@ -286,13 +239,6 @@
 
             <button type="submit" class="btn-register">Create Account</button>
         </form>
-
-        <div class="divider">or</div>
-
-        <div class="social-signup">
-            <button class="btn-social">Google</button>
-            <button class="btn-social">GitHub</button>
-        </div>
 
         <div class="Login-link">
             Already have an account? <a href="/login.html">Login</a>
