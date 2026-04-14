@@ -4,8 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
 
-// JWT Secret (in production, use environment variable)
-const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-this-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Generate JWT Token
 const generateToken = (userId) => {
@@ -55,7 +54,7 @@ router.post('/register', async (req, res) => {
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public
-router.post('/Login', async (req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -104,32 +103,13 @@ router.post('/Login', async (req, res) => {
 // @route   GET /api/auth/me
 // @desc    Get current user
 // @access  Private
-router.get('/me', async (req, res) => {
+router.get('/me', protect, async (req, res) => {
   try {
-    // Get token from header
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ message: 'No token provided' });
-    }
-
-    // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET);
-    
-    // Find user
-    const user = await User.findById(decoded.id);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.json({
-      success: true,
-      user
-    });
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ success: true, user });
   } catch (error) {
-    console.error('Auth error:', error);
-    res.status(401).json({ message: 'Invalid token' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

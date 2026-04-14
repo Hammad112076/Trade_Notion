@@ -517,9 +517,18 @@
                     // Profit Factor
                     document.getElementById('profitFactor').textContent = parseFloat(stats.profitFactor).toFixed(2);
                     document.getElementById('profitFactorDetail').textContent = `Expectancy: $${stats.expectancy}`;
+                } else {
+                    ['totalPL','winRate','totalTrades','profitFactor'].forEach(id => {
+                        document.getElementById(id).textContent = '—';
+                    });
+                    document.getElementById('plChange').textContent = 'Could not load stats';
                 }
             } catch (error) {
                 console.error('Error loading stats:', error);
+                ['totalPL','winRate','totalTrades','profitFactor'].forEach(id => {
+                    document.getElementById(id).textContent = '—';
+                });
+                document.getElementById('plChange').textContent = 'Error loading stats';
             }
         }
 

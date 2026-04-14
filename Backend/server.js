@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -13,7 +14,18 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",")
+  : ["http://localhost:5000"];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (same-origin, curl, Render health checks)
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // API Routes (REMOVED upload route)
@@ -84,7 +96,7 @@ app.get("/settings", (req, res) => {
 
 
 // MongoDB Atlas connection
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://hammadshahzad861_db_user:L7nkzZnwYs5AmnNg@cluster1.u10tbzm.mongodb.net/tradenotion?retryWrites=true&w=majority&appName=Cluster1";
+const MONGODB_URI = process.env.MONGODB_URI;
 
 mongoose.connect(MONGODB_URI, {
   serverSelectionTimeoutMS: 5000,
