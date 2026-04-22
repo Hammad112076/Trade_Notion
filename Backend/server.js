@@ -94,6 +94,14 @@ app.get("/settings", (req, res) => {
   res.sendFile(path.join(htmlDir, "settings.html"));
 });
 
+app.get("/terms", (req, res) => {
+  res.sendFile(path.join(htmlDir, "terms.html"));
+});
+
+app.get("/privacy", (req, res) => {
+  res.sendFile(path.join(htmlDir, "privacy.html"));
+});;
+
 
 // MongoDB Atlas connection
 const MONGODB_URI = process.env.MONGODB_URI;

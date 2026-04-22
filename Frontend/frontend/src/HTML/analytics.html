@@ -272,10 +272,35 @@
             <div id="symbolTableContainer"><div class="loading">Loading symbol data...</div></div>
         </div>
 
+        <!-- Psychology Insights -->
+        <div style="margin-bottom:0.75rem;margin-top:0.5rem;">
+            <span style="font-size:1.1rem;font-weight:600;color:#1f2937;">🧘 Psychology Insights</span>
+            <span style="font-size:0.8rem;color:#6b7280;margin-left:0.75rem;">How your mental state affects performance</span>
+        </div>
+
+        <div class="charts-row">
+            <div class="performance-table" style="margin-bottom:0;">
+                <div class="table-header">
+                    <h2 class="table-title">Emotion Before Trade</h2>
+                    <p class="table-subtitle">Which emotional state leads to the best results</p>
+                </div>
+                <div id="emotionTableContainer"><div class="loading">Loading...</div></div>
+            </div>
+            <div class="performance-table" style="margin-bottom:0;">
+                <div class="table-header">
+                    <h2 class="table-title">Confidence Level</h2>
+                    <p class="table-subtitle">How your confidence score (1–10) correlates with P&L</p>
+                </div>
+                <div id="confidenceTableContainer"><div class="loading">Loading...</div></div>
+            </div>
+        </div>
+
     </div><!-- /main-content -->
 
     <script>
     const token = localStorage.getItem('token');
+    const CURRENCY_SYM = { usd:'$', eur:'€', gbp:'£', jpy:'¥' };
+    const sym = CURRENCY_SYM[localStorage.getItem('currency') || 'usd'] || '$';
     if (!token) window.location.href = '/login.html';
 
     function logout() { localStorage.removeItem('token'); window.location.href = '/login.html'; }
@@ -297,8 +322,9 @@
             const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             if (res.ok) {
                 const { stats } = await res.json();
+                const fmt = n => Math.abs(parseFloat(n)).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
                 const totalPL = parseFloat(stats.totalPL);
-                document.getElementById('totalPL').textContent = `$${totalPL.toFixed(2)}`;
+                document.getElementById('totalPL').textContent = `${totalPL < 0 ? '-' : ''}${sym}${fmt(totalPL)}`;
                 document.getElementById('totalPL').style.color = totalPL >= 0 ? '#059669' : '#dc2626';
                 document.getElementById('plDesc').textContent = `${stats.wins} wins / ${stats.losses} losses`;
 
@@ -310,9 +336,9 @@
                 document.getElementById('profitFactorDesc').textContent =
                     pfVal > 1 ? 'Profitable system' : pfVal === 1 ? 'Break even' : pfVal === 0 ? 'No data' : 'Needs improvement';
 
-                document.getElementById('avgWin').textContent = `$${stats.avgWin}`;
-                document.getElementById('avgLoss').textContent = `$${stats.avgLoss}`;
-                document.getElementById('expectancy').textContent = `$${stats.expectancy}`;
+                document.getElementById('avgWin').textContent = `${sym}${fmt(stats.avgWin)}`;
+                document.getElementById('avgLoss').textContent = `${sym}${fmt(stats.avgLoss)}`;
+                document.getElementById('expectancy').textContent = `${parseFloat(stats.expectancy) < 0 ? '-' : ''}${sym}${fmt(stats.expectancy)}`;
             } else {
                 ['totalPL','winRate','profitFactor','avgWin','avgLoss','expectancy'].forEach(id => {
                     document.getElementById(id).textContent = '—';
@@ -339,7 +365,7 @@
             const { trades } = await res.json();
 
             if (!trades.length) {
-                ['symbolTableContainer','dayTableContainer'].forEach(id => {
+                ['symbolTableContainer','dayTableContainer','emotionTableContainer','confidenceTableContainer'].forEach(id => {
                     document.getElementById(id).innerHTML = '<div class="empty-state"><p>No trades in this period</p></div>';
                 });
                 clearCharts();
@@ -355,6 +381,8 @@
             buildStreakAnalysis(sorted);
             buildDayAnalysis(sorted);
             buildSymbolTable(trades);
+            buildEmotionTable(trades);
+            buildConfidenceTable(trades);
         } catch (e) { console.error('Trade data error:', e); }
     }
 
@@ -545,22 +573,22 @@
         const DAY = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
         const groups = {};
-        DAY.forEach(d => { groups[d] = []; });
+        DAY.forEach(d => { groups[d] = { pls: [], wins: 0 }; });
 
         const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
         // +12h before getUTCDay(): handles dates stored as local midnight in any UTC±12 timezone
         const tradeDay = d => DAY_NAMES[new Date(new Date(d).getTime() + 12 * 60 * 60 * 1000).getUTCDay()];
         sorted.forEach(t => {
             const day = tradeDay(t.date);
-            if (!groups[day]) groups[day] = [];
-            groups[day].push(parseFloat(t.profitLoss) || 0);
+            if (!groups[day]) groups[day] = { pls: [], wins: 0 };
+            groups[day].pls.push(parseFloat(t.profitLoss) || 0);
+            if (t.result === 'win') groups[day].wins++;
         });
 
         const rows = DAY.map(day => {
-            const pls = groups[day];
+            const { pls, wins } = groups[day];
             const n = pls.length;
             if (n === 0) return null;
-            const wins = pls.filter(v => v > 0).length;
             const winRate = (wins / n) * 100;
             const ci = wilsonLow(wins, n);
             const avgPL = pls.reduce((a,b)=>a+b,0) / n;
@@ -617,7 +645,7 @@
                     <span style="font-size:0.8rem;color:${r.ci>=50?'#059669':r.ci>=45?'#d97706':'#dc2626'};font-weight:600;min-width:2.5rem;">${r.ci.toFixed(0)}%</span>
                   </div>
                 </td>
-                <td class="${r.avgPL>=0?'stat-positive':'stat-negative'}">${r.avgPL>=0?'+':''}$${r.avgPL.toFixed(2)}</td>
+                <td class="${r.avgPL>=0?'stat-positive':'stat-negative'}">${r.avgPL>=0?'+':'-'}${sym}${Math.abs(r.avgPL).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
                 <td>
                   <div class="score-bar-wrap">
                     <div class="score-bar-bg"><div class="score-bar-fill" style="width:${(r.score*100).toFixed(0)}%"></div></div>
@@ -656,15 +684,111 @@
                     <td><strong>${sym}</strong></td>
                     <td>${s.trades.length}</td>
                     <td>${wr}%</td>
-                    <td class="${s.totalPL>=0?'stat-positive':'stat-negative'}">${s.totalPL>=0?'+':''}$${s.totalPL.toFixed(2)}</td>
-                    <td class="stat-positive">+$${best.toFixed(2)}</td>
-                    <td class="stat-negative">$${worst.toFixed(2)}</td>
+                    <td class="${s.totalPL>=0?'stat-positive':'stat-negative'}">${s.totalPL>=0?'+':'-'}${sym}${Math.abs(s.totalPL).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                    <td class="stat-positive">+${sym}${best.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                    <td class="stat-negative">-${sym}${Math.abs(worst).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
                 </tr>`;
             }).join('')}
             </tbody>
         </table>`;
 
         document.getElementById('symbolTableContainer').innerHTML = html;
+    }
+
+    // ── 7. Emotion Before table ────────────────────────────────────────────────
+    function buildEmotionTable(trades) {
+        const withEmotion = trades.filter(t => t.emotionBefore);
+        if (!withEmotion.length) {
+            document.getElementById('emotionTableContainer').innerHTML = '<div class="empty-state"><p>No emotion data yet — log it when adding trades</p></div>';
+            return;
+        }
+
+        const groups = {};
+        withEmotion.forEach(t => {
+            const e = t.emotionBefore.charAt(0).toUpperCase() + t.emotionBefore.slice(1);
+            if (!groups[e]) groups[e] = { pls: [], wins: 0 };
+            const pl = parseFloat(t.profitLoss) || 0;
+            groups[e].pls.push(pl);
+            if (t.result === 'win') groups[e].wins++;
+        });
+
+        const rows = Object.entries(groups).map(([emotion, d]) => {
+            const n = d.pls.length;
+            const wr = (d.wins / n) * 100;
+            const avgPL = d.pls.reduce((a, b) => a + b, 0) / n;
+            return { emotion, n, wr, avgPL };
+        }).sort((a, b) => b.wr - a.wr);
+
+        const emotionEmoji = { Confident:'😎', Anxious:'😰', Excited:'🤩', Fearful:'😨', Calm:'😌', Greedy:'🤑', Disciplined:'🧘', Impulsive:'😤', Neutral:'😐' };
+
+        const html = `<table>
+            <thead><tr>
+                <th>Emotion</th><th>Trades</th><th>Win Rate</th><th>Avg P&L</th>
+            </tr></thead>
+            <tbody>
+            ${rows.map(r => `<tr>
+                <td><strong>${emotionEmoji[r.emotion] || ''} ${r.emotion}</strong></td>
+                <td>${r.n}</td>
+                <td style="color:${r.wr>=50?'#059669':'#dc2626'};font-weight:600;">${r.wr.toFixed(1)}%</td>
+                <td class="${r.avgPL>=0?'stat-positive':'stat-negative'}">${r.avgPL>=0?'+':'-'}${sym}${Math.abs(r.avgPL).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+            </tr>`).join('')}
+            </tbody>
+        </table>`;
+
+        document.getElementById('emotionTableContainer').innerHTML = html;
+    }
+
+    // ── 8. Confidence level table ──────────────────────────────────────────────
+    function buildConfidenceTable(trades) {
+        const withConf = trades.filter(t => t.confidenceLevel != null);
+        if (!withConf.length) {
+            document.getElementById('confidenceTableContainer').innerHTML = '<div class="empty-state"><p>No confidence data yet — log it when adding trades</p></div>';
+            return;
+        }
+
+        // Group into buckets: Low (1-3), Medium (4-6), High (7-10)
+        const buckets = {
+            'Low (1–3)':    { pls: [], wins: 0, range: [1,3] },
+            'Medium (4–6)': { pls: [], wins: 0, range: [4,6] },
+            'High (7–10)':  { pls: [], wins: 0, range: [7,10] },
+        };
+
+        withConf.forEach(t => {
+            const c = parseInt(t.confidenceLevel);
+            const key = c <= 3 ? 'Low (1–3)' : c <= 6 ? 'Medium (4–6)' : 'High (7–10)';
+            const pl = parseFloat(t.profitLoss) || 0;
+            buckets[key].pls.push(pl);
+            if (t.result === 'win') buckets[key].wins++;
+        });
+
+        const rows = Object.entries(buckets)
+            .filter(([, d]) => d.pls.length > 0)
+            .map(([label, d]) => {
+                const n = d.pls.length;
+                const wr = (d.wins / n) * 100;
+                const avgPL = d.pls.reduce((a, b) => a + b, 0) / n;
+                const totalPL = d.pls.reduce((a, b) => a + b, 0);
+                return { label, n, wr, avgPL, totalPL };
+            });
+
+        const bucketEmoji = { 'Low (1–3)':'🔴', 'Medium (4–6)':'🟡', 'High (7–10)':'🟢' };
+
+        const html = `<table>
+            <thead><tr>
+                <th>Confidence</th><th>Trades</th><th>Win Rate</th><th>Avg P&L</th><th>Total P&L</th>
+            </tr></thead>
+            <tbody>
+            ${rows.map(r => `<tr>
+                <td><strong>${bucketEmoji[r.label] || ''} ${r.label}</strong></td>
+                <td>${r.n}</td>
+                <td style="color:${r.wr>=50?'#059669':'#dc2626'};font-weight:600;">${r.wr.toFixed(1)}%</td>
+                <td class="${r.avgPL>=0?'stat-positive':'stat-negative'}">${r.avgPL>=0?'+':'-'}${sym}${Math.abs(r.avgPL).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                <td class="${r.totalPL>=0?'stat-positive':'stat-negative'}">${r.totalPL>=0?'+':'-'}${sym}${Math.abs(r.totalPL).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+            </tr>`).join('')}
+            </tbody>
+        </table>`;
+
+        document.getElementById('confidenceTableContainer').innerHTML = html;
     }
 
     // Initial load

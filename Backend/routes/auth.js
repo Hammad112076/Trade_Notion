@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Trade = require('../models/Trade');
+const Goal = require('../models/Goal');
+const UserSettings = require('../models/UserSettings');
 const { protect } = require('../middleware/auth');
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -179,6 +182,24 @@ router.put('/notifications', protect, async (req, res) => {
     res.json({ success: true, user });
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+// @route   DELETE /api/auth/account
+// @desc    Delete account and all associated data
+// @access  Private
+router.delete('/account', protect, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    await Promise.all([
+      Trade.deleteMany({ user: userId }),
+      Goal.deleteMany({ user: userId }),
+      UserSettings.deleteMany({ user: userId }),
+      User.findByIdAndDelete(userId),
+    ]);
+    res.json({ success: true, message: 'Account deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting account', error: error.message });
   }
 });
 

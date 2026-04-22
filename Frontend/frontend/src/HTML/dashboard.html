@@ -457,6 +457,8 @@
 
     <script>
         const token = localStorage.getItem('token');
+        const CURRENCY_SYM = { usd:'$', eur:'€', gbp:'£', jpy:'¥' };
+        const sym = CURRENCY_SYM[localStorage.getItem('currency') || 'usd'] || '$';
         if (!token) {
             window.location.href = '/login.html';
         }
@@ -499,9 +501,11 @@
                     const data = await response.json();
                     const stats = data.stats;
 
+                    const fmt = n => Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+
                     // Total P&L
                     const totalPL = parseFloat(stats.totalPL);
-                    document.getElementById('totalPL').textContent = `$${totalPL.toFixed(2)}`;
+                    document.getElementById('totalPL').textContent = `${totalPL < 0 ? '-' : ''}${sym}${fmt(totalPL)}`;
                     document.getElementById('totalPL').style.color = totalPL >= 0 ? '#059669' : '#dc2626';
                     document.getElementById('plChange').textContent = `${stats.wins} wins / ${stats.losses} losses`;
                     document.getElementById('plChange').className = totalPL >= 0 ? 'stat-change positive' : 'stat-change negative';
@@ -516,7 +520,7 @@
 
                     // Profit Factor
                     document.getElementById('profitFactor').textContent = parseFloat(stats.profitFactor).toFixed(2);
-                    document.getElementById('profitFactorDetail').textContent = `Expectancy: $${stats.expectancy}`;
+                    document.getElementById('profitFactorDetail').textContent = `Expectancy: ${sym}${fmt(parseFloat(stats.expectancy))}`;
                 } else {
                     ['totalPL','winRate','totalTrades','profitFactor'].forEach(id => {
                         document.getElementById(id).textContent = '—';
@@ -576,7 +580,7 @@
                                             <td>${date}</td>
                                             <td><strong>${trade.symbol}</strong></td>
                                             <td>${(trade.direction || '').charAt(0).toUpperCase() + (trade.direction || '').slice(1)}</td>
-                                            <td style="color: ${plColor}; font-weight: 600;">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}</td>
+                                            <td style="color: ${plColor}; font-weight: 600;">${pl >= 0 ? '+' : '-'}${sym}${Math.abs(pl).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                                             <td><span class="badge ${trade.result}">${(trade.result || '').charAt(0).toUpperCase() + (trade.result || '').slice(1)}</span></td>
                                         </tr>
                                     `;

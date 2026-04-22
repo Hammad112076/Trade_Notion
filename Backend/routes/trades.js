@@ -225,6 +225,19 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// @route   DELETE /api/trades/all
+// @desc    Delete all trades for logged-in user
+// @access  Private
+router.delete('/all', async (req, res) => {
+  try {
+    const result = await Trade.deleteMany({ user: req.user._id });
+    res.json({ success: true, deleted: result.deletedCount });
+  } catch (error) {
+    console.error('Error deleting all trades:', error);
+    res.status(500).json({ message: 'Error deleting trades', error: error.message });
+  }
+});
+
 // @route   DELETE /api/trades/:id
 // @desc    Delete a trade
 // @access  Private

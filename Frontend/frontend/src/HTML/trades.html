@@ -261,16 +261,48 @@
         .modal-field { display: flex; flex-direction: column; gap: .4rem; margin-bottom: .25rem; }
         .modal-field.full { grid-column: 1/-1; }
         .modal-field label { font-size: .8rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; }
-        .modal-field input, .modal-field select {
+        .modal-field input, .modal-field select, .modal-field textarea {
             padding: .6rem .75rem; border: 2px solid #e5e7eb; border-radius: 6px;
-            font-size: .9rem; width: 100%;
+            font-size: .9rem; width: 100%; font-family: inherit; box-sizing: border-box;
         }
-        .modal-field input:focus, .modal-field select:focus { outline: none; border-color: #4F46E5; }
+        .modal-field textarea { resize: vertical; min-height: 80px; }
+        .modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { outline: none; border-color: #4F46E5; }
+        .edit-tags-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+        .edit-tag-chip { display: flex; align-items: center; gap: 4px; padding: 3px 10px; background: #f1f1ef; border-radius: 4px; font-size: 12px; border: 1px solid #e5e7eb; }
+        .edit-tag-chip .rm { cursor: pointer; color: #6b7280; font-size: 14px; line-height: 1; }
+        .edit-tag-chip .rm:hover { color: #dc2626; }
         .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.5rem; }
         .modal-actions button { padding: .6rem 1.25rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: .9rem; }
         .btn-save-modal { background: #4F46E5; color: white; }
         .btn-save-modal:hover { background: #4338CA; }
         .btn-cancel-modal { background: #f3f4f6; color: #374151; }
+
+        /* CSV info modal */
+        .csv-info-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+            z-index: 2000; justify-content: center; align-items: center;
+        }
+        .csv-info-overlay.open { display: flex; }
+        .csv-info-box {
+            background: white; border-radius: 12px; padding: 2rem;
+            max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+        }
+        .csv-info-box h3 { font-size: 1.1rem; color: #1f2937; margin-bottom: .25rem; }
+        .csv-info-box p  { font-size: .82rem; color: #6b7280; margin-bottom: 1.25rem; }
+        .csv-cols-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: .35rem .75rem;
+            margin-bottom: 1.25rem;
+        }
+        .csv-col-item {
+            background: #f3f4f6; border-radius: 6px; padding: .35rem .65rem;
+            font-size: .82rem; color: #1f2937; font-weight: 500;
+        }
+        .csv-col-item.required { background: #ede9fe; color: #4F46E5; }
+        .csv-info-close {
+            width: 100%; padding: .6rem; background: #4F46E5; color: white;
+            border: none; border-radius: 8px; font-size: .9rem; font-weight: 600; cursor: pointer;
+        }
+        .csv-info-close:hover { background: #4338CA; }
 
         /* CSV import */
         .import-bar {
@@ -370,7 +402,9 @@
             <div style="display:flex;gap:.75rem;">
                 <a href="/new-trade.html" class="btn btn-primary">+ Add Trade</a>
                 <button class="btn btn-secondary" onclick="document.getElementById('csvFileInput').click()">📂 Import CSV</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('csvInfoOverlay').classList.add('open')">📋 Sample CSV</button>
                 <button class="btn btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
+                <button class="btn btn-secondary" style="color:#dc2626;border-color:#dc2626;" onclick="deleteAllTrades()">🗑 Delete All Trades</button>
             </div>
         </div>
 
@@ -455,7 +489,7 @@
                     <input type="number" id="editShares" placeholder="e.g. 1">
                 </div>
                 <div class="modal-field">
-                    <label>P&L ($)</label>
+                    <label>P&L</label>
                     <input type="number" id="editPL" step="0.01" placeholder="e.g. 250">
                 </div>
                 <div class="modal-field">
@@ -478,13 +512,51 @@
                         <option value="after-hours">After Hours</option>
                     </select>
                 </div>
+                <div class="modal-field">
+                    <label>Confidence (1–10)</label>
+                    <input type="number" id="editConfidence" min="1" max="10" placeholder="e.g. 7">
+                </div>
+                <div class="modal-field">
+                    <label>Emotion Before</label>
+                    <select id="editEmotionBefore">
+                        <option value="">— None —</option>
+                        <option value="confident">Confident</option>
+                        <option value="anxious">Anxious</option>
+                        <option value="excited">Excited</option>
+                        <option value="fearful">Fearful</option>
+                        <option value="calm">Calm</option>
+                        <option value="greedy">Greedy</option>
+                        <option value="disciplined">Disciplined</option>
+                        <option value="impulsive">Impulsive</option>
+                        <option value="neutral">Neutral</option>
+                    </select>
+                </div>
+                <div class="modal-field">
+                    <label>Emotion After</label>
+                    <select id="editEmotionAfter">
+                        <option value="">— None —</option>
+                        <option value="satisfied">Satisfied</option>
+                        <option value="disappointed">Disappointed</option>
+                        <option value="regretful">Regretful</option>
+                        <option value="proud">Proud</option>
+                        <option value="frustrated">Frustrated</option>
+                        <option value="relieved">Relieved</option>
+                        <option value="angry">Angry</option>
+                        <option value="neutral">Neutral</option>
+                    </select>
+                </div>
+                <div class="modal-field full">
+                    <label>Mistake Tags</label>
+                    <input type="text" id="editMistakeTagInput" placeholder="Type a tag and press Enter…">
+                    <div class="edit-tags-list" id="editMistakeTagsList"></div>
+                </div>
                 <div class="modal-field full">
                     <label>What Went Right</label>
-                    <input type="text" id="editWentRight" placeholder="What did you execute well?">
+                    <textarea id="editWentRight" placeholder="What did you execute well?"></textarea>
                 </div>
                 <div class="modal-field full">
                     <label>What Went Wrong</label>
-                    <input type="text" id="editWentWrong" placeholder="What could be improved?">
+                    <textarea id="editWentWrong" placeholder="What could be improved?"></textarea>
                 </div>
             </div>
             <div id="editMsg" style="font-size:.85rem;margin-top:.75rem;display:none;"></div>
@@ -497,6 +569,8 @@
 
     <script>
         const token = localStorage.getItem('token');
+        const CURRENCY_SYM = { usd:'$', eur:'€', gbp:'£', jpy:'¥' };
+        const sym = CURRENCY_SYM[localStorage.getItem('currency') || 'usd'] || '$';
         if (!token) window.location.href = '/login.html';
         function logout() { localStorage.removeItem('token'); window.location.href = '/login.html'; }
 
@@ -505,6 +579,14 @@
 
         let allTrades = [];
         let editingId = null;
+        let editMistakeTags = [];
+
+        function renderEditTags() {
+            document.getElementById('editMistakeTagsList').innerHTML = editMistakeTags.map(t =>
+                `<div class="edit-tag-chip">${t}<span class="rm" onclick="removeEditTag('${t}')">×</span></div>`
+            ).join('');
+        }
+        function removeEditTag(t) { editMistakeTags = editMistakeTags.filter(x => x !== t); renderEditTags(); }
 
         // ── Load & display ────────────────────────────────────────────────
         async function loadTrades() {
@@ -553,7 +635,7 @@
                                 <td><span class="badge ${dir}">${dir.charAt(0).toUpperCase()+dir.slice(1)}</span></td>
                                 <td>${trade.model || '—'}</td>
                                 <td>${trade.shares || '—'}</td>
-                                <td style="color:${plColor};font-weight:600;">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}</td>
+                                <td style="color:${plColor};font-weight:600;">${pl >= 0 ? '+' : ''}${sym}${pl.toFixed(2)}</td>
                                 <td><span class="badge ${result}">${result.charAt(0).toUpperCase()+result.slice(1)}</span></td>
                                 <td>
                                     <button class="action-btn edit"   onclick="openEditModal('${trade._id}')">Edit</button>
@@ -578,9 +660,15 @@
             document.getElementById('editShares').value    = trade.shares     || '';
             document.getElementById('editPL').value        = trade.profitLoss != null ? trade.profitLoss : '';
             document.getElementById('editResult').value    = trade.result     || 'win';
-            document.getElementById('editSession').value   = trade.session    || '';
-            document.getElementById('editWentRight').value = trade.whatWentRight  || '';
-            document.getElementById('editWentWrong').value = trade.whatWentWrongI || '';
+            document.getElementById('editSession').value       = trade.session         || '';
+            document.getElementById('editConfidence').value    = trade.confidenceLevel != null ? trade.confidenceLevel : '';
+            document.getElementById('editEmotionBefore').value = trade.emotionBefore   || '';
+            document.getElementById('editEmotionAfter').value  = trade.emotionAfter    || '';
+            document.getElementById('editWentRight').value     = trade.whatWentRight   || '';
+            document.getElementById('editWentWrong').value     = trade.whatWentWrongI  || '';
+            editMistakeTags = Array.isArray(trade.mistakeTag) ? [...trade.mistakeTag] : [];
+            document.getElementById('editMistakeTagInput').value = '';
+            renderEditTags();
             document.getElementById('editMsg').style.display = 'none';
             document.getElementById('editModal').classList.add('open');
         }
@@ -588,6 +676,10 @@
         function closeEditModal() {
             document.getElementById('editModal').classList.remove('open');
             editingId = null;
+            editMistakeTags = [];
+            const saveBtn = document.querySelector('.btn-save-modal');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save Changes';
         }
         document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditModal(); });
 
@@ -610,9 +702,13 @@
                 profitLoss:pl,
                 result:    document.getElementById('editResult').value,
                 notes: {
-                    session:      document.getElementById('editSession').value || null,
-                    whatWentRight:document.getElementById('editWentRight').value || null,
-                    whatWentWrong:document.getElementById('editWentWrong').value || null,
+                    session:        document.getElementById('editSession').value       || null,
+                    confidenceLevel:parseInt(document.getElementById('editConfidence').value) || null,
+                    emotionBefore:  document.getElementById('editEmotionBefore').value || null,
+                    emotionAfter:   document.getElementById('editEmotionAfter').value  || null,
+                    mistakeTags:    editMistakeTags,
+                    whatWentRight:  document.getElementById('editWentRight').value     || null,
+                    whatWentWrong:  document.getElementById('editWentWrong').value     || null,
                 }
             };
 
@@ -641,6 +737,22 @@
                 const res = await fetch(`/api/trades/${id}`, { method:'DELETE', headers: authHeader });
                 if (res.ok) loadTrades();
                 else alert('Failed to delete trade.');
+            } catch (e) { alert('Network error.'); }
+        }
+
+        // ── Delete All Trades ─────────────────────────────────────────────
+        async function deleteAllTrades() {
+            if (!confirm('Delete ALL trades? This cannot be undone.')) return;
+            if (!confirm('Are you sure? All 261+ trades will be permanently deleted.')) return;
+            try {
+                const res = await fetch('/api/trades/all', { method: 'DELETE', headers: jsonHeader });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`Deleted ${data.deleted} trade(s).`);
+                    loadTrades();
+                } else {
+                    alert('Error: ' + (data.message || 'Could not delete trades.'));
+                }
             } catch (e) { alert('Network error.'); }
         }
 
@@ -686,19 +798,19 @@
             // Required: symbol. Accept flexible column names.
             const find = (...names) => { for (const n of names) { const i = col(n); if (i >= 0) return i; } return -1; };
             const colMap = {
-                date:      find('date','tradedate'),
+                date:      find('date','tradedate','dateandtime','datetime','date/time'),
                 symbol:    find('symbol','trade/symbol','ticker','instrument','asset'),
                 direction: find('direction','type','side','tradetype','trade/direction'),
-                strategy:  find('strategy','model','setup','strategyname','trade/model'),
-                shares:    find('shares','contracts','qty','quantity','size','trade/shares'),
-                pl:        find('p&l','pl','pnl','profit/loss','profitloss','profit','gain','cumulativepnl'),
+                strategy:  find('strategy','model','setup','strategyname','trade/model','strat','playbook','setupname'),
+                shares:    find('shares','contracts','qty','quantity','size','trade/shares','volume'),
+                pl:        find('p&l','pl','pnl','pandl','pnl_usd','plnusd','profit/loss','profitloss','profit','gain','return','netprofit','netpl','net','cumulativepnl','realizedpnl','realizedpl'),
                 result:    find('result','status','outcome','trade/result'),
                 session:   find('session','trade/session'),
-                confidence:find('confidencelevel','confidence'),
-                emotionB:  find('emotionbefore'),
-                emotionA:  find('emotionafter'),
-                wentRight: find('whatwentright'),
-                wentWrong: find('whatwentwrong'),
+                confidence:find('confidencelevel','confidence_level','confidence'),
+                emotionB:  find('emotionbefore','emotion_before','emotionb','before'),
+                emotionA:  find('emotionafter','emotion_after','emotiona','after'),
+                wentRight: find('whatwentright','went_right','wentright','whatwentwell','went_well'),
+                wentWrong: find('whatwentwrong','went_wrong','wentwrong','whatwentbad','went_bad'),
                 tradingDay:find('tradingday','week'),
             };
 
@@ -708,6 +820,7 @@
             }
 
             // Debug: log first data row so we can verify column alignment
+            console.log('Raw headers (normalized):', rawHeaders);
             console.log('Header map:', colMap);
             console.log('First data row:', parseRow(lines[1]));
             console.log('Symbol value from first row:', parseRow(lines[1])[colMap.symbol]);
@@ -729,15 +842,27 @@
 
             importStatus.textContent = `Importing 0 / ${rows.length}…`;
 
+            // Handle currency-formatted values: "$182.50", "-$50", "(50.00)" = -50
+            function parseMoney(v) {
+                if (v == null || v === '') return 0;
+                const s = String(v).trim();
+                const negative = s.startsWith('(') && s.endsWith(')');
+                const n = parseFloat(s.replace(/[^0-9.\-]/g, ''));
+                if (isNaN(n)) return 0;
+                return negative ? -Math.abs(n) : n;
+            }
+
             for (let i = 0; i < rows.length; i++) {
                 const r = rows[i];
                 const get = (key) => colMap[key] >= 0 ? (r[colMap[key]] || '').trim() : '';
-                const pl  = colMap.pl >= 0 ? parseFloat(r[colMap.pl]) || 0 : 0;
+                const pl  = colMap.pl >= 0 ? parseMoney(r[colMap.pl]) : 0;
+                const stratRaw = get('strategy');
                 const tradeData = {
                     symbol:     get('symbol').toUpperCase(),
                     date:       get('date') || new Date().toISOString().slice(0,10),
                     tradeType:  (get('direction') || 'long').toLowerCase(),
-                    strategy:   get('strategy'),
+                    strategy:   stratRaw || null,
+                    model:      stratRaw || null,
                     shares:     colMap.shares >= 0 ? parseFloat(r[colMap.shares]) || null : null,
                     profitLoss: pl,
                     status:     get('result').toLowerCase() || (pl > 0 ? 'win' : pl < 0 ? 'loss' : 'breakeven'),
@@ -767,6 +892,14 @@
             if (ok > 0) loadTrades();
         }
 
+        // ── Edit modal tag input ──────────────────────────────────────────
+        document.getElementById('editMistakeTagInput').addEventListener('keypress', e => {
+            if (e.key !== 'Enter') return; e.preventDefault();
+            const t = e.target.value.trim();
+            if (t && !editMistakeTags.includes(t)) { editMistakeTags.push(t); renderEditTags(); }
+            e.target.value = '';
+        });
+
         // ── Filters ───────────────────────────────────────────────────────
         document.getElementById('symbolFilter').addEventListener('input', loadTrades);
         document.getElementById('typeFilter').addEventListener('change', loadTrades);
@@ -775,5 +908,29 @@
 
         loadTrades();
     </script>
+
+    <!-- CSV Column Names Modal -->
+    <div class="csv-info-overlay" id="csvInfoOverlay" onclick="if(event.target===this)this.classList.remove('open')">
+        <div class="csv-info-box">
+            <h3>CSV Column Names</h3>
+            <p>Your CSV header row can include any of these column names. Only <strong style="color:#4F46E5">Symbol</strong> is required — everything else is optional.</p>
+            <div class="csv-cols-grid">
+                <div class="csv-col-item required">Symbol</div>
+                <div class="csv-col-item">Date</div>
+                <div class="csv-col-item">Direction</div>
+                <div class="csv-col-item">Strategy</div>
+                <div class="csv-col-item">Shares</div>
+                <div class="csv-col-item">P&amp;L</div>
+                <div class="csv-col-item">Result</div>
+                <div class="csv-col-item">Session</div>
+                <div class="csv-col-item">Confidence</div>
+                <div class="csv-col-item">Emotion Before</div>
+                <div class="csv-col-item">Emotion After</div>
+                <div class="csv-col-item">What Went Right</div>
+                <div class="csv-col-item">What Went Wrong</div>
+            </div>
+            <button class="csv-info-close" onclick="document.getElementById('csvInfoOverlay').classList.remove('open')">Got it</button>
+        </div>
+    </div>
 </body>
 </html>

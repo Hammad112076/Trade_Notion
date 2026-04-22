@@ -170,89 +170,15 @@
         /* About Section */
         .about {
             padding: 4rem 2rem;
-            background: #f3f4f6;
-        }
-
-        .about-container {
             max-width: 1200px;
             margin: 0 auto;
         }
 
         .about h2 {
-            font-size: 2.5rem;
-            margin-bottom: 2rem;
-            text-align: center;
-            color: #1f2937;
-        }
-
-        .about p {
-            font-size: 1.1rem;
-            color: #4b5563;
-            max-width: 800px;
-            margin: 0 auto 1.5rem;
-            text-align: center;
-            line-height: 1.8;
-        }
-
-        /* Pricing Section */
-        .pricing {
-            padding: 4rem 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .pricing h2 {
             text-align: center;
             font-size: 2.5rem;
             margin-bottom: 3rem;
             color: #1f2937;
-        }
-
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-        }
-
-        .pricing-card {
-            padding: 2rem;
-            border-radius: 10px;
-            border: 2px solid #e5e7eb;
-            text-align: center;
-            transition: all 0.3s;
-        }
-
-        .pricing-card.featured {
-            border-color: #4F46E5;
-            transform: scale(1.05);
-            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.2);
-        }
-
-        .pricing-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .pricing-card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .price {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #4F46E5;
-            margin-bottom: 1rem;
-        }
-
-        .pricing-features {
-            list-style: none;
-            margin-bottom: 2rem;
-        }
-
-        .pricing-features li {
-            padding: 0.5rem 0;
-            color: #6b7280;
         }
 
         /* Footer */
@@ -281,11 +207,10 @@
             <ul class="nav-links">
                 <li><a href="#features">Features</a></li>
                 <li><a href="#about">About Us</a></li>
-                <li><a href="#pricing">Pricing</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
             <div class="nav-buttons">
-                <a href="/login.html" class="btn btn-Login">Login</a>
+                <a href="/login.html" class="btn btn-login">Login</a>
                 <a href="/register.html" class="btn btn-signup">Sign Up</a>
             </div>
         </div>
@@ -328,48 +253,32 @@
                 <p>Your trading data is encrypted and protected with bank-level security protocols.</p>
             </div>
             <div class="feature-card">
-    <div class="feature-icon">📅</div>
-    <h3>Trading Calendar</h3>
-    <p>Visualize your trading activity and patterns with an interactive calendar view of all your trades.</p>
-</div>
+                <div class="feature-icon">📅</div>
+                <h3>Trading Calendar</h3>
+                <p>Visualise every trading day on a calendar — see your wins, losses, and P&L at a glance.</p>
+            </div>
         </div>
     </section>
 
     <!-- About Section -->
     <section id="about" class="about">
-        <div class="about-container">
-            <h2>About Us</h2>
-            <p>Trade Notion was founded by traders, for traders. We understand the challenges of maintaining discipline, tracking performance, and continuously improving your trading strategy.</p>
-            <p>Our mission is to provide traders with the tools they need to analyze their performance, identify patterns, and make data-driven decisions. Whether you're a day trader, swing trader, or long-term investor, Trade Notion helps you stay accountable and focused on your goals.</p>
-            <p>Join thousands of traders who have already transformed their trading with Trade Notion.</p>
-        </div>
-    </section>
-
-    <!-- Pricing Section -->
-    <section id="pricing" class="pricing">
-        <h2>Choose Your Plan</h2>
-        <div class="pricing-grid">
-            <div class="pricing-card">
-                <h3>Free</h3>
-                <div class="price">$0<span style="font-size: 1rem;">/month</span></div>
-                <ul class="pricing-features">
-                    <li>✓ Up to 20 trades/month</li>
-                    <li>✓ Basic analytics</li>
-                    <li>✓ Trade journal</li>
-                    <li>✓ Goal tracking</li>
-                </ul>
-                <a href="/register.html" class="btn btn-signup">Get Started</a>
+        <h2>Built by Traders, for Traders</h2>
+        <p style="text-align:center;color:#6b7280;max-width:700px;margin:0 auto 3rem;font-size:1.1rem;line-height:1.8;">Trade Notion was founded by traders, for traders. We understand the challenges of maintaining discipline, tracking performance, and continuously improving your trading strategy. Whether you're a day trader, swing trader, or long-term investor — Trade Notion helps you stay accountable and focused on your goals.</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>Stay Accountable</h3>
+                <p>Every trade logged is a data point. Build the habit of reviewing your performance and identifying what's really working.</p>
             </div>
-            <div class="pricing-card featured">
-                <h3>Pro</h3>
-                <div class="price">$29<span style="font-size: 1rem;">/month</span></div>
-                <ul class="pricing-features">
-                    <li>✓ Unlimited trades</li>
-                    <li>✓ Advanced analytics</li>
-                    <li>✓ Custom reports</li>
-                    <li>✓ Priority support</li>
-                </ul>
-                <a href="/register.html" class="btn btn-signup">Start Free Trial</a>
+            <div class="feature-card">
+                <div class="feature-icon">🧠</div>
+                <h3>Understand Your Edge</h3>
+                <p>Deep analytics reveal your best strategies, best days, and the emotional states behind your biggest wins and losses.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📈</div>
+                <h3>Grow Consistently</h3>
+                <p>Set goals, track progress, and use real data to make smarter decisions — not gut feeling.</p>
             </div>
         </div>
     </section>
@@ -377,9 +286,11 @@
     <!-- Footer -->
     <footer id="contact">
         <p>&copy; 2026 Trade Notion. All rights reserved.</p>
-        <p>
-            <a href="#">Privacy Policy</a> | 
-            <a href="#">Terms of Service</a> | 
+        <p style="margin-top:0.75rem;">
+            <a href="/terms.html">Terms of Service</a>
+            &nbsp;·&nbsp;
+            <a href="/privacy.html">Privacy Policy</a>
+            &nbsp;·&nbsp;
             <a href="mailto:support@tradenotion.com">support@tradenotion.com</a>
         </p>
     </footer>

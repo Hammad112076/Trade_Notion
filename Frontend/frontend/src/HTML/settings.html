@@ -396,7 +396,10 @@
                     🎨 Preferences
                 </div>
                 <div class="settings-nav-item" onclick="showSection('subscription', this)">
-                    💳 Subscription
+                    ✅ Plan
+                </div>
+                <div class="settings-nav-item" onclick="showSection('danger', this)" style="color:#dc2626;">
+                    🗑 Delete Account
                 </div>
             </div>
 
@@ -565,18 +568,75 @@
                     </div>
                 </div>
 
-                <!-- Subscription Section -->
+                <!-- Plan Section -->
                 <div id="subscription" class="settings-section">
-                    <h2 class="section-title">Subscription</h2>
-                    <p class="section-description">Your current plan</p>
+                    <h2 class="section-title">Your Plan</h2>
+                    <p class="section-description">Trade Notion is completely free — no subscriptions, no limits</p>
 
-                    <div id="planCard" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; color: white; margin-bottom: 2rem;">
-                        <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;" id="planName">Loading…</h3>
-                        <p style="opacity: 0.9;" id="planStatus">Checking status…</p>
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; color: white; margin-bottom: 2rem;">
+                        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;">
+                            <span style="font-size:1.75rem;">✅</span>
+                            <h3 style="font-size: 1.5rem;">Free Plan</h3>
+                        </div>
+                        <p style="opacity: 0.9;">Active — all features included at no cost</p>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem;">
+                        <div style="background:#f0fdf4;border-radius:8px;padding:1rem;display:flex;gap:.6rem;align-items:flex-start;">
+                            <span>📝</span>
+                            <div>
+                                <strong style="color:#1f2937;font-size:.9rem;">Unlimited Trades</strong>
+                                <p style="color:#6b7280;font-size:.8rem;margin-top:.15rem;">Log as many trades as you need</p>
+                            </div>
+                        </div>
+                        <div style="background:#f0fdf4;border-radius:8px;padding:1rem;display:flex;gap:.6rem;align-items:flex-start;">
+                            <span>📈</span>
+                            <div>
+                                <strong style="color:#1f2937;font-size:.9rem;">Full Analytics</strong>
+                                <p style="color:#6b7280;font-size:.8rem;margin-top:.15rem;">All charts and insights included</p>
+                            </div>
+                        </div>
+                        <div style="background:#f0fdf4;border-radius:8px;padding:1rem;display:flex;gap:.6rem;align-items:flex-start;">
+                            <span>🎯</span>
+                            <div>
+                                <strong style="color:#1f2937;font-size:.9rem;">Goal Tracking</strong>
+                                <p style="color:#6b7280;font-size:.8rem;margin-top:.15rem;">Set and monitor your trading goals</p>
+                            </div>
+                        </div>
+                        <div style="background:#f0fdf4;border-radius:8px;padding:1rem;display:flex;gap:.6rem;align-items:flex-start;">
+                            <span>📅</span>
+                            <div>
+                                <strong style="color:#1f2937;font-size:.9rem;">Calendar & Reports</strong>
+                                <p style="color:#6b7280;font-size:.8rem;margin-top:.15rem;">Visual calendar and detailed reports</p>
+                            </div>
+                        </div>
                     </div>
 
                     <h3 style="margin-bottom: 1rem; color: #1f2937;">Account Info</h3>
-                    <ul id="accountInfo" style="margin-bottom: 2rem; color: #6b7280; line-height: 2;"></ul>
+                    <ul id="accountInfo" style="color: #6b7280; line-height: 2; list-style:none;"></ul>
+                </div>
+                <!-- Danger Zone Section -->
+                <div id="danger" class="settings-section">
+                    <h2 class="section-title" style="color:#dc2626;">Delete Account</h2>
+                    <p class="section-description">Permanently delete your account and all your data. This cannot be undone.</p>
+
+                    <div style="border:2px solid #fee2e2;border-radius:10px;padding:1.5rem;background:#fff5f5;">
+                        <p style="color:#374151;margin-bottom:1.25rem;line-height:1.7;">
+                            Deleting your account will permanently remove:
+                        </p>
+                        <ul style="color:#6b7280;margin:0 0 1.5rem 1.25rem;line-height:2;">
+                            <li>All your trades and journal entries</li>
+                            <li>All goals and progress</li>
+                            <li>All settings and preferences</li>
+                            <li>Your profile and account credentials</li>
+                        </ul>
+                        <div id="deleteMsg" style="margin-bottom:1rem;font-size:0.9rem;display:none;"></div>
+                        <div class="form-group" style="margin-bottom:1rem;">
+                            <label>Type <strong>DELETE</strong> to confirm</label>
+                            <input type="text" id="deleteConfirmInput" placeholder="Type DELETE here">
+                        </div>
+                        <button class="btn btn-danger" onclick="deleteAccount()">Permanently Delete My Account</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -627,6 +687,7 @@
                 document.getElementById('prefCurrency').value   = p.currency   || 'usd';
                 document.getElementById('prefDateFormat').value = p.dateFormat  || 'mdy';
                 document.getElementById('prefTimezone').value   = p.timezone    || 'est';
+                localStorage.setItem('currency', p.currency || 'usd');
 
                 // Notifications
                 const n = user.notifications || {};
@@ -635,11 +696,7 @@
                 document.getElementById('notifWeeklySummary').checked   = n.weeklySummary   ?? false;
                 document.getElementById('notifGoalAchievements').checked = n.goalAchievements ?? true;
 
-                // Subscription
-                const s = user.subscription || {};
-                const plan = s.plan || 'free';
-                document.getElementById('planName').textContent   = plan.charAt(0).toUpperCase() + plan.slice(1) + ' Plan';
-                document.getElementById('planStatus').textContent = 'Status: ' + (s.status || 'active');
+                // Account info
                 document.getElementById('accountInfo').innerHTML  = `
                     <li>📧 ${user.email}</li>
                     <li>📅 Member since ${new Date(user.createdAt).toLocaleDateString()}</li>
@@ -719,8 +776,37 @@
             try {
                 const r = await fetch('/api/auth/preferences', { method: 'PUT', headers, body: JSON.stringify(body) });
                 const d = await r.json();
+                if (r.ok) localStorage.setItem('currency', body.currency);
                 showMsg('prefsMsg', r.ok ? '✅ Preferences saved' : '❌ ' + (d.message || 'Failed'), r.ok);
             } catch (e) { showMsg('prefsMsg', '❌ Network error', false); }
+        }
+
+        // ── Delete account ────────────────────────────────────────────────
+        async function deleteAccount() {
+            const input = document.getElementById('deleteConfirmInput').value.trim();
+            if (input !== 'DELETE') {
+                showMsg('deleteMsg', '❌ Please type DELETE to confirm', false);
+                return;
+            }
+            const btn = document.querySelector('#danger .btn-danger');
+            btn.disabled = true;
+            btn.textContent = 'Deleting…';
+            try {
+                const r = await fetch('/api/auth/account', { method: 'DELETE', headers });
+                if (r.ok) {
+                    localStorage.clear();
+                    window.location.href = '/login.html';
+                } else {
+                    const d = await r.json();
+                    showMsg('deleteMsg', '❌ ' + (d.message || 'Failed to delete account'), false);
+                    btn.disabled = false;
+                    btn.textContent = 'Permanently Delete My Account';
+                }
+            } catch (e) {
+                showMsg('deleteMsg', '❌ Network error', false);
+                btn.disabled = false;
+                btn.textContent = 'Permanently Delete My Account';
+            }
         }
 
         loadUser();
