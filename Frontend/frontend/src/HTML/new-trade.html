@@ -82,7 +82,6 @@
         .range-badge { font-family:'DM Mono',monospace; font-size:12px; color:var(--accent); background:#eff6ff; padding:2px 8px; border-radius:12px; min-width:32px; text-align:center; }
 
         #calculatedPL { font-family:'DM Mono',monospace; font-weight:500; }
-        .pl-hint { font-size:11px; color:var(--text-placeholder); padding:2px 8px 0; }
 
         .tag-input-wrap input { margin-bottom:6px; }
         .tags-list { display:flex; flex-wrap:wrap; gap:5px; padding:0 8px 4px; }
@@ -94,51 +93,6 @@
         .model-add-row input { flex:1; }
         .model-add-row button { padding:6px 12px; background:var(--accent); color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-family:'DM Sans',sans-serif; white-space:nowrap; }
         .model-add-row button:hover { background:var(--accent-hover); }
-
-        /* custom fields section */
-        .custom-fields-header { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.5rem; border-bottom:1px solid var(--border); }
-        .custom-fields-header h2 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-secondary); }
-        .add-field-btn { display:flex; align-items:center; gap:5px; padding:5px 10px; background:transparent; border:1px dashed var(--border); border-radius:5px; cursor:pointer; font-size:12px; color:var(--text-secondary); font-family:'DM Sans',sans-serif; transition:all .2s; }
-        .add-field-btn:hover { border-color:var(--accent); color:var(--accent); background:#f0f7ff; }
-
-        .custom-prop-row { display:flex; align-items:flex-start; padding:3px 0; border-radius:4px; transition:background .15s; position:relative; }
-        .custom-prop-row:hover { background:var(--bg); }
-        .custom-prop-row:hover .field-actions { opacity:1; }
-        .field-actions { position:absolute; right:0; top:50%; transform:translateY(-50%); display:flex; gap:2px; opacity:0; transition:opacity .15s; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:2px; }
-        .field-action-btn { padding:3px 6px; border:none; background:transparent; cursor:pointer; font-size:12px; border-radius:3px; color:var(--text-secondary); transition:all .15s; }
-        .field-action-btn:hover { background:var(--tag-bg); color:var(--danger); }
-
-        .empty-custom { padding:2rem 1.5rem; text-align:center; color:var(--text-placeholder); font-size:13px; }
-        .empty-custom span { display:block; font-size:24px; margin-bottom:6px; }
-
-        /* modal */
-        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:100; align-items:center; justify-content:center; }
-        .modal-overlay.open { display:flex; }
-        .modal { background:var(--surface); border-radius:10px; box-shadow:0 20px 60px rgba(0,0,0,.18); width:420px; padding:1.75rem; animation:popIn .18s ease; }
-        @keyframes popIn { from{transform:scale(.95);opacity:0} to{transform:scale(1);opacity:1} }
-        .modal h3 { font-size:15px; font-weight:600; margin-bottom:1.25rem; }
-        .modal-field { margin-bottom:1rem; }
-        .modal-field label { display:block; font-size:12px; color:var(--text-secondary); margin-bottom:4px; font-weight:500; }
-        .modal-field input,.modal-field select { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text-primary); outline:none; }
-        .modal-field input:focus,.modal-field select:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(47,128,237,.12); }
-
-        #dropdownOptionsWrap { display:none; }
-        .dropdown-opt-row { display:flex; gap:6px; margin-bottom:6px; }
-        .dropdown-opt-row input { flex:1; }
-        .dropdown-opt-row button { padding:6px 8px; border:1px solid var(--border); border-radius:4px; background:transparent; cursor:pointer; font-size:13px; color:var(--danger); }
-
-        .type-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:.25rem; }
-        .type-option { display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 6px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:11px; color:var(--text-secondary); transition:all .15s; user-select:none; text-align:center; }
-        .type-option .ti { font-size:18px; }
-        .type-option:hover { border-color:var(--accent); color:var(--accent); background:#f0f7ff; }
-        .type-option.selected { border-color:var(--accent); color:var(--accent); background:#eff6ff; font-weight:600; }
-
-        .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:1.5rem; }
-        .modal-actions button { padding:7px 16px; border-radius:var(--radius); font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif; border:none; }
-        .btn-cancel-modal { background:var(--tag-bg); color:var(--text-primary); }
-        .btn-cancel-modal:hover { background:var(--border); }
-        .btn-add-modal { background:var(--accent); color:#fff; }
-        .btn-add-modal:hover { background:var(--accent-hover); }
 
         /* footer */
         .form-footer { display:flex; justify-content:flex-end; gap:10px; padding:1.25rem 1.5rem; border-top:1px solid var(--border); background:var(--surface); border-radius:0 0 8px 8px; margin-top:-1.25rem; }
@@ -183,7 +137,7 @@
     <div class="page-header">
         <div>
             <div class="page-title">Log New Trade</div>
-            <div class="page-subtitle">Fill in the details below — add your own custom fields too.</div>
+            <div class="page-subtitle">Fill in the details below.</div>
         </div>
         <a href="/trades.html" class="back-btn">← Back to Journal</a>
     </div>
@@ -269,17 +223,6 @@
                     <div class="prop-label"><span class="type-icon">⚖️</span> R:R Ratio</div>
                     <div class="prop-value"><input type="text" id="riskReward" placeholder="e.g. 1:2.5"></div>
                 </div>
-                <div class="prop-row">
-                    <div class="prop-label"><span class="type-icon">🏆</span> Result <span class="req">*</span></div>
-                    <div class="prop-value">
-                        <select id="result" required>
-                            <option value="">Auto-calculated</option>
-                            <option value="win">Win</option>
-                            <option value="loss">Loss</option>
-                            <option value="breakeven">Breakeven</option>
-                        </select>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -345,20 +288,6 @@
             </div>
         </div>
 
-        <!-- Custom Fields -->
-        <div class="form-block">
-            <div class="custom-fields-header">
-                <h2>✦ Custom Fields</h2>
-                <button type="button" class="add-field-btn" onclick="openFieldModal()">+ Add field</button>
-            </div>
-            <div class="block-body" id="customFieldsBody">
-                <div class="empty-custom" id="emptyCustom">
-                    <span>✦</span>
-                    No custom fields yet. Click <strong>+ Add field</strong> to create your own.
-                </div>
-            </div>
-        </div>
-
         <!-- Footer -->
         <div class="form-footer">
             <button type="button" class="btn-discard" onclick="window.location.href='/trades.html'">Discard</button>
@@ -368,56 +297,12 @@
     </form>
 </div>
 
-<!-- Add Field Modal -->
-<div class="modal-overlay" id="modalOverlay">
-    <div class="modal">
-        <h3>New custom field</h3>
-        <div class="modal-field">
-            <label>Field name</label>
-            <input type="text" id="newFieldName" placeholder="e.g. Volume, News Catalyst, Screenshot URL…">
-        </div>
-        <div class="modal-field">
-            <label>Field type</label>
-            <div class="type-grid">
-                <div class="type-option selected" data-type="text"     onclick="selectType(this)"><span class="ti">🔤</span>Text</div>
-                <div class="type-option"           data-type="number"   onclick="selectType(this)"><span class="ti">#</span>Number</div>
-                <div class="type-option"           data-type="date"     onclick="selectType(this)"><span class="ti">📅</span>Date</div>
-                <div class="type-option"           data-type="select"   onclick="selectType(this)"><span class="ti">📋</span>Dropdown</div>
-                <div class="type-option"           data-type="checkbox" onclick="selectType(this)"><span class="ti">☑️</span>Checkbox</div>
-                <div class="type-option"           data-type="textarea" onclick="selectType(this)"><span class="ti">📝</span>Long Text</div>
-            </div>
-        </div>
-        <div id="dropdownOptionsWrap" class="modal-field">
-            <label>Dropdown options</label>
-            <div id="dropdownOptionsList"></div>
-            <button type="button" onclick="addDropdownOpt()"
-                style="padding:5px 10px;border:1px dashed var(--border);border-radius:4px;background:transparent;cursor:pointer;font-size:12px;color:var(--text-secondary);font-family:'DM Sans',sans-serif;">
-                + Add option
-            </button>
-        </div>
-        <div class="modal-field">
-            <label>Required?</label>
-            <select id="newFieldRequired">
-                <option value="false">No</option>
-                <option value="true">Yes</option>
-            </select>
-        </div>
-        <div class="modal-actions">
-            <button type="button" class="btn-cancel-modal" onclick="closeFieldModal()">Cancel</button>
-            <button type="button" class="btn-add-modal"    onclick="saveNewField()">Add field</button>
-        </div>
-    </div>
-</div>
-
 <script>
 const token = localStorage.getItem('token');
 if (!token) window.location.href = '/login.html';
 function logout() { localStorage.removeItem('token'); window.location.href = '/login.html'; }
 
-let customModels = [], mistakeTags = [], customFields = [];
-let selectedType = 'text', dropdownOpts = [];
-
-document.getElementById('date').valueAsDate = new Date();
+let customModels = [], mistakeTags = [];
 
 /* ── Settings load ── */
 async function loadSettings() {
@@ -425,10 +310,8 @@ async function loadSettings() {
         const r = await fetch('/api/settings', { headers: { Authorization: `Bearer ${token}` } });
         if (r.ok) {
             const { settings } = await r.json();
-            customModels = settings.customModels  || [];
-            customFields = settings.customFields  || [];
+            customModels = settings.customModels || [];
             updateModelDropdown();
-            renderCustomFields();
         }
     } catch(e) { console.error(e); }
 }
@@ -449,12 +332,10 @@ function updateModelDropdown() {
 async function addCustomModel() {
     const inp = document.getElementById('newModel');
     const name = inp.value.trim(); if (!name) return;
-    // Add to dropdown immediately so it works even if API is slow/fails
     if (!customModels.includes(name)) customModels.push(name);
     updateModelDropdown();
     document.getElementById('model').value = name;
     inp.value = '';
-    // Persist to backend
     try {
         const r = await fetch('/api/settings/models', {
             method: 'POST',
@@ -494,118 +375,6 @@ function colorPL() {
     el.style.color = isNaN(v) ? '' : v >= 0 ? 'var(--success)' : 'var(--danger)';
 }
 
-/* ══════════════════════════════
-   CUSTOM FIELDS
-   ══════════════════════════════ */
-function openFieldModal() {
-    selectedType = 'text'; dropdownOpts = [];
-    document.getElementById('newFieldName').value = '';
-    document.getElementById('newFieldRequired').value = 'false';
-    document.getElementById('dropdownOptionsWrap').style.display = 'none';
-    document.getElementById('dropdownOptionsList').innerHTML = '';
-    document.querySelectorAll('.type-option').forEach(el => el.classList.remove('selected'));
-    document.querySelector('.type-option[data-type="text"]').classList.add('selected');
-    document.getElementById('modalOverlay').classList.add('open');
-}
-function closeFieldModal() { document.getElementById('modalOverlay').classList.remove('open'); }
-document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeFieldModal(); });
-
-function selectType(el) {
-    document.querySelectorAll('.type-option').forEach(x => x.classList.remove('selected'));
-    el.classList.add('selected'); selectedType = el.dataset.type;
-    document.getElementById('dropdownOptionsWrap').style.display = selectedType === 'select' ? 'block' : 'none';
-}
-
-function addDropdownOpt() {
-    const id = 'dopt_' + Date.now(); dropdownOpts.push({ id, value: '' }); renderDropdownOpts();
-}
-function removeDropdownOpt(id) { dropdownOpts = dropdownOpts.filter(o => o.id !== id); renderDropdownOpts(); }
-function renderDropdownOpts() {
-    document.getElementById('dropdownOptionsList').innerHTML = dropdownOpts.map(o =>
-        `<div class="dropdown-opt-row">
-            <input type="text" placeholder="Option label" value="${o.value}" oninput="updateDropdownOpt('${o.id}',this.value)">
-            <button type="button" onclick="removeDropdownOpt('${o.id}')">✕</button>
-        </div>`).join('');
-}
-function updateDropdownOpt(id, val) { const o = dropdownOpts.find(x => x.id === id); if (o) o.value = val; }
-
-async function saveNewField() {
-    const name = document.getElementById('newFieldName').value.trim();
-    if (!name) { document.getElementById('newFieldName').focus(); return; }
-    if (selectedType === 'select' && !dropdownOpts.some(o => o.value.trim())) {
-        alert('Please add at least one dropdown option.'); return;
-    }
-    const field = {
-        id:       'cf_' + Date.now(),
-        name,
-        type:     selectedType,
-        required: document.getElementById('newFieldRequired').value === 'true',
-        options:  selectedType === 'select' ? dropdownOpts.filter(o => o.value.trim()).map(o => o.value.trim()) : []
-    };
-    customFields.push(field);
-    await persistCustomFields();
-    renderCustomFields();
-    closeFieldModal();
-}
-
-async function deleteCustomField(id) {
-    if (!confirm('Delete this field?')) return;
-    customFields = customFields.filter(f => f.id !== id);
-    await persistCustomFields();
-    renderCustomFields();
-}
-
-async function persistCustomFields() {
-    try {
-        await fetch('/api/settings/custom-fields', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ customFields })
-        });
-    } catch(e) { console.error('Failed to persist custom fields:', e); }
-}
-
-const TYPE_META = {
-    text:     { icon:'🔤', label:'Text'      },
-    number:   { icon:'#',  label:'Number'    },
-    date:     { icon:'📅', label:'Date'      },
-    select:   { icon:'📋', label:'Dropdown'  },
-    checkbox: { icon:'☑️', label:'Checkbox'  },
-    textarea: { icon:'📝', label:'Long Text' },
-};
-
-function buildFieldInput({ id, type, options, required }) {
-    const req = required ? 'required' : '';
-    if (type === 'text')     return `<input type="text"   id="${id}" name="${id}" ${req} placeholder="Enter value…">`;
-    if (type === 'number')   return `<input type="number" id="${id}" name="${id}" step="any" ${req} placeholder="0">`;
-    if (type === 'date')     return `<input type="date"   id="${id}" name="${id}" ${req}>`;
-    if (type === 'textarea') return `<textarea             id="${id}" name="${id}" ${req} placeholder="Enter notes…"></textarea>`;
-    if (type === 'checkbox') return `<div style="padding:8px"><input type="checkbox" id="${id}" name="${id}" style="width:auto;accent-color:var(--accent);transform:scale(1.2)"></div>`;
-    if (type === 'select')   return `<select id="${id}" name="${id}" ${req}><option value="">Select…</option>${options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>`;
-    return '';
-}
-
-function renderCustomFields() {
-    const body = document.getElementById('customFieldsBody');
-    document.getElementById('emptyCustom').style.display = customFields.length ? 'none' : 'block';
-    body.querySelectorAll('.custom-prop-row').forEach(el => el.remove());
-    customFields.forEach(field => {
-        const meta = TYPE_META[field.type] || { icon:'🔤' };
-        const row  = document.createElement('div');
-        row.className = 'custom-prop-row'; row.id = 'row_' + field.id;
-        row.innerHTML = `
-            <div class="prop-label">
-                <span class="type-icon">${meta.icon}</span>
-                ${field.name}${field.required ? '<span class="req">*</span>' : ''}
-            </div>
-            <div class="prop-value">${buildFieldInput(field)}</div>
-            <div class="field-actions">
-                <button class="field-action-btn" type="button" title="Delete" onclick="deleteCustomField('${field.id}')">🗑</button>
-            </div>`;
-        body.appendChild(row);
-    });
-}
-
 /* ── Submit ── */
 document.getElementById('tradeForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -616,12 +385,6 @@ document.getElementById('tradeForm').addEventListener('submit', async e => {
 
     const pl  = parseFloat(document.getElementById('calculatedPL').value) || 0;
     const dir = document.querySelector('input[name="direction"]:checked').value;
-
-    const customValues = {};
-    customFields.forEach(f => {
-        const el = document.getElementById(f.id); if (!el) return;
-        customValues[f.name] = f.type === 'checkbox' ? el.checked : el.value;
-    });
 
     const tradeData = {
         symbol:     document.getElementById('symbol').value.toUpperCase(),
@@ -641,7 +404,6 @@ document.getElementById('tradeForm').addEventListener('submit', async e => {
             mistakeTags,
             whatWentRight:   document.getElementById('whatWentRight').value || null,
             whatWentWrong:   document.getElementById('whatWentWrong').value || null,
-            customFields:    customValues
         }
     };
 
