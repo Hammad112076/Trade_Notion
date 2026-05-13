@@ -16,10 +16,12 @@
 // Load PORT, MONGODB_URI, JWT_SECRET, ALLOWED_ORIGINS from the .env file
 require("dotenv").config();
 
-const express  = require("express");
-const mongoose = require("mongoose");
-const cors     = require("cors");
-const path     = require("path");
+const express        = require("express");
+const mongoose       = require("mongoose");
+const cors           = require("cors");
+const path           = require("path");
+const helmet         = require("helmet");
+const mongoSanitize  = require("express-mongo-sanitize");
 
 // ── Route modules ──────────────────────────────────────────────────────────────
 // Each module exports an Express Router that handles a specific resource group.
@@ -31,6 +33,35 @@ const settingsRoutes = require("./routes/settings"); // /api/settings/* — cust
 const app  = express();
 // Default to port 5000 if PORT is not set in .env
 const PORT = process.env.PORT || 5000;
+
+// ── Proxy trust (Render) ───────────────────────────────────────────────────────
+// Render terminates SSL and forwards requests via an internal proxy.
+// trust proxy: 1 tells Express to read the real client IP from the
+// X-Forwarded-For header so rate limiters see the user's IP, not Render's.
+app.set('trust proxy', 1);
+
+// ── HTTPS redirect (Render) ───────────────────────────────────────────────────
+// Render provides HTTPS automatically, but HTTP requests can still reach the app.
+// This middleware redirects any plain-HTTP request to its HTTPS equivalent.
+// req.secure uses the X-Forwarded-Proto header (reliable because trust proxy is on).
+// Skipped in local development (NODE_ENV !== 'production') so http://localhost works.
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && !req.secure) {
+    return res.redirect(301, `https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
+
+// ── Security headers (Helmet) ─────────────────────────────────────────────────
+// Sets ~12 HTTP response headers that defend against common browser-based attacks:
+//   Content-Security-Policy  — restricts which scripts/styles/resources can load
+//   X-Frame-Options           — prevents the page being embedded in an iframe (clickjacking)
+//   X-Content-Type-Options    — stops browsers guessing MIME types (MIME sniffing)
+//   Referrer-Policy           — controls how much URL info is sent in the Referer header
+//   Strict-Transport-Security — tells browsers to always use HTTPS for this domain
+// crossOriginResourcePolicy is set to "cross-origin" so the HTML files served by
+// Express can still load assets from different origins without being blocked.
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
 // ── CORS configuration ─────────────────────────────────────────────────────────
 // ALLOWED_ORIGINS is a comma-separated list in .env, e.g. "http://localhost:5000,https://myapp.com".
@@ -52,6 +83,12 @@ app.use(cors({
 
 // Parse incoming JSON request bodies so route handlers can access req.body
 app.use(express.json());
+
+// Strip MongoDB operator keys (starting with $ or containing .) from req.body,
+// req.query, and req.params before they reach any route handler.
+// Prevents NoSQL injection attacks like { "email": { "$gt": "" } } being
+// passed directly into Mongoose queries such as User.findOne({ email }).
+app.use(mongoSanitize());
 
 // ── API Routes ─────────────────────────────────────────────────────────────────
 // All data operations go through these routes.  The frontend calls these with

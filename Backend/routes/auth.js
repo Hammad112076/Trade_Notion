@@ -19,14 +19,81 @@
  * and sends it with every protected request via the Authorization header.
  */
 
-const express      = require('express');
-const router       = express.Router();
-const jwt          = require('jsonwebtoken');
+const express                        = require('express');
+const router                         = express.Router();
+const jwt                            = require('jsonwebtoken');
+const rateLimit                      = require('express-rate-limit');
+const { body, validationResult }     = require('express-validator');
 const User         = require('../models/User');
 const Trade        = require('../models/Trade');
 const Goal         = require('../models/Goal');
 const UserSettings = require('../models/UserSettings');
 const { protect }  = require('../middleware/auth');
+
+// ── Validation helper ──────────────────────────────────────────────────────────
+// Reads the result of express-validator checks and returns 400 with the first
+// error message if any field failed.  Applied as middleware before route logic.
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ message: errors.array()[0].msg });
+  }
+  next();
+};
+
+// ── Validation rule sets ───────────────────────────────────────────────────────
+// Each array is spread into the route as middleware so Express runs them in order
+// before the async handler.
+
+// Rules for POST /register
+const registerRules = [
+  body('name')
+    .trim()
+    .notEmpty().withMessage('Name is required'),
+  body('email')
+    .trim()
+    .isEmail().withMessage('Please provide a valid email address')
+    .normalizeEmail(),                          // lowercases and removes dots (gmail aliases)
+  body('password')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+];
+
+// Rules for POST /login
+const loginRules = [
+  body('email')
+    .trim()
+    .isEmail().withMessage('Please provide a valid email address')
+    .normalizeEmail(),
+  body('password')
+    .notEmpty().withMessage('Password is required'),
+];
+
+// ── Rate limiters ──────────────────────────────────────────────────────────────
+// Applied only to the two public auth endpoints — all other routes require a
+// valid JWT, so a brute-force attempt would fail at the middleware layer first.
+
+// Login: 10 attempts per IP per 15 minutes.
+// After the limit is hit the client receives 429 with a plain-English message.
+// standardHeaders: true adds RateLimit-* headers so clients can see their quota.
+// legacyHeaders: false suppresses the older X-RateLimit-* headers (redundant).
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15-minute sliding window
+  max: 10,                   // max 10 login attempts per IP per window
+  message: { message: 'Too many login attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Register: 5 new accounts per IP per hour.
+// Lower limit because legitimate users rarely need to register more than once;
+// high registration rate from a single IP is almost always abuse.
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1-hour sliding window
+  max: 5,                    // max 5 registration attempts per IP per hour
+  message: { message: 'Too many accounts created from this IP. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // JWT_SECRET must match the value in middleware/auth.js — both are read from .env.
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -58,7 +125,7 @@ const generateToken = (userId) => {
  * Errors:   400 if the email is already taken
  *           500 on any unexpected server error
  */
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, registerRules, validate, async (req, res) => {
   try {
     const { name, email, password, tradingExperience } = req.body;
 
@@ -115,14 +182,9 @@ router.post('/register', async (req, res) => {
  *               "user not found" and "wrong password" to avoid user enumeration)
  *           500 on any unexpected server error
  */
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, loginRules, validate, async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Require both fields before hitting the database
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Please provide email and password' });
-    }
 
     // .select('+password') overrides the schema's select: false so we can compare
     const user = await User.findOne({ email }).select('+password');

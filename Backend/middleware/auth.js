@@ -20,8 +20,10 @@ const jwt  = require('jsonwebtoken');
 const User = require('../models/User');
 
 // JWT_SECRET must match the secret used when the token was signed in routes/auth.js.
-// Falls back to a placeholder — change this in production via the .env file.
-const JWT_SECRET = process.env.JWT_SECRET || 'secret-key-change-this-in-production';
+// No fallback — missing JWT_SECRET crashes the server on startup rather than
+// silently signing tokens with a weak default string.
+if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET environment variable is not set');
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /**
  * protect — Express middleware that enforces authentication.
