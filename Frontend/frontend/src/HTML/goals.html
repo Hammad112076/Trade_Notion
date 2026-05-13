@@ -1,3 +1,23 @@
+<!--
+  goals.html — Trading Goals Tracker
+  ====================================
+  Allows the user to create, view, edit, update progress on, and delete trading goals.
+
+  Layout:
+    - Fixed left sidebar (shared navigation, collapses to icon-only on mobile)
+    - Main content area with a header bar and a responsive card grid (#goalsContainer)
+    - A single modal (#goalModal) that doubles as both "Create" and "Edit" depending on
+      whether editingGoalId is null or set to an existing goal's _id
+
+  Data flow:
+    1. On page load → loadGoals() → GET /api/goals → displayGoals(goals[])
+    2. Create goal  → openCreateModal() → user fills form → submit handler → POST /api/goals
+    3. Edit goal    → editGoal(id) → GET /api/goals/:id → pre-fill modal → submit → PUT /api/goals/:id
+    4. Update value → updateProgress(id,...) → native prompt() → PATCH /api/goals/:id/progress
+    5. Delete goal  → deleteGoal(id) → confirm() → DELETE /api/goals/:id
+
+  Auth: JWT stored in localStorage under "token". Missing token → redirect to /login.html.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,17 +25,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Goals - Trade Notion</title>
     <style>
+        /* ── Reset ────────────────────────────────────────────────────────── */
+        /* Remove browser default margin/padding and use border-box sizing
+           so padding never expands an element beyond its declared width. */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        /* ── Page base ────────────────────────────────────────────────────── */
+        /* Light grey page background so white cards stand out clearly. */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: #f3f4f6;
         }
 
+        /* ── Sidebar ──────────────────────────────────────────────────────── */
+        /* Fixed to the left edge, full viewport height, dark charcoal
+           background.  overflow-y: auto lets it scroll independently if
+           content overflows on small screens. */
         .sidebar {
             position: fixed;
             left: 0;
@@ -28,6 +57,7 @@
             overflow-y: auto;
         }
 
+        /* Brand name in indigo — the only pop of colour in the dark sidebar. */
         .logo {
             padding: 0 1.5rem;
             margin-bottom: 2rem;
@@ -38,6 +68,9 @@
             font-size: 1.5rem;
         }
 
+        /* ── Sidebar navigation groups ───────────────────────────────────── */
+        /* Each nav-section groups related links (Main / Tools / Account)
+           with a small uppercase label above them. */
         .nav-section {
             margin-bottom: 2rem;
         }
@@ -51,6 +84,9 @@
             margin-bottom: 0.5rem;
         }
 
+        /* Individual sidebar links — flex row so the emoji icon and text
+           sit side by side.  The 0.3s transition makes the hover highlight
+           feel smooth rather than an instant flash. */
         .nav-item {
             padding: 0.75rem 1.5rem;
             color: #d1d5db;
@@ -61,6 +97,8 @@
             transition: all 0.3s;
         }
 
+        /* Active/hovered nav items get a darker background and a 3px
+           indigo left border that acts as the "you are here" indicator. */
         .nav-item:hover,
         .nav-item.active {
             background: #374151;
@@ -72,11 +110,16 @@
             font-size: 1.25rem;
         }
 
+        /* ── Main content area ────────────────────────────────────────────── */
+        /* Offset by exactly the sidebar width so the two panels never overlap. */
         .main-content {
             margin-left: 260px;
             padding: 2rem;
         }
 
+        /* ── Page header bar ──────────────────────────────────────────────── */
+        /* White card containing the page title and the "Create New Goal" button,
+           separated from the card grid below by 2 rem of space. */
         .header {
             background: white;
             padding: 1.5rem 2rem;
@@ -93,6 +136,8 @@
             font-size: 1.75rem;
         }
 
+        /* ── Button base ──────────────────────────────────────────────────── */
+        /* Shared padding, border-radius, and cursor for all button variants. */
         .btn {
             padding: 0.625rem 1.25rem;
             border: none;
@@ -102,6 +147,7 @@
             transition: all 0.3s;
         }
 
+        /* Primary button — indigo fill for the main call-to-action. */
         .btn-primary {
             background: #4F46E5;
             color: white;
@@ -111,12 +157,19 @@
             background: #4338CA;
         }
 
+        /* ── Goals card grid ──────────────────────────────────────────────── */
+        /* CSS Grid with auto layout so it fills one column on narrow screens
+           and naturally expands to multiple columns if the viewport is wide
+           enough.  JS injects goal cards directly into this container. */
         .goals-grid {
             display: grid;
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
+        /* ── Individual goal card ─────────────────────────────────────────── */
+        /* White card with a subtle shadow — each one holds a single goal's
+           header, progress bar, stats row, and action buttons. */
         .goal-card {
             background: white;
             padding: 2rem;
@@ -124,6 +177,7 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
+        /* Top row: goal title + description on the left, status badge on the right. */
         .goal-header {
             display: flex;
             justify-content: space-between;
@@ -142,6 +196,9 @@
             font-size: 0.9rem;
         }
 
+        /* ── Status badge ─────────────────────────────────────────────────── */
+        /* Pill-shaped badge that reflects the goal's current status.
+           Three variants: active (blue), completed (green), paused (amber). */
         .goal-status {
             padding: 0.5rem 1rem;
             border-radius: 20px;
@@ -164,6 +221,9 @@
             color: #d97706;
         }
 
+        /* ── Progress bar ─────────────────────────────────────────────────── */
+        /* Two-line header (label left, current/target value right), then a
+           track with an animated indigo→purple gradient fill. */
         .goal-progress {
             margin-bottom: 1rem;
         }
@@ -185,6 +245,9 @@
             color: #1f2937;
         }
 
+        /* The grey track acts as the background "empty" state.
+           overflow: hidden ensures the fill never visually overflows its
+           rounded corners even when the fill width is set to 100%. */
         .progress-bar {
             width: 100%;
             height: 12px;
@@ -193,6 +256,9 @@
             overflow: hidden;
         }
 
+        /* The fill's width is set inline by JS to `Math.min(progress, 100)%`
+           so it never exceeds the track width even if currentValue > targetValue.
+           transition: width gives a smooth animation when the value changes. */
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #4F46E5, #7c3aed);
@@ -200,6 +266,10 @@
             transition: width 0.3s;
         }
 
+        /* ── Goal stats row ───────────────────────────────────────────────── */
+        /* Auto-fit grid below the progress bar showing Target Date and
+           Completion %.  auto-fit with minmax(150px,1fr) means two columns
+           on normal cards but collapses to one on very narrow cards. */
         .goal-details {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -214,6 +284,8 @@
             gap: 0.25rem;
         }
 
+        /* Small all-caps label above the larger value — same two-line
+           pattern used throughout the dashboard and analytics pages. */
         .detail-label {
             font-size: 0.75rem;
             color: #6b7280;
@@ -227,6 +299,9 @@
             color: #1f2937;
         }
 
+        /* ── Card action buttons ──────────────────────────────────────────── */
+        /* Row of ghost-style buttons below the stats row.
+           The "delete" variant uses red tones to signal a destructive action. */
         .goal-actions {
             display: flex;
             gap: 0.75rem;
@@ -248,6 +323,7 @@
             background: #e5e7eb;
         }
 
+        /* Red tint for the Delete button — visually distinct from neutral actions. */
         .action-btn.delete {
             background: #fee2e2;
             color: #dc2626;
@@ -257,6 +333,10 @@
             background: #fecaca;
         }
 
+        /* ── Create/Edit modal ────────────────────────────────────────────── */
+        /* Hidden by default (display:none). Adding the .active class switches
+           it to display:flex so the overlay and the centred card both appear
+           together.  z-index: 1000 keeps it above all page content. */
         .modal {
             display: none;
             position: fixed;
@@ -264,7 +344,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.5);   /* semi-transparent dark scrim */
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -274,6 +354,9 @@
             display: flex;
         }
 
+        /* The white dialogue card inside the modal.
+           max-height + overflow-y: auto prevents the form from overflowing
+           on small screens. */
         .modal-content {
             background: white;
             padding: 2rem;
@@ -284,6 +367,8 @@
             overflow-y: auto;
         }
 
+        /* Header row inside the modal card: title on the left, × close
+           button on the right. */
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -297,6 +382,7 @@
             color: #1f2937;
         }
 
+        /* Borderless × button — looks like plain text but acts as a button. */
         .close-btn {
             background: none;
             border: none;
@@ -305,6 +391,9 @@
             color: #6b7280;
         }
 
+        /* ── Modal form fields ────────────────────────────────────────────── */
+        /* Each form-group wraps a label + input/select pair with consistent
+           bottom spacing so the form feels evenly spaced. */
         .form-group {
             margin-bottom: 1.5rem;
         }
@@ -325,24 +414,35 @@
             font-size: 1rem;
         }
 
+        /* Indigo border on focus — matches the brand accent colour used
+           throughout the sidebar and buttons. */
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
             border-color: #4F46E5;
         }
 
+        /* ── Utility states ───────────────────────────────────────────────── */
+        /* Shown while the API call for loadGoals() is in-flight. */
         .loading {
             text-align: center;
             padding: 3rem;
             color: #6b7280;
         }
 
+        /* Shown when the API returns an empty goals array — includes a CTA
+           button so the user can create their first goal without going back
+           to the header. */
         .empty-state {
             text-align: center;
             padding: 4rem 2rem;
             color: #6b7280;
         }
 
+        /* ── Responsive breakpoint ────────────────────────────────────────── */
+        /* On narrow viewports the sidebar collapses to 70px (icon-only).
+           The main content shifts left accordingly.  Nav-item text labels
+           are hidden, leaving only the emoji icons visible. */
         @media (max-width: 768px) {
             .sidebar {
                 width: 70px;
@@ -359,11 +459,15 @@
     </style>
 </head>
 <body>
+    <!-- ── Fixed left sidebar ─────────────────────────────────────────────── -->
+    <!-- Shared navigation used by every page.  The "Goals" link has the
+         .active class here so the indigo left-border highlights the current page. -->
     <div class="sidebar">
         <div class="logo">
             <h2>Trade Notion</h2>
         </div>
 
+        <!-- Main section: core journaling and analysis pages -->
         <div class="nav-section">
             <div class="nav-section-title">Main</div>
             <a href="/dashboard.html" class="nav-item">
@@ -380,6 +484,7 @@
             </a>
         </div>
 
+        <!-- Tools section: calendar, reports, and goals tracking -->
         <div class="nav-section">
             <div class="nav-section-title">Tools</div>
             <a href="/calendar.html" class="nav-item">
@@ -390,18 +495,22 @@
                 <span class="nav-icon">📄</span>
                 <span>Reports</span>
             </a>
+            <!-- .active marks this as the current page -->
             <a href="/goals.html" class="nav-item active">
                 <span class="nav-icon">🎯</span>
                 <span>Goals</span>
             </a>
         </div>
 
+        <!-- Account section: settings and logout -->
         <div class="nav-section">
             <div class="nav-section-title">Account</div>
             <a href="/settings.html" class="nav-item">
                 <span class="nav-icon">⚙️</span>
                 <span>Settings</span>
             </a>
+            <!-- Logout clears the JWT from localStorage then redirects to
+                 the login page via the JS logout() function. -->
             <a href="#" class="nav-item" onclick="logout()">
                 <span class="nav-icon">🚪</span>
                 <span>Logout</span>
@@ -409,31 +518,46 @@
         </div>
     </div>
 
+    <!-- ── Main content ───────────────────────────────────────────────────── -->
     <div class="main-content">
+        <!-- Header bar: page title on the left, create button on the right.
+             openCreateModal() resets the form and sets the modal to create mode. -->
         <div class="header">
             <h1>Trading Goals</h1>
             <button class="btn btn-primary" onclick="openCreateModal()">+ Create New Goal</button>
         </div>
 
+        <!-- Goal cards are injected here by displayGoals().
+             While loading, a "Loading your goals..." placeholder is shown. -->
         <div id="goalsContainer" class="goals-grid">
             <div class="loading">Loading your goals...</div>
         </div>
     </div>
 
-    <!-- Create/Edit Goal Modal -->
+    <!-- ── Create / Edit Goal Modal ───────────────────────────────────────── -->
+    <!-- Single modal that serves both create and edit flows.
+         The modal title, form values, and submit behaviour change depending
+         on whether editingGoalId is null (create) or set to a goal _id (edit).
+         Clicking × or Cancel calls closeModal() which removes .active. -->
     <div id="goalModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
+                <!-- Title is set to "Create New Goal" or "Edit Goal" by JS -->
                 <h2 class="modal-title" id="modalTitle">Create New Goal</h2>
                 <button class="close-btn" onclick="closeModal()">×</button>
             </div>
 
+            <!-- goalForm submit handler determines POST vs PUT based on editingGoalId -->
             <form id="goalForm">
+                <!-- Short descriptive name for the goal, e.g. "Reach $10k profit" -->
                 <div class="form-group">
                     <label>Goal Title</label>
                     <input type="text" id="goalTitle" required placeholder="e.g., Reach $10,000 Profit">
                 </div>
 
+                <!-- Selects a goal category which determines the unit (see getUnitFromType).
+                     Options: profit → $, winRate → %, consistency → days,
+                              drawdown → %, custom → trades -->
                 <div class="form-group">
                     <label>Goal Type</label>
                     <select id="goalType" required>
@@ -445,21 +569,26 @@
                     </select>
                 </div>
 
+                <!-- The numeric value the user is trying to reach, e.g. 10000 -->
                 <div class="form-group">
                     <label>Target Value</label>
                     <input type="number" id="targetValue" required placeholder="10000">
                 </div>
 
+                <!-- Optional deadline.  Stored as an ISO date string, displayed
+                     with toLocaleDateString() in goal cards. -->
                 <div class="form-group">
                     <label>Target Date (Optional)</label>
                     <input type="date" id="targetDate">
                 </div>
 
+                <!-- Optional free-text explanation of why this goal matters. -->
                 <div class="form-group">
                     <label>Description (Optional)</label>
                     <input type="text" id="goalDescription" placeholder="Why is this goal important?">
                 </div>
 
+                <!-- Cancel dismisses without saving; Save Goal submits the form. -->
                 <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                     <button type="button" class="action-btn" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Goal</button>
@@ -469,18 +598,48 @@
     </div>
 
     <script>
+        /*
+         * Auth guard
+         * ----------
+         * Retrieve the JWT stored at login.  If it is absent (user never logged
+         * in or has cleared storage) redirect immediately to the login page so no
+         * API calls are attempted unauthenticated.
+         */
         const token = localStorage.getItem('token');
         if (!token) {
             window.location.href = '/login.html';
         }
 
+        /*
+         * logout()
+         * --------
+         * Removes the JWT from localStorage (so the next page load returns to the
+         * login screen) and navigates to /login.html.
+         */
         function logout() {
             localStorage.removeItem('token');
             window.location.href = '/login.html';
         }
 
+        /*
+         * editingGoalId
+         * -------------
+         * Module-level state variable that tracks whether the modal is in
+         * "create" mode (null) or "edit" mode (goal's _id string).
+         * The form submit handler reads this to decide between POST and PUT.
+         */
         let editingGoalId = null;
 
+        /*
+         * loadGoals()
+         * -----------
+         * Fetches all goals belonging to the authenticated user from the API
+         * and passes the resulting array to displayGoals().
+         *
+         * Endpoint: GET /api/goals
+         * Auth: Bearer token in Authorization header.
+         * On success the response body is { goals: Goal[] }.
+         */
         async function loadGoals() {
             try {
                 const response = await fetch('/api/goals', {
@@ -496,9 +655,38 @@
             }
         }
 
+        /*
+         * displayGoals(goals)
+         * -------------------
+         * Renders the goals array into the #goalsContainer grid.
+         *
+         * If the array is empty an empty-state prompt is shown instead of cards.
+         * Otherwise each goal is mapped to a card HTML string and joined into
+         * one innerHTML assignment (a single DOM write is faster than appending
+         * cards one-by-one).
+         *
+         * Card contents per goal:
+         *   - goal-header: title, description, coloured status badge
+         *   - goal-progress: "current / target" text + filled progress bar
+         *   - goal-details: target date and percentage completion
+         *   - goal-actions: Update Progress, Edit, Delete buttons
+         *
+         * Progress calculation:
+         *   progress = (currentValue / targetValue) * 100, capped at 100 for the
+         *   bar width so the fill never overflows the track element.
+         *
+         * Unit display:
+         *   goal.unit maps the stored enum value to a human-readable suffix.
+         *   dollar → "$", percent → "%", days → " days", trades → " trades".
+         *
+         * Status badge class:
+         *   "completed" → green, "paused" → amber, anything else → blue.
+         *   The badge text capitalises only the first letter for readability.
+         */
         function displayGoals(goals) {
             const container = document.getElementById('goalsContainer');
 
+            // Show a friendly empty state with a CTA when the user has no goals yet
             if (goals.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
@@ -511,16 +699,21 @@
             }
 
             container.innerHTML = goals.map(goal => {
+                // Percentage of the goal completed; toFixed(1) keeps one decimal place
                 const progress = ((goal.currentValue / goal.targetValue) * 100).toFixed(1);
-                const statusClass = goal.status === 'completed' ? 'status-completed' : 
+
+                // Map status string to the corresponding CSS class
+                const statusClass = goal.status === 'completed' ? 'status-completed' :
                                   goal.status === 'paused' ? 'status-paused' : 'status-active';
 
+                // Suffix appended to current/target values in the progress label
                 let unitDisplay = '';
                 if (goal.unit === 'dollar') unitDisplay = '$';
                 else if (goal.unit === 'percent') unitDisplay = '%';
                 else if (goal.unit === 'days') unitDisplay = ' days';
                 else if (goal.unit === 'trades') unitDisplay = ' trades';
 
+                // Format the target date for display, or fall back to "No deadline"
                 const targetDate = goal.targetDate ? new Date(goal.targetDate).toLocaleDateString() : 'No deadline';
 
                 return `
@@ -530,19 +723,25 @@
                                 <h3>${goal.title}</h3>
                                 <p>${goal.description || 'No description'}</p>
                             </div>
+                            <!-- Badge text: capitalise first letter e.g. "active" → "Active" -->
                             <div class="goal-status ${statusClass}">${goal.status.charAt(0).toUpperCase() + goal.status.slice(1)}</div>
                         </div>
 
+                        <!-- Progress bar section -->
                         <div class="goal-progress">
                             <div class="progress-header">
                                 <span class="progress-label">Progress</span>
+                                <!-- Shows e.g. "3500$ / 10000$" for a profit goal -->
                                 <span class="progress-value">${goal.currentValue}${unitDisplay} / ${goal.targetValue}${unitDisplay}</span>
                             </div>
                             <div class="progress-bar">
+                                <!-- Math.min(progress, 100) prevents the fill from
+                                     exceeding the bar track width if over-target -->
                                 <div class="progress-fill" style="width: ${Math.min(progress, 100)}%"></div>
                             </div>
                         </div>
 
+                        <!-- Stats row below the bar: target date + completion % -->
                         <div class="goal-details">
                             <div class="detail-item">
                                 <span class="detail-label">Target Date</span>
@@ -550,10 +749,13 @@
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Completion</span>
+                                <!-- Indigo colour matches the progress bar gradient start -->
                                 <span class="detail-value" style="color: #4F46E5;">${progress}%</span>
                             </div>
                         </div>
 
+                        <!-- Action buttons: pass goal details inline so the handlers
+                             have context without another API round-trip -->
                         <div class="goal-actions">
                             <button class="action-btn" onclick="updateProgress('${goal._id}', ${goal.currentValue}, ${goal.targetValue}, '${goal.unit}')">Update Progress</button>
                             <button class="action-btn" onclick="editGoal('${goal._id}')">Edit</button>
@@ -564,6 +766,15 @@
             }).join('');
         }
 
+        /*
+         * openCreateModal()
+         * -----------------
+         * Switches the modal to "create new goal" mode:
+         *   1. Clears editingGoalId so the submit handler knows to POST.
+         *   2. Resets all form fields to their default empty/placeholder state.
+         *   3. Updates the modal title to "Create New Goal".
+         *   4. Shows the modal by adding the .active class.
+         */
         function openCreateModal() {
             editingGoalId = null;
             document.getElementById('modalTitle').textContent = 'Create New Goal';
@@ -571,10 +782,33 @@
             document.getElementById('goalModal').classList.add('active');
         }
 
+        /*
+         * closeModal()
+         * ------------
+         * Hides the modal by removing the .active class.
+         * CSS transitions the display from flex to none.
+         * Does NOT reset the form — that happens in openCreateModal() so that
+         * cancelled edits don't lose their field values if the user re-opens.
+         */
         function closeModal() {
             document.getElementById('goalModal').classList.remove('active');
         }
 
+        /*
+         * editGoal(id)
+         * ------------
+         * Fetches a single goal's data from the API and pre-populates the modal
+         * form fields so the user can update existing values.
+         *
+         * Steps:
+         *   1. GET /api/goals/:id → { goal: Goal }
+         *   2. Store the goal's _id in editingGoalId (signals submit to use PUT).
+         *   3. Update modal title to "Edit Goal".
+         *   4. Populate all form fields from the fetched goal.
+         *      For targetDate: slice 'T' onwards off the ISO string so the date
+         *      input gets "YYYY-MM-DD" format which is what <input type="date"> expects.
+         *   5. Show the modal.
+         */
         async function editGoal(id) {
             try {
                 const response = await fetch(`/api/goals/${id}`, {
@@ -585,14 +819,16 @@
                     const data = await response.json();
                     const goal = data.goal;
 
+                    // Mark as edit mode — submit handler will use PUT to this id
                     editingGoalId = id;
                     document.getElementById('modalTitle').textContent = 'Edit Goal';
                     document.getElementById('goalTitle').value = goal.title;
                     document.getElementById('goalType').value = goal.type;
                     document.getElementById('targetValue').value = goal.targetValue;
+                    // Split at "T" to strip the time portion of the ISO date string
                     document.getElementById('targetDate').value = goal.targetDate ? goal.targetDate.split('T')[0] : '';
                     document.getElementById('goalDescription').value = goal.description || '';
-                    
+
                     document.getElementById('goalModal').classList.add('active');
                 }
             } catch (error) {
@@ -600,15 +836,38 @@
             }
         }
 
+        /*
+         * updateProgress(id, currentValue, targetValue, unit)
+         * ----------------------------------------------------
+         * Opens a native browser prompt() dialog showing the user their current
+         * value and target, then sends the entered value to the API as a PATCH.
+         *
+         * Why prompt() instead of a custom modal?  It's the quickest UX for a
+         * single numeric input; a full modal would be heavy for one field.
+         *
+         * Steps:
+         *   1. Build unitDisplay suffix for the prompt message (same logic as displayGoals).
+         *   2. Show prompt() with context (current + target + input request).
+         *      newValue === null means the user clicked Cancel → return early.
+         *   3. PATCH /api/goals/:id/progress with { currentValue: parseFloat(newValue) }.
+         *   4. On success reload the goals list so the updated bar is visible.
+         *
+         * Endpoint: PATCH /api/goals/:id/progress
+         * Body: { currentValue: Number }
+         */
         async function updateProgress(id, currentValue, targetValue, unit) {
+            // Determine the unit suffix to show in the prompt context message
             let unitDisplay = '';
             if (unit === 'dollar') unitDisplay = '$';
             else if (unit === 'percent') unitDisplay = '%';
             else if (unit === 'days') unitDisplay = ' days';
             else if (unit === 'trades') unitDisplay = ' trades';
 
+            // Native prompt gives the user the current and target for context
+            // Default value pre-fills with currentValue so minor edits are easy
             const newValue = prompt(`Current: ${currentValue}${unitDisplay}\nTarget: ${targetValue}${unitDisplay}\n\nEnter new progress value:`, currentValue);
-            
+
+            // null means the user dismissed the dialog with Cancel — abort
             if (newValue === null) return;
 
             try {
@@ -623,7 +882,7 @@
 
                 if (response.ok) {
                     alert('Progress updated!');
-                    loadGoals();
+                    loadGoals();  // Refresh the grid so the progress bar updates immediately
                 } else {
                     alert('Failed to update progress');
                 }
@@ -633,7 +892,17 @@
             }
         }
 
+        /*
+         * deleteGoal(id)
+         * --------------
+         * Asks the user to confirm before sending a DELETE request.
+         * On success the goal is removed from the server and the UI refreshes.
+         *
+         * Endpoint: DELETE /api/goals/:id
+         */
         async function deleteGoal(id) {
+            // Single confirm() step — goals are not as critical as all trades,
+            // so one confirmation is sufficient here
             if (!confirm('Are you sure you want to delete this goal?')) return;
 
             try {
@@ -644,7 +913,7 @@
 
                 if (response.ok) {
                     alert('Goal deleted!');
-                    loadGoals();
+                    loadGoals();  // Re-render grid without the deleted card
                 } else {
                     alert('Failed to delete goal');
                 }
@@ -654,19 +923,38 @@
             }
         }
 
+        /*
+         * goalForm submit handler
+         * -----------------------
+         * Handles both creating a new goal and updating an existing one.
+         *
+         * The "unit" field is derived from the selected goalType via
+         * getUnitFromType() — it is not entered by the user directly.
+         *
+         * Routing logic:
+         *   - editingGoalId is null  → POST /api/goals          (create)
+         *   - editingGoalId is set   → PUT  /api/goals/:id      (update)
+         *
+         * On success: close the modal and reload the goals grid.
+         */
         document.getElementById('goalForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            // Build the request body from all form inputs
             const goalData = {
                 title: document.getElementById('goalTitle').value,
                 type: document.getElementById('goalType').value,
                 targetValue: parseFloat(document.getElementById('targetValue').value),
+                // Empty string from the date input is converted to null so the
+                // API stores no date rather than an empty string
                 targetDate: document.getElementById('targetDate').value || null,
                 description: document.getElementById('goalDescription').value || null,
+                // Derive the unit automatically from the type selection
                 unit: getUnitFromType(document.getElementById('goalType').value)
             };
 
             try {
+                // Conditional URL and method based on edit vs create mode
                 const url = editingGoalId ? `/api/goals/${editingGoalId}` : '/api/goals';
                 const method = editingGoalId ? 'PUT' : 'POST';
 
@@ -682,7 +970,7 @@
                 if (response.ok) {
                     alert(editingGoalId ? 'Goal updated!' : 'Goal created!');
                     closeModal();
-                    loadGoals();
+                    loadGoals();  // Refresh so the new or updated card is visible
                 } else {
                     alert('Failed to save goal');
                 }
@@ -692,17 +980,30 @@
             }
         });
 
+        /*
+         * getUnitFromType(type)
+         * ---------------------
+         * Maps a goal type enum value to its storage unit string.
+         * This unit is sent to the API and used later by displayGoals()
+         * to choose the correct display suffix.
+         *
+         * profit      → 'dollar'   (displayed as "$")
+         * winRate     → 'percent'  (displayed as "%")
+         * consistency → 'days'     (displayed as " days")
+         * drawdown    → 'percent'  (displayed as "%")
+         * custom      → 'trades'   (displayed as " trades") — default fallback
+         */
         function getUnitFromType(type) {
             switch(type) {
-                case 'profit': return 'dollar';
-                case 'winRate': return 'percent';
+                case 'profit':      return 'dollar';
+                case 'winRate':     return 'percent';
                 case 'consistency': return 'days';
-                case 'drawdown': return 'percent';
-                default: return 'trades';
+                case 'drawdown':    return 'percent';
+                default:            return 'trades';
             }
         }
 
-        // Load goals on page load
+        // Kick off the initial goals fetch when the page finishes loading
         loadGoals();
     </script>
 </body>

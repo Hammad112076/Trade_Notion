@@ -1,3 +1,29 @@
+<!--
+  settings.html — User Settings Panel
+  =====================================
+  A single-page settings hub divided into six named sections.  Only one section
+  is visible at a time; clicking a left-nav item calls showSection() to swap them.
+
+  Sections:
+    1. Profile      — name, email, trading experience, bio; saved via PUT /api/auth/profile
+    2. Account      — change password; saved via PUT /api/auth/password
+    3. Notifications — four toggle switches; saved via PUT /api/auth/notifications
+    4. Preferences  — currency, date format, timezone; saved via PUT /api/auth/preferences
+    5. Plan         — static "Free Plan" info card + dynamic account info list
+    6. Delete Account — requires typing "DELETE" then calls DELETE /api/auth/account
+
+  Layout:
+    - Fixed 260px dark sidebar (shared navigation)
+    - settings-layout: a CSS Grid with a 250px left nav panel and a flex-1 content panel
+    - On mobile the nav panel becomes a horizontal scrolling tab strip
+
+  Auth: JWT in localStorage under "token".  Missing token → redirect to /login.html.
+  All API calls use the shared `headers` const that includes the Bearer token.
+
+  Inline feedback:
+    showMsg(id, text, ok) displays a coloured status line directly in the form
+    (green for success, red for error) and auto-hides it after 4 seconds.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,17 +31,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - Trade Notion</title>
     <style>
+        /* ── Reset ────────────────────────────────────────────────────────── */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        /* ── Page base ────────────────────────────────────────────────────── */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: #f3f4f6;
         }
 
+        /* ── Sidebar ──────────────────────────────────────────────────────── */
+        /* Fixed left panel shared by all pages.  Dark charcoal background
+           with the app logo at the top and grouped navigation links below. */
         .sidebar {
             position: fixed;
             left: 0;
@@ -28,6 +59,7 @@
             overflow-y: auto;
         }
 
+        /* Brand name in indigo — only coloured element in the dark sidebar. */
         .logo {
             padding: 0 1.5rem;
             margin-bottom: 2rem;
@@ -38,6 +70,8 @@
             font-size: 1.5rem;
         }
 
+        /* ── Sidebar navigation groups ───────────────────────────────────── */
+        /* Groups of links separated by a small uppercase section label. */
         .nav-section {
             margin-bottom: 2rem;
         }
@@ -51,6 +85,8 @@
             margin-bottom: 0.5rem;
         }
 
+        /* Each link is a flex row with an emoji icon and a text label.
+           The 0.3s transition makes the hover highlight feel smooth. */
         .nav-item {
             padding: 0.75rem 1.5rem;
             color: #d1d5db;
@@ -61,6 +97,7 @@
             transition: all 0.3s;
         }
 
+        /* .active adds a 3px indigo left border acting as the "current page" indicator. */
         .nav-item:hover,
         .nav-item.active {
             background: #374151;
@@ -72,11 +109,16 @@
             font-size: 1.25rem;
         }
 
+        /* ── Main content area ────────────────────────────────────────────── */
+        /* Offset by the sidebar width so the two panels never overlap. */
         .main-content {
             margin-left: 260px;
             padding: 2rem;
         }
 
+        /* ── Page header ──────────────────────────────────────────────────── */
+        /* Simple white card at the top with just the "Settings" title and
+           a subtitle — no action buttons here. */
         .header {
             background: white;
             padding: 1.5rem 2rem;
@@ -90,12 +132,20 @@
             font-size: 1.75rem;
         }
 
+        /* ── Settings two-column layout ───────────────────────────────────── */
+        /* Left column (250px): the settings section navigation list.
+           Right column (1fr): the active settings panel content area.
+           gap: 2rem keeps the two columns visually separated. */
         .settings-layout {
             display: grid;
             grid-template-columns: 250px 1fr;
             gap: 2rem;
         }
 
+        /* ── Left settings nav panel ──────────────────────────────────────── */
+        /* White card containing the clickable section labels.
+           height: fit-content so it does not stretch to match the taller
+           content panel on the right. */
         .settings-nav {
             background: white;
             padding: 1.5rem;
@@ -104,6 +154,9 @@
             height: fit-content;
         }
 
+        /* Each settings nav item is a clickable div (not an anchor) that
+           calls showSection(id, this).  On hover or when active it gets
+           a light grey background and indigo text. */
         .settings-nav-item {
             padding: 0.75rem 1rem;
             border-radius: 6px;
@@ -121,6 +174,10 @@
             color: #4F46E5;
         }
 
+        /* ── Right settings content panel ─────────────────────────────────── */
+        /* White card that shows whichever .settings-section has .active.
+           All sections are rendered in the DOM at all times; only the active
+           one has display:block — the rest are display:none. */
         .settings-content {
             background: white;
             padding: 2rem;
@@ -128,6 +185,7 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
+        /* Individual section panels: hidden by default, shown when .active is added */
         .settings-section {
             display: none;
         }
@@ -136,6 +194,7 @@
             display: block;
         }
 
+        /* Section title and description at the top of each panel */
         .section-title {
             font-size: 1.5rem;
             font-weight: 600;
@@ -148,6 +207,8 @@
             margin-bottom: 2rem;
         }
 
+        /* ── Form field groups ────────────────────────────────────────────── */
+        /* Wraps a label + input/select pair with consistent vertical spacing. */
         .form-group {
             margin-bottom: 1.5rem;
         }
@@ -159,6 +220,8 @@
             font-weight: 500;
         }
 
+        /* Global input and select styling: full-width, padded, 2px grey border.
+           Focus switches border to indigo to match the brand colour. */
         input, select {
             width: 100%;
             padding: 0.75rem;
@@ -173,6 +236,9 @@
             border-color: #4F46E5;
         }
 
+        /* ── Toggle switch row ────────────────────────────────────────────── */
+        /* A labelled row with descriptive text on the left and the toggle
+           switch on the right, used in the Notifications section. */
         .toggle-group {
             display: flex;
             justify-content: space-between;
@@ -193,18 +259,30 @@
             color: #6b7280;
         }
 
+        /* ── Custom toggle switch ─────────────────────────────────────────── */
+        /* A CSS-only pill toggle built from a hidden <input type="checkbox">
+           and a <span class="slider"> positioned absolutely inside a relative
+           .toggle wrapper.
+
+           When checked: background turns indigo (#4F46E5) and the white knob
+           translates 22px to the right via transform: translateX(22px).
+           The 0.4s transition makes the knob slide smoothly. */
         .toggle {
             position: relative;
             width: 50px;
             height: 28px;
         }
 
+        /* The actual checkbox is invisible (opacity: 0, no dimensions) but
+           still controls the :checked state used for the sibling .slider. */
         .toggle input {
             opacity: 0;
             width: 0;
             height: 0;
         }
 
+        /* The track: grey by default, stretches to fill the .toggle container.
+           border-radius: 34px makes it fully pill-shaped. */
         .slider {
             position: absolute;
             cursor: pointer;
@@ -217,6 +295,7 @@
             border-radius: 34px;
         }
 
+        /* The knob: white circle sitting 4px from the left and bottom edges. */
         .slider:before {
             position: absolute;
             content: "";
@@ -229,20 +308,25 @@
             border-radius: 50%;
         }
 
+        /* When the checkbox is checked: fill track with indigo */
         input:checked + .slider {
             background-color: #4F46E5;
         }
 
+        /* When checked: slide the knob to the right end of the track */
         input:checked + .slider:before {
             transform: translateX(22px);
         }
 
+        /* ── Save button row ──────────────────────────────────────────────── */
+        /* Flex row at the bottom of each section for action buttons. */
         .btn-group {
             display: flex;
             gap: 1rem;
             margin-top: 2rem;
         }
 
+        /* ── Button variants ──────────────────────────────────────────────── */
         .btn {
             padding: 0.75rem 2rem;
             border: none;
@@ -252,6 +336,7 @@
             transition: all 0.3s;
         }
 
+        /* Primary — indigo fill for main save actions */
         .btn-primary {
             background: #4F46E5;
             color: white;
@@ -261,11 +346,13 @@
             background: #4338CA;
         }
 
+        /* Secondary — neutral grey for cancel-like actions */
         .btn-secondary {
             background: #f3f4f6;
             color: #374151;
         }
 
+        /* Danger — red fill for destructive actions (delete account) */
         .btn-danger {
             background: #dc2626;
             color: white;
@@ -275,6 +362,9 @@
             background: #b91c1c;
         }
 
+        /* ── Profile avatar ───────────────────────────────────────────────── */
+        /* Circular indigo badge showing the user's initials.  Populated by
+           loadUser() using the first letter of each word in the user's name. */
         .profile-avatar {
             width: 100px;
             height: 100px;
@@ -289,12 +379,17 @@
             margin-bottom: 1rem;
         }
 
+        /* Horizontal rule between content blocks within a section */
         .divider {
             height: 2px;
             background: #f3f4f6;
             margin: 2rem 0;
         }
 
+        /* ── Responsive breakpoint ────────────────────────────────────────── */
+        /* On narrow viewports the sidebar collapses to icon-only (70px) and
+           the settings layout switches to a single column.  The settings nav
+           becomes a horizontal scrolling strip across the top. */
         @media (max-width: 768px) {
             .sidebar {
                 width: 70px;
@@ -308,16 +403,19 @@
                 display: none;
             }
 
+            /* Stack nav and content vertically on mobile */
             .settings-layout {
                 grid-template-columns: 1fr;
             }
 
+            /* Horizontal scrolling pill nav on mobile */
             .settings-nav {
                 display: flex;
                 overflow-x: auto;
                 padding: 1rem;
             }
 
+            /* Prevent nav items from wrapping — they scroll horizontally */
             .settings-nav-item {
                 white-space: nowrap;
             }
@@ -325,11 +423,15 @@
     </style>
 </head>
 <body>
+    <!-- ── Fixed left sidebar ─────────────────────────────────────────────── -->
+    <!-- Shared navigation used by every page.  The "Settings" link has the
+         .active class here so the indigo left-border highlights the current page. -->
     <div class="sidebar">
         <div class="logo">
             <h2>Trade Notion</h2>
         </div>
 
+        <!-- Main section: core journaling and analysis pages -->
         <div class="nav-section">
             <div class="nav-section-title">Main</div>
             <a href="/dashboard.html" class="nav-item">
@@ -346,6 +448,7 @@
             </a>
         </div>
 
+        <!-- Tools section -->
         <div class="nav-section">
             <div class="nav-section-title">Tools</div>
             <a href="/calendar.html" class="nav-item">
@@ -362,12 +465,14 @@
             </a>
         </div>
 
+        <!-- Account section — Settings link is .active on this page -->
         <div class="nav-section">
             <div class="nav-section-title">Account</div>
             <a href="/settings.html" class="nav-item active">
                 <span class="nav-icon">⚙️</span>
                 <span>Settings</span>
             </a>
+            <!-- Logout clears localStorage JWT and redirects to /login.html -->
             <a href="#" class="nav-item" onclick="logout()">
                 <span class="nav-icon">🚪</span>
                 <span>Logout</span>
@@ -375,13 +480,22 @@
         </div>
     </div>
 
+    <!-- ── Main content ───────────────────────────────────────────────────── -->
     <div class="main-content">
+        <!-- Simple header card with title and subtitle — no action buttons -->
         <div class="header">
             <h1>Settings</h1>
             <p style="color: #6b7280; margin-top: 0.25rem;">Manage your account and preferences</p>
         </div>
 
+        <!-- Two-column grid: left nav panel + right content panel -->
         <div class="settings-layout">
+
+            <!-- ── Left settings navigation ─────────────────────────────── -->
+            <!-- Each item calls showSection(sectionId, this) which hides all
+                 sections, removes .active from all nav items, then shows the
+                 target section and marks this item as active.
+                 The "Delete Account" item is red to signal a destructive zone. -->
             <div class="settings-nav">
                 <div class="settings-nav-item active" onclick="showSection('profile', this)">
                     👤 Profile
@@ -398,18 +512,31 @@
                 <div class="settings-nav-item" onclick="showSection('subscription', this)">
                     ✅ Plan
                 </div>
+                <!-- Red text warns the user this section contains a destructive action -->
                 <div class="settings-nav-item" onclick="showSection('danger', this)" style="color:#dc2626;">
                     🗑 Delete Account
                 </div>
             </div>
 
+            <!-- ── Right settings content panel ─────────────────────────── -->
+            <!-- All six sections live here in the DOM simultaneously.
+                 Only the one with .active is display:block at any time.
+                 On page load "profile" starts as active. -->
             <div class="settings-content">
-                <!-- Profile Section -->
+
+                <!-- ── Section 1: Profile ──────────────────────────────── -->
+                <!-- Displays the user's initials in a circular avatar badge.
+                     Fields: name, email, trading experience dropdown, bio.
+                     All fields are pre-populated by loadUser() on page load.
+                     The avatar updates immediately after a successful save
+                     by re-deriving initials from the new name. -->
                 <div id="profile" class="settings-section active">
                     <h2 class="section-title">Profile Information</h2>
                     <p class="section-description">Update your profile details and photo</p>
 
+                    <!-- Circular avatar showing user initials — populated by loadUser() -->
                     <div class="profile-avatar" id="profileAvatar">?</div>
+                    <!-- Inline status message shown after save attempt (success/error) -->
                     <div id="profileMsg" style="margin-bottom:1rem;font-size:0.9rem;display:none;"></div>
 
                     <div class="form-group">
@@ -422,6 +549,7 @@
                         <input type="email" id="profileEmail" placeholder="your@email.com">
                     </div>
 
+                    <!-- Dropdown maps to the tradingExperience field on the User model -->
                     <div class="form-group">
                         <label>Trading Experience</label>
                         <select id="profileExperience">
@@ -442,13 +570,20 @@
                     </div>
                 </div>
 
-                <!-- Account Section -->
+                <!-- ── Section 2: Account / Password ──────────────────── -->
+                <!-- Three password fields: current, new, confirm.
+                     Client-side validation (all filled, new === confirm, len ≥ 8)
+                     runs before the API call so obvious errors are caught locally.
+                     On success all three fields are cleared for security. -->
                 <div id="account" class="settings-section">
                     <h2 class="section-title">Account Security</h2>
                     <p class="section-description">Manage your password and security settings</p>
 
+                    <!-- Inline status message for password change outcome -->
                     <div id="passwordMsg" style="margin-bottom:1rem;font-size:0.9rem;display:none;"></div>
 
+                    <!-- Current password must be verified server-side to prevent
+                         session hijacking if a device is left unlocked -->
                     <div class="form-group">
                         <label>Current Password</label>
                         <input type="password" id="currentPassword" placeholder="Enter current password">
@@ -459,6 +594,7 @@
                         <input type="password" id="newPassword" placeholder="Enter new password (min 8 chars)">
                     </div>
 
+                    <!-- Confirm field checked client-side: must equal newPassword -->
                     <div class="form-group">
                         <label>Confirm New Password</label>
                         <input type="password" id="confirmPassword" placeholder="Confirm new password">
@@ -469,24 +605,32 @@
                     </div>
                 </div>
 
-                <!-- Notifications Section -->
+                <!-- ── Section 3: Notifications ───────────────────────── -->
+                <!-- Four CSS toggle switches for notification preferences.
+                     Stored as boolean fields in user.notifications on the backend.
+                     Loaded by loadUser() with ?? fallbacks for first-time users. -->
                 <div id="notifications" class="settings-section">
                     <h2 class="section-title">Notification Preferences</h2>
                     <p class="section-description">Choose what updates you want to receive</p>
 
+                    <!-- Status message for save outcome -->
                     <div id="notifMsg" style="margin-bottom:1rem;font-size:0.9rem;display:none;"></div>
 
+                    <!-- Email notifications toggle -->
                     <div class="toggle-group">
                         <div class="toggle-info">
                             <h4>Email Notifications</h4>
                             <p>Receive updates via email</p>
                         </div>
+                        <!-- The <label> wraps the hidden checkbox + visible slider so
+                             clicking anywhere on the label area toggles the checkbox -->
                         <label class="toggle">
                             <input type="checkbox" id="notifEmail">
                             <span class="slider"></span>
                         </label>
                     </div>
 
+                    <!-- Trade reminder notifications toggle -->
                     <div class="toggle-group">
                         <div class="toggle-info">
                             <h4>Trade Reminders</h4>
@@ -498,6 +642,7 @@
                         </label>
                     </div>
 
+                    <!-- Weekly performance summary toggle -->
                     <div class="toggle-group">
                         <div class="toggle-info">
                             <h4>Weekly Summary</h4>
@@ -509,6 +654,7 @@
                         </label>
                     </div>
 
+                    <!-- Goal achievement celebration notification toggle -->
                     <div class="toggle-group">
                         <div class="toggle-info">
                             <h4>Goal Achievements</h4>
@@ -525,13 +671,21 @@
                     </div>
                 </div>
 
-                <!-- Preferences Section -->
+                <!-- ── Section 4: Preferences ──────────────────────────── -->
+                <!-- App-level display preferences: currency, date format, timezone.
+                     On save: the currency value is ALSO written to localStorage
+                     so that analytics.html and dashboard.html can read it without
+                     an extra API call.  The backend stores all three fields in
+                     user.preferences and returns them in GET /api/auth/me. -->
                 <div id="preferences" class="settings-section">
                     <h2 class="section-title">App Preferences</h2>
                     <p class="section-description">Customize your Trade Notion experience</p>
 
+                    <!-- Status message for save outcome -->
                     <div id="prefsMsg" style="margin-bottom:1rem;font-size:0.9rem;display:none;"></div>
 
+                    <!-- Currency: controls the symbol shown on P&L values throughout the app.
+                         The selected value is cached to localStorage on save. -->
                     <div class="form-group">
                         <label>Currency</label>
                         <select id="prefCurrency">
@@ -542,6 +696,7 @@
                         </select>
                     </div>
 
+                    <!-- Date format: determines how dates are displayed across the app -->
                     <div class="form-group">
                         <label>Date Format</label>
                         <select id="prefDateFormat">
@@ -551,6 +706,7 @@
                         </select>
                     </div>
 
+                    <!-- Timezone: stored for reference but not yet used to offset display times -->
                     <div class="form-group">
                         <label>Timezone</label>
                         <select id="prefTimezone">
@@ -568,11 +724,17 @@
                     </div>
                 </div>
 
-                <!-- Plan Section -->
+                <!-- ── Section 5: Plan ─────────────────────────────────── -->
+                <!-- Static "Free Plan" information section with a gradient banner
+                     and a 2×2 feature card grid.  No user interactions — purely
+                     informational to show what is included at no cost.
+                     The #accountInfo list is populated dynamically by loadUser()
+                     with email, join date, last login, and experience level. -->
                 <div id="subscription" class="settings-section">
                     <h2 class="section-title">Your Plan</h2>
                     <p class="section-description">Trade Notion is completely free — no subscriptions, no limits</p>
 
+                    <!-- Purple gradient banner acting as the "plan card" -->
                     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; color: white; margin-bottom: 2rem;">
                         <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem;">
                             <span style="font-size:1.75rem;">✅</span>
@@ -581,6 +743,7 @@
                         <p style="opacity: 0.9;">Active — all features included at no cost</p>
                     </div>
 
+                    <!-- 2×2 feature grid: each cell has an icon, title, and description -->
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem;">
                         <div style="background:#f0fdf4;border-radius:8px;padding:1rem;display:flex;gap:.6rem;align-items:flex-start;">
                             <span>📝</span>
@@ -613,13 +776,28 @@
                     </div>
 
                     <h3 style="margin-bottom: 1rem; color: #1f2937;">Account Info</h3>
+                    <!-- Populated by loadUser() with email, member-since date,
+                         last-login timestamp, and trading experience level -->
                     <ul id="accountInfo" style="color: #6b7280; line-height: 2; list-style:none;"></ul>
                 </div>
-                <!-- Danger Zone Section -->
+
+                <!-- ── Section 6: Delete Account (Danger Zone) ─────────── -->
+                <!-- Destructive section styled with red accents to make the
+                     risk visually clear.  The user must type the exact string
+                     "DELETE" into the input field before the button proceeds.
+
+                     On confirmed deletion:
+                       1. The button is disabled and its text changes to "Deleting…"
+                          to prevent double-clicks during the async call.
+                       2. DELETE /api/auth/account removes the user and all data.
+                       3. localStorage.clear() removes the JWT and any cached settings.
+                       4. Redirects to /login.html.
+                     On failure the button is re-enabled and an error is shown. -->
                 <div id="danger" class="settings-section">
                     <h2 class="section-title" style="color:#dc2626;">Delete Account</h2>
                     <p class="section-description">Permanently delete your account and all your data. This cannot be undone.</p>
 
+                    <!-- Red-bordered warning box listing what will be deleted -->
                     <div style="border:2px solid #fee2e2;border-radius:10px;padding:1.5rem;background:#fff5f5;">
                         <p style="color:#374151;margin-bottom:1.25rem;line-height:1.7;">
                             Deleting your account will permanently remove:
@@ -630,7 +808,10 @@
                             <li>All settings and preferences</li>
                             <li>Your profile and account credentials</li>
                         </ul>
+                        <!-- Inline status message for delete attempt outcome -->
                         <div id="deleteMsg" style="margin-bottom:1rem;font-size:0.9rem;display:none;"></div>
+                        <!-- Text-match confirmation: the JS checks value === 'DELETE'
+                             before sending the API request, preventing accidental deletion -->
                         <div class="form-group" style="margin-bottom:1rem;">
                             <label>Type <strong>DELETE</strong> to confirm</label>
                             <input type="text" id="deleteConfirmInput" placeholder="Type DELETE here">
@@ -643,11 +824,35 @@
     </div>
 
     <script>
+        /*
+         * Auth guard
+         * ----------
+         * Read the JWT from localStorage.  If absent redirect immediately so
+         * no authenticated API calls are made without a valid session.
+         */
         const token = localStorage.getItem('token');
         if (!token) window.location.href = '/login.html';
 
+        /*
+         * logout()
+         * --------
+         * Wipes the JWT and navigates to the login page.
+         */
         function logout() { localStorage.removeItem('token'); window.location.href = '/login.html'; }
 
+        /*
+         * showSection(id, el)
+         * -------------------
+         * Switches the visible settings panel without a page reload.
+         *
+         * Steps:
+         *   1. Remove .active from every .settings-section (hides all panels).
+         *   2. Remove .active from every .settings-nav-item (clears all highlights).
+         *   3. Add .active to the panel whose id matches the argument.
+         *   4. Add .active to the clicked nav item (el) to highlight it.
+         *
+         * Called inline by each settings nav item's onclick attribute.
+         */
         function showSection(id, el) {
             document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.settings-nav-item').forEach(n => n.classList.remove('active'));
@@ -655,49 +860,101 @@
             el.classList.add('active');
         }
 
+        /*
+         * Shared headers object
+         * ----------------------
+         * All mutating API calls (PUT, DELETE) need both Content-Type and the
+         * Bearer token.  Defining them once avoids repetition across save functions.
+         * GET /api/auth/me in loadUser() constructs its own header inline because
+         * it doesn't need Content-Type.
+         */
         const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
+        /*
+         * showMsg(id, text, ok)
+         * ----------------------
+         * Displays a transient status message inside the active section.
+         *
+         * Parameters:
+         *   id   — the element id of the message container div (e.g. 'profileMsg')
+         *   text — the message string to display (include ✅/❌ emoji for clarity)
+         *   ok   — true = success (green), false = error (red)
+         *
+         * The message auto-hides after 4 seconds via setTimeout so the user
+         * doesn't need to manually dismiss it.
+         */
         function showMsg(id, text, ok) {
             const el = document.getElementById(id);
             el.textContent = text;
-            el.style.color  = ok ? '#059669' : '#dc2626';
+            el.style.color   = ok ? '#059669' : '#dc2626';
             el.style.display = 'block';
             setTimeout(() => el.style.display = 'none', 4000);
         }
 
-        // ── Load user data ────────────────────────────────────────────────
+        /*
+         * loadUser()
+         * ----------
+         * Fetches the current user's full profile from GET /api/auth/me and uses
+         * the response to pre-populate every settings section on page load.
+         *
+         * Fields populated:
+         *
+         *   Profile section:
+         *     profileName, profileEmail, profileBio, profileExperience
+         *     profileAvatar textContent — derived from the first letter of each
+         *     word in user.name, uppercased, limited to 2 chars (e.g. "John Doe" → "JD")
+         *
+         *   Preferences section:
+         *     prefCurrency, prefDateFormat, prefTimezone — read from user.preferences
+         *     Also writes currency to localStorage so other pages can read it without
+         *     their own /api/auth/me call.
+         *
+         *   Notifications section:
+         *     notifEmail, notifTradeReminders, notifWeeklySummary, notifGoalAchievements
+         *     The ?? operator provides safe defaults for new users whose notification
+         *     object may not yet have all fields set.
+         *
+         *   Plan section:
+         *     #accountInfo list — email, member-since date, last-login, experience level.
+         *     lastLogin may be null if the user has never logged out and back in.
+         */
         async function loadUser() {
             try {
                 const r = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
                 if (!r.ok) return;
                 const { user } = await r.json();
 
-                // Profile
+                // ── Profile fields ──────────────────────────────────────────
                 document.getElementById('profileName').value       = user.name        || '';
                 document.getElementById('profileEmail').value      = user.email       || '';
                 document.getElementById('profileBio').value        = user.bio         || '';
                 document.getElementById('profileExperience').value = user.tradingExperience || 'beginner';
 
-                // Avatar initials
+                // Build initials: split name by spaces, take the first character of
+                // each word, join, uppercase, then limit to the first 2 characters
                 const initials = (user.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
                 document.getElementById('profileAvatar').textContent = initials;
 
-                // Preferences
+                // ── Preferences fields ──────────────────────────────────────
                 const p = user.preferences || {};
                 document.getElementById('prefCurrency').value   = p.currency   || 'usd';
                 document.getElementById('prefDateFormat').value = p.dateFormat  || 'mdy';
                 document.getElementById('prefTimezone').value   = p.timezone    || 'est';
+                // Cache currency so analytics / dashboard pages can use it without
+                // making their own /api/auth/me request
                 localStorage.setItem('currency', p.currency || 'usd');
 
-                // Notifications
+                // ── Notification toggles ────────────────────────────────────
                 const n = user.notifications || {};
-                document.getElementById('notifEmail').checked           = n.email           ?? true;
-                document.getElementById('notifTradeReminders').checked  = n.tradeReminders  ?? true;
-                document.getElementById('notifWeeklySummary').checked   = n.weeklySummary   ?? false;
+                // ?? (nullish coalescing) provides a default when the field is
+                // absent (undefined) but does NOT override an explicit false
+                document.getElementById('notifEmail').checked            = n.email            ?? true;
+                document.getElementById('notifTradeReminders').checked   = n.tradeReminders   ?? true;
+                document.getElementById('notifWeeklySummary').checked    = n.weeklySummary    ?? false;
                 document.getElementById('notifGoalAchievements').checked = n.goalAchievements ?? true;
 
-                // Account info
-                document.getElementById('accountInfo').innerHTML  = `
+                // ── Plan section account info ───────────────────────────────
+                document.getElementById('accountInfo').innerHTML = `
                     <li>📧 ${user.email}</li>
                     <li>📅 Member since ${new Date(user.createdAt).toLocaleDateString()}</li>
                     <li>🕒 Last login: ${user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'N/A'}</li>
@@ -706,7 +963,16 @@
             } catch (e) { console.error('Failed to load user:', e); }
         }
 
-        // ── Save profile ──────────────────────────────────────────────────
+        /*
+         * saveProfile()
+         * -------------
+         * Sends the four profile fields to PUT /api/auth/profile.
+         * On success the avatar initials are immediately updated in the DOM so
+         * the user sees the change without reloading.
+         *
+         * Endpoint: PUT /api/auth/profile
+         * Body: { name, email, tradingExperience, bio }
+         */
         async function saveProfile() {
             const body = {
                 name:              document.getElementById('profileName').value.trim(),
@@ -718,6 +984,7 @@
                 const r = await fetch('/api/auth/profile', { method: 'PUT', headers, body: JSON.stringify(body) });
                 const d = await r.json();
                 if (r.ok) {
+                    // Re-derive initials from the newly saved name and update the avatar badge
                     const initials = body.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
                     document.getElementById('profileAvatar').textContent = initials;
                     showMsg('profileMsg', '✅ Profile updated successfully', true);
@@ -727,20 +994,35 @@
             } catch (e) { showMsg('profileMsg', '❌ Network error', false); }
         }
 
-        // ── Save password ─────────────────────────────────────────────────
+        /*
+         * savePassword()
+         * --------------
+         * Client-side validation before sending to the API:
+         *   1. Both current and new passwords must be filled.
+         *   2. New password must match the confirm field.
+         *   3. New password must be at least 8 characters.
+         *
+         * On success all three password fields are cleared so the values do
+         * not remain in the browser's memory longer than necessary.
+         *
+         * Endpoint: PUT /api/auth/password
+         * Body: { currentPassword, newPassword }
+         */
         async function savePassword() {
-            const current  = document.getElementById('currentPassword').value;
-            const newPw    = document.getElementById('newPassword').value;
-            const confirm  = document.getElementById('confirmPassword').value;
+            const current = document.getElementById('currentPassword').value;
+            const newPw   = document.getElementById('newPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
 
+            // Local validation — catch obvious errors before making an API call
             if (!current || !newPw) { showMsg('passwordMsg', '❌ Please fill in all fields', false); return; }
-            if (newPw !== confirm)  { showMsg('passwordMsg', '❌ New passwords do not match', false); return; }
+            if (newPw !== confirm)   { showMsg('passwordMsg', '❌ New passwords do not match', false); return; }
             if (newPw.length < 8)   { showMsg('passwordMsg', '❌ Password must be at least 8 characters', false); return; }
 
             try {
                 const r = await fetch('/api/auth/password', { method: 'PUT', headers, body: JSON.stringify({ currentPassword: current, newPassword: newPw }) });
                 const d = await r.json();
                 if (r.ok) {
+                    // Clear all password fields after a successful update
                     document.getElementById('currentPassword').value = '';
                     document.getElementById('newPassword').value     = '';
                     document.getElementById('confirmPassword').value = '';
@@ -751,7 +1033,15 @@
             } catch (e) { showMsg('passwordMsg', '❌ Network error', false); }
         }
 
-        // ── Save notifications ────────────────────────────────────────────
+        /*
+         * saveNotifications()
+         * --------------------
+         * Reads the checked state of the four notification toggles and sends
+         * them to the API as boolean values.
+         *
+         * Endpoint: PUT /api/auth/notifications
+         * Body: { email, tradeReminders, weeklySummary, goalAchievements }
+         */
         async function saveNotifications() {
             const body = {
                 email:            document.getElementById('notifEmail').checked,
@@ -766,7 +1056,17 @@
             } catch (e) { showMsg('notifMsg', '❌ Network error', false); }
         }
 
-        // ── Save preferences ──────────────────────────────────────────────
+        /*
+         * savePreferences()
+         * -----------------
+         * Saves currency, dateFormat, and timezone to the backend.
+         * Also writes currency to localStorage immediately on success so
+         * analytics.html and dashboard.html can pick it up for P&L display
+         * without needing to call /api/auth/me themselves.
+         *
+         * Endpoint: PUT /api/auth/preferences
+         * Body: { currency, dateFormat, timezone }
+         */
         async function savePreferences() {
             const body = {
                 currency:   document.getElementById('prefCurrency').value,
@@ -776,29 +1076,54 @@
             try {
                 const r = await fetch('/api/auth/preferences', { method: 'PUT', headers, body: JSON.stringify(body) });
                 const d = await r.json();
+                // Sync currency to localStorage so other pages see the updated symbol
                 if (r.ok) localStorage.setItem('currency', body.currency);
                 showMsg('prefsMsg', r.ok ? '✅ Preferences saved' : '❌ ' + (d.message || 'Failed'), r.ok);
             } catch (e) { showMsg('prefsMsg', '❌ Network error', false); }
         }
 
-        // ── Delete account ────────────────────────────────────────────────
+        /*
+         * deleteAccount()
+         * ---------------
+         * Permanently deletes the user account and all associated data.
+         *
+         * Safety mechanism:
+         *   The user must type the exact string "DELETE" in #deleteConfirmInput.
+         *   Any other value shows an error and aborts — this prevents accidental
+         *   deletion from a stray button click.
+         *
+         * Button state:
+         *   The delete button is disabled and its label changed to "Deleting…"
+         *   for the duration of the async call to prevent double-submission.
+         *   On failure the button is re-enabled so the user can try again.
+         *
+         * On success:
+         *   localStorage.clear() removes the JWT and all cached settings (currency
+         *   etc.) before navigating to /login.html, ensuring a clean state.
+         *
+         * Endpoint: DELETE /api/auth/account
+         */
         async function deleteAccount() {
             const input = document.getElementById('deleteConfirmInput').value.trim();
+            // Strict string match — the user must type the word in uppercase exactly
             if (input !== 'DELETE') {
                 showMsg('deleteMsg', '❌ Please type DELETE to confirm', false);
                 return;
             }
+            // Disable the button to prevent re-clicking during the async operation
             const btn = document.querySelector('#danger .btn-danger');
             btn.disabled = true;
             btn.textContent = 'Deleting…';
             try {
                 const r = await fetch('/api/auth/account', { method: 'DELETE', headers });
                 if (r.ok) {
+                    // Wipe all localStorage data (JWT, currency, etc.) before redirect
                     localStorage.clear();
                     window.location.href = '/login.html';
                 } else {
                     const d = await r.json();
                     showMsg('deleteMsg', '❌ ' + (d.message || 'Failed to delete account'), false);
+                    // Re-enable the button so the user can retry or cancel
                     btn.disabled = false;
                     btn.textContent = 'Permanently Delete My Account';
                 }
@@ -809,6 +1134,7 @@
             }
         }
 
+        // Pre-populate all settings fields as soon as the page loads
         loadUser();
     </script>
 </body>

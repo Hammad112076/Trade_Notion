@@ -4,20 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trade Notion - Trading Journal & Analytics Platform</title>
+
+    <!--
+        home.html — Public marketing / landing page
+        ============================================
+        This is the first page visitors see before logging in.
+        It is served by Express at the root route GET /.
+
+        Page structure:
+          1. <nav>      Fixed top navigation bar with logo, anchor links, and auth buttons
+          2. .hero      Full-width hero section with headline and CTA button
+          3. .features  Grid of six feature cards explaining what the app does
+          4. .about     "Built by Traders" section with three value-proposition cards
+          5. <footer>   Copyright, legal links, and support email
+
+        No JavaScript is needed on this page — it is purely informational.
+        Auth buttons link directly to /login.html and /register.html.
+    -->
+
     <style>
+        /* ── Reset ────────────────────────────────────────────────────────────
+           Remove default browser margins, padding, and make all elements use
+           border-box sizing so padding doesn't add to the element's total width. */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        /* ── Body ─────────────────────────────────────────────────────────────
+           System font stack picks the best available native font on each OS.
+           line-height: 1.6 improves readability of paragraph text. */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             line-height: 1.6;
             color: #333;
         }
 
-        /* Navigation */
+        /* ── Navigation bar ───────────────────────────────────────────────────
+           Fixed to the top so it stays visible while the user scrolls.
+           z-index: 1000 keeps it above all page content.
+           box-shadow gives a subtle depth effect to separate it from the page. */
         nav {
             background: #fff;
             padding: 1rem 2rem;
@@ -28,6 +55,7 @@
             z-index: 1000;
         }
 
+        /* Flex container that spreads logo, links, and buttons across the full width */
         .nav-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -36,12 +64,14 @@
             align-items: center;
         }
 
+        /* Brand name shown in the indigo brand colour */
         .logo {
             font-size: 1.5rem;
             font-weight: bold;
             color: #4F46E5;
         }
 
+        /* Horizontal list of anchor links that scroll to page sections */
         .nav-links {
             display: flex;
             gap: 2rem;
@@ -55,15 +85,18 @@
             transition: color 0.3s;
         }
 
+        /* Turn the link indigo on hover to indicate it's interactive */
         .nav-links a:hover {
             color: #4F46E5;
         }
 
+        /* Right-hand side of the nav — Login (ghost) and Sign Up (filled) buttons */
         .nav-buttons {
             display: flex;
             gap: 1rem;
         }
 
+        /* Shared base styles for navigation and CTA buttons */
         .btn {
             padding: 0.6rem 1.5rem;
             border: none;
@@ -74,11 +107,13 @@
             text-decoration: none;
         }
 
+        /* Login button — transparent background, indigo text */
         .btn-login {
             background: transparent;
             color: #4F46E5;
         }
 
+        /* Sign Up button — solid indigo background, white text */
         .btn-signup {
             background: #4F46E5;
             color: white;
@@ -88,7 +123,10 @@
             background: #4338CA;
         }
 
-        /* Hero Section */
+        /* ── Hero section ─────────────────────────────────────────────────────
+           Full-width banner directly below the nav.
+           margin-top: 80px pushes it below the fixed navbar height.
+           Diagonal gradient gives a modern, vibrant look. */
         .hero {
             margin-top: 80px;
             padding: 4rem 2rem;
@@ -97,17 +135,20 @@
             text-align: center;
         }
 
+        /* Large headline — the main value proposition in one sentence */
         .hero h1 {
             font-size: 3rem;
             margin-bottom: 1rem;
         }
 
+        /* Subtitle that supports the headline with a bit more detail */
         .hero p {
             font-size: 1.3rem;
             margin-bottom: 2rem;
             opacity: 0.95;
         }
 
+        /* Primary call-to-action button — links to the registration page */
         .hero .btn-cta {
             background: white;
             color: #4F46E5;
@@ -115,12 +156,16 @@
             font-size: 1.1rem;
         }
 
+        /* Subtle lift effect on hover to invite the user to click */
         .hero .btn-cta:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
 
-        /* Features Section */
+        /* ── Features section ─────────────────────────────────────────────────
+           Six cards arranged in a responsive CSS grid.
+           auto-fit + minmax allows the grid to reflow from 3 columns to 2 to 1
+           as the viewport narrows, without any media queries. */
         .features {
             padding: 4rem 2rem;
             max-width: 1200px;
@@ -140,6 +185,7 @@
             gap: 2rem;
         }
 
+        /* Individual feature card — light grey background with hover animation */
         .feature-card {
             padding: 2rem;
             border-radius: 10px;
@@ -147,11 +193,13 @@
             transition: transform 0.3s, box-shadow 0.3s;
         }
 
+        /* Cards lift slightly on hover to signal interactivity */
         .feature-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
+        /* Large emoji icon at the top of each card */
         .feature-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
@@ -167,7 +215,9 @@
             color: #6b7280;
         }
 
-        /* About Section */
+        /* ── About section ────────────────────────────────────────────────────
+           Same layout as features — reuses the features-grid class for the
+           three value-proposition cards below the intro paragraph. */
         .about {
             padding: 4rem 2rem;
             max-width: 1200px;
@@ -181,7 +231,9 @@
             color: #1f2937;
         }
 
-        /* Footer */
+        /* ── Footer ───────────────────────────────────────────────────────────
+           Dark background separates it from the page content.
+           Contains copyright notice, legal page links, and support email. */
         footer {
             background: #1f2937;
             color: white;
@@ -189,6 +241,7 @@
             text-align: center;
         }
 
+        /* Footer links are muted grey by default, turning white on hover */
         footer a {
             color: #9ca3af;
             text-decoration: none;
@@ -200,7 +253,12 @@
     </style>
 </head>
 <body>
-    <!-- Navigation -->
+
+    <!-- ── Navigation bar ──────────────────────────────────────────────────────
+         Fixed at the top of the viewport.
+         Logo = brand name (no link — already on the home page).
+         Nav links scroll to the #features and #about sections on this page.
+         Auth buttons link to the login and registration HTML pages. -->
     <nav>
         <div class="nav-container">
             <div class="logo">Trade Notion</div>
@@ -210,60 +268,87 @@
                 <li><a href="#contact">Contact</a></li>
             </ul>
             <div class="nav-buttons">
+                <!-- Ghost login button — takes existing users straight to the login form -->
                 <a href="/login.html" class="btn btn-login">Login</a>
+                <!-- Primary CTA — new visitors click this to create an account -->
                 <a href="/register.html" class="btn btn-signup">Sign Up</a>
             </div>
         </div>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- ── Hero section ────────────────────────────────────────────────────────
+         The first thing visitors see — headline, tagline, and one big CTA.
+         The gradient background and white CTA button create high visual contrast. -->
     <section class="hero">
         <h1>Elevate Your Trading Journey</h1>
         <p>The ultimate trading journal and analytics platform for serious traders</p>
+        <!-- Links to registration — the primary conversion action on this page -->
         <a href="/register.html" class="btn btn-cta">Start Trading Smarter</a>
     </section>
 
-    <!-- Features Section -->
+    <!-- ── Features section ────────────────────────────────────────────────────
+         Six cards, each explaining one core capability of the app.
+         id="features" is the anchor target for the nav "Features" link. -->
     <section id="features" class="features">
         <h2>Powerful Features for Better Trading</h2>
         <div class="features-grid">
+
+            <!-- Analytics card — deep stats and visual performance reports -->
             <div class="feature-card">
                 <div class="feature-icon">📊</div>
                 <h3>Advanced Analytics</h3>
                 <p>Gain deep insights into your trading performance with comprehensive statistics and visual reports.</p>
             </div>
+
+            <!-- Journal card — detailed trade logging with notes and emotions -->
             <div class="feature-card">
                 <div class="feature-icon">📝</div>
                 <h3>Trade Journal</h3>
                 <p>Log every trade with detailed notes, screenshots, and emotions to track your progress over time.</p>
             </div>
+
+            <!-- Metrics card — key performance indicators like win rate and expectancy -->
             <div class="feature-card">
                 <div class="feature-icon">📈</div>
                 <h3>Performance Metrics</h3>
                 <p>Monitor win rate, profit factor, expectancy, and other key metrics that matter to your success.</p>
             </div>
+
+            <!-- Goals card — target setting and progress tracking -->
             <div class="feature-card">
                 <div class="feature-icon">🎯</div>
                 <h3>Goal Tracking</h3>
                 <p>Set and track your trading goals to stay focused and motivated on your journey to profitability.</p>
             </div>
+
+            <!-- Security card — reassures users their data is protected -->
             <div class="feature-card">
                 <div class="feature-icon">🔒</div>
                 <h3>Secure & Private</h3>
                 <p>Your trading data is encrypted and protected with bank-level security protocols.</p>
             </div>
+
+            <!-- Calendar card — visual monthly view of trading activity -->
             <div class="feature-card">
                 <div class="feature-icon">📅</div>
                 <h3>Trading Calendar</h3>
                 <p>Visualise every trading day on a calendar — see your wins, losses, and P&L at a glance.</p>
             </div>
+
         </div>
     </section>
 
-    <!-- About Section -->
+    <!-- ── About section ────────────────────────────────────────────────────────
+         Addresses the "why" — explains the philosophy behind the product and
+         who it was built for.  Three sub-cards reinforce the core value props.
+         id="about" is the anchor target for the nav "About Us" link. -->
     <section id="about" class="about">
         <h2>Built by Traders, for Traders</h2>
-        <p style="text-align:center;color:#6b7280;max-width:700px;margin:0 auto 3rem;font-size:1.1rem;line-height:1.8;">Trade Notion was founded by traders, for traders. We understand the challenges of maintaining discipline, tracking performance, and continuously improving your trading strategy. Whether you're a day trader, swing trader, or long-term investor — Trade Notion helps you stay accountable and focused on your goals.</p>
+        <p style="text-align:center;color:#6b7280;max-width:700px;margin:0 auto 3rem;font-size:1.1rem;line-height:1.8;">
+            Trade Notion was founded by traders, for traders. We understand the challenges of maintaining discipline,
+            tracking performance, and continuously improving your trading strategy. Whether you're a day trader,
+            swing trader, or long-term investor — Trade Notion helps you stay accountable and focused on your goals.
+        </p>
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feature-icon">🎯</div>
@@ -283,7 +368,9 @@
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- ── Footer ───────────────────────────────────────────────────────────────
+         id="contact" is the anchor for the nav "Contact" link.
+         Contains copyright, legal page links, and the support email address. -->
     <footer id="contact">
         <p>&copy; 2026 Trade Notion. All rights reserved.</p>
         <p style="margin-top:0.75rem;">
@@ -294,5 +381,6 @@
             <a href="mailto:support@tradenotion.com">support@tradenotion.com</a>
         </p>
     </footer>
+
 </body>
 </html>

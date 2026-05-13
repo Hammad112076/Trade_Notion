@@ -4,18 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendar - Trade Notion</title>
+
+    <!--
+        calendar.html — Monthly trading calendar view
+        ==============================================
+        This page renders a month-at-a-glance calendar showing every day the
+        user traded.  Each day cell lists how many wins and losses occurred that
+        day and the net P&L.  Days with no trades are shown as blank cells.
+
+        Page layout:
+          - Fixed sidebar (same as all dashboard pages)
+          - Header with the current month label and ← / → navigation buttons
+          - Stats row: four summary cards (Trades, Win Rate, Monthly P&L, Best Day)
+          - Calendar grid: 7-column CSS grid with day-of-week headers and day cells
+
+        Data flow:
+          1. loadTrades() fetches ALL trades for the user (no date filter) on page load.
+          2. The full list is cached in tradesData[].
+          3. renderCalendar() filters tradesData[] to only trades in the currently
+             displayed month, computes per-day and monthly stats, and rebuilds the
+             calendar HTML string from scratch.
+          4. previousMonth() / nextMonth() mutate currentDate and call renderCalendar()
+             again — no extra API call is needed because all trades are already in memory.
+
+        Calendar layout maths:
+          - firstDay = getDay() of the 1st of the month (0 = Sunday … 6 = Saturday).
+          - The grid always shows 42 cells (6 rows × 7 columns) so every month fits.
+          - Cells before day 1 show the trailing days of the previous month.
+          - Cells after the last day show the leading days of the next month.
+          - Both are marked with the .other-month class and displayed in muted grey.
+
+        Auth:
+          JWT is read from localStorage; if missing, redirects to /login.html.
+    -->
+
     <style>
+        /* Remove default browser margins/padding and use border-box sizing everywhere */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        /* Light grey page background so white cards stand out */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: #f3f4f6;
         }
 
+        /* ── Sidebar ──────────────────────────────────────────────────────────
+           Fixed dark panel on the left — scrollable if content overflows */
         .sidebar {
             position: fixed;
             left: 0;
@@ -42,6 +80,7 @@
             margin-bottom: 2rem;
         }
 
+        /* Tiny uppercase section label inside the sidebar */
         .nav-section-title {
             padding: 0 1.5rem;
             color: #9ca3af;
@@ -51,6 +90,7 @@
             margin-bottom: 0.5rem;
         }
 
+        /* Individual nav link — flex row so icon and text are aligned */
         .nav-item {
             padding: 0.75rem 1.5rem;
             color: #d1d5db;
@@ -61,6 +101,7 @@
             transition: all 0.3s;
         }
 
+        /* Active and hovered links: dark background + indigo left border accent */
         .nav-item:hover,
         .nav-item.active {
             background: #374151;
@@ -72,11 +113,15 @@
             font-size: 1.25rem;
         }
 
+        /* Main content sits to the right of the fixed 260px sidebar */
         .main-content {
             margin-left: 260px;
             padding: 2rem;
         }
 
+        /* ── Page header card ─────────────────────────────────────────────────
+           White card containing the page title on the left and the
+           month-navigation controls (← month →) on the right. */
         .header {
             background: white;
             padding: 1.5rem 2rem;
@@ -93,18 +138,21 @@
             font-size: 1.75rem;
         }
 
+        /* Wraps the two navigation buttons and the month label */
         .calendar-controls {
             display: flex;
             gap: 1rem;
             align-items: center;
         }
 
+        /* Row holding the ← label → month navigation */
         .month-selector {
             display: flex;
             align-items: center;
             gap: 1rem;
         }
 
+        /* Arrow buttons for navigating to the previous / next month */
         .month-btn {
             padding: 0.5rem 1rem;
             background: #f3f4f6;
@@ -119,6 +167,8 @@
             background: #e5e7eb;
         }
 
+        /* Centred text showing the current month and year (e.g. "May 2026").
+           min-width keeps the header from jumping when the month name changes length. */
         .current-month {
             font-size: 1.25rem;
             font-weight: 600;
@@ -127,6 +177,9 @@
             text-align: center;
         }
 
+        /* ── Monthly summary stats row ────────────────────────────────────────
+           Four small stat cards displayed in an auto-fit grid above the calendar.
+           Each card shows a single metric for the currently viewed month. */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -153,6 +206,7 @@
             color: #1f2937;
         }
 
+        /* White card container that holds the entire calendar grid */
         .calendar-container {
             background: white;
             padding: 2rem;
@@ -160,14 +214,19 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
+        /* ── Calendar grid ────────────────────────────────────────────────────
+           7-column grid (one per day of week).
+           gap: 1px between cells combined with a background colour creates the
+           thin grey grid lines between day cells. */
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 1px;
-            background: #e5e7eb;
+            background: #e5e7eb; /* Grid-line colour (visible through the 1px gaps) */
             border: 1px solid #e5e7eb;
         }
 
+        /* Day-of-week header cells (Sun, Mon, … Sat) */
         .calendar-header {
             background: #f9fafb;
             padding: 1rem;
@@ -177,6 +236,9 @@
             font-size: 0.875rem;
         }
 
+        /* ── Day cells ────────────────────────────────────────────────────────
+           Each cell is at least 120px tall so there is room for trade indicators.
+           position: relative allows absolutely-positioned child elements if needed. */
         .calendar-day {
             background: white;
             min-height: 120px;
@@ -190,21 +252,25 @@
             background: #f9fafb;
         }
 
+        /* Days from the previous or next month — light grey background with muted text */
         .calendar-day.other-month {
             background: #f9fafb;
             color: #9ca3af;
         }
 
+        /* Today's date — light blue tinted background to make it stand out */
         .calendar-day.today {
             background: #eff6ff;
         }
 
+        /* Day number displayed in the top-left of each cell */
         .day-number {
             font-weight: 600;
             color: #1f2937;
             margin-bottom: 0.5rem;
         }
 
+        /* Today's day number gets an indigo circle badge so it's easy to spot */
         .today .day-number {
             background: #4F46E5;
             color: white;
@@ -216,6 +282,9 @@
             justify-content: center;
         }
 
+        /* ── Trade indicator chips ────────────────────────────────────────────
+           Small coloured pills shown inside each day cell that has trades.
+           Green for wins, red for losses. Multiple chips can stack vertically. */
         .trade-indicator {
             font-size: 0.75rem;
             padding: 0.25rem 0.5rem;
@@ -224,28 +293,36 @@
             font-weight: 500;
         }
 
+        /* Win chip — green background */
         .trade-win {
             background: #d1fae5;
             color: #059669;
         }
 
+        /* Loss chip — red background */
         .trade-loss {
             background: #fee2e2;
             color: #dc2626;
         }
 
+        /* Net P&L for the day — shown below the win/loss chips.
+           Colour is applied inline by JavaScript (green positive, red negative). */
         .day-summary {
             font-size: 0.75rem;
             color: #6b7280;
             margin-top: 0.5rem;
         }
 
+        /* Loading placeholder while trades are being fetched */
         .loading {
             text-align: center;
             padding: 2rem;
             color: #6b7280;
         }
 
+        /* ── Responsive: narrow screens ───────────────────────────────────────
+           On screens ≤ 768px, collapse the sidebar to icon-only (70px) and
+           reduce day cell min-height to fit the smaller viewport. */
         @media (max-width: 768px) {
             .sidebar {
                 width: 70px;
@@ -267,6 +344,9 @@
     </style>
 </head>
 <body>
+
+    <!-- ── Sidebar navigation ──────────────────────────────────────────────────
+         Fixed dark left panel. "Calendar" has the .active class for this page. -->
     <div class="sidebar">
         <div class="logo">
             <h2>Trade Notion</h2>
@@ -290,6 +370,7 @@
 
         <div class="nav-section">
             <div class="nav-section-title">Tools</div>
+            <!-- Active — this is the current page -->
             <a href="/calendar.html" class="nav-item active">
                 <span class="nav-icon">📅</span>
                 <span>Calendar</span>
@@ -310,6 +391,7 @@
                 <span class="nav-icon">⚙️</span>
                 <span>Settings</span>
             </a>
+            <!-- logout() clears the token and redirects to login -->
             <a href="#" class="nav-item" onclick="logout()">
                 <span class="nav-icon">🚪</span>
                 <span>Logout</span>
@@ -318,37 +400,55 @@
     </div>
 
     <div class="main-content">
+
+        <!-- ── Page header ────────────────────────────────────────────────────
+             Title on the left; month navigation (← "May 2026" →) on the right.
+             previousMonth() and nextMonth() change currentDate and re-render. -->
         <div class="header">
             <h1>Trading Calendar</h1>
             <div class="calendar-controls">
                 <div class="month-selector">
+                    <!-- Navigates one month back without re-fetching from the API -->
                     <button class="month-btn" onclick="previousMonth()">←</button>
+                    <!-- Updated by renderCalendar() to show e.g. "May 2026" -->
                     <span class="current-month" id="currentMonth">Loading...</span>
+                    <!-- Navigates one month forward -->
                     <button class="month-btn" onclick="nextMonth()">→</button>
                 </div>
             </div>
         </div>
 
+        <!-- ── Monthly summary stats ───────────────────────────────────────────
+             Four cards recalculated each time renderCalendar() runs.
+             Values are scoped to the currently displayed month only. -->
         <div class="stats-row">
+            <!-- Total number of trades logged this month -->
             <div class="stat-card">
                 <div class="stat-label">Trades This Month</div>
                 <div class="stat-value" id="tradesCount">0</div>
             </div>
+            <!-- Wins ÷ total trades as a percentage for the current month -->
             <div class="stat-card">
                 <div class="stat-label">Win Rate</div>
                 <div class="stat-value" id="winRate">0%</div>
             </div>
+            <!-- Sum of all P&L values for the current month (green if positive, red if negative) -->
             <div class="stat-card">
                 <div class="stat-label">Monthly P&L</div>
                 <div class="stat-value" id="monthlyPL">$0</div>
             </div>
+            <!-- Highest single-day net P&L among all trading days this month -->
             <div class="stat-card">
                 <div class="stat-label">Best Day</div>
                 <div class="stat-value" id="bestDay">$0</div>
             </div>
         </div>
 
+        <!-- ── Calendar grid container ────────────────────────────────────────
+             The inner #calendarContent element is replaced entirely by
+             renderCalendar() each time the month changes or trades reload. -->
         <div class="calendar-container">
+            <!-- Replaced with the built calendar-grid HTML by renderCalendar() -->
             <div id="calendarContent">
                 <div class="loading">Loading calendar...</div>
             </div>
@@ -356,6 +456,12 @@
     </div>
 
     <script>
+        /*
+         * Auth guard
+         * ───────────
+         * If no JWT is stored in localStorage the user is not logged in.
+         * Redirect immediately to prevent unauthenticated access.
+         */
         const token = localStorage.getItem('token');
         if (!token) {
             window.location.href = '/login.html';
@@ -366,9 +472,26 @@
             window.location.href = '/login.html';
         }
 
+        /*
+         * State
+         * ──────
+         * currentDate — a Date object used to track which month is displayed.
+         *               previousMonth() and nextMonth() mutate this, then call renderCalendar().
+         * tradesData  — the complete list of trades fetched once on page load.
+         *               Kept in memory so switching months doesn't require extra API calls.
+         */
         let currentDate = new Date();
         let tradesData = [];
 
+        /*
+         * loadTrades()
+         * ─────────────
+         * Fetches ALL of the user's trades from GET /api/trades (no filter).
+         * Stores them in tradesData[] and calls renderCalendar() to build the
+         * initial view for the current month.
+         *
+         * All trades are fetched upfront so month navigation is instant.
+         */
         async function loadTrades() {
             try {
                 const response = await fetch('/api/trades', {
@@ -385,32 +508,52 @@
             }
         }
 
+        /*
+         * renderCalendar()
+         * ─────────────────
+         * Rebuilds the entire calendar UI for the month stored in currentDate.
+         *
+         * Steps:
+         *  1. Update the month label in the header.
+         *  2. Filter tradesData[] to trades in the current month.
+         *  3. Compute monthly stats (win rate, total P&L, best day).
+         *  4. Group trades by day-of-month into tradesByDay{}.
+         *  5. Build a 42-cell HTML grid (7 × 6):
+         *     - Day headers (Sun–Sat)
+         *     - Trailing cells from the previous month
+         *     - Current month day cells with trade indicators and P&L
+         *     - Leading cells for the next month to complete the last row
+         *  6. Inject the HTML into #calendarContent.
+         */
         function renderCalendar() {
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            
-            // Update month display
-            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+            const year  = currentDate.getFullYear();
+            const month = currentDate.getMonth(); /* 0-indexed (0 = January) */
+
+            /* ── Update the month label in the header ─────────────────────────── */
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
                               'July', 'August', 'September', 'October', 'November', 'December'];
             document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
 
-            // Calculate calendar data
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            /* ── Calendar layout constants ────────────────────────────────────── */
+            /* getDay() of the 1st: 0 = Sunday, which is the first column */
+            const firstDay       = new Date(year, month, 1).getDay();
+            /* Number of days in the current month */
+            const daysInMonth    = new Date(year, month + 1, 0).getDate();
+            /* Number of days in the previous month (for the trailing cells) */
             const daysInPrevMonth = new Date(year, month, 0).getDate();
 
-            // Filter trades for this month
+            /* ── Filter trades to the current month ───────────────────────────── */
             const monthTrades = tradesData.filter(trade => {
                 const tradeDate = new Date(trade.date);
                 return tradeDate.getMonth() === month && tradeDate.getFullYear() === year;
             });
 
-            // Calculate stats
-            const wins = monthTrades.filter(t => t.result === 'win').length;
-            const winRate = monthTrades.length > 0 ? ((wins / monthTrades.length) * 100).toFixed(1) : 0;
-            const totalPL = monthTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss), 0);
-            
-            // Group trades by day
+            /* ── Compute monthly summary stats ────────────────────────────────── */
+            const wins     = monthTrades.filter(t => t.result === 'win').length;
+            const winRate  = monthTrades.length > 0 ? ((wins / monthTrades.length) * 100).toFixed(1) : 0;
+            const totalPL  = monthTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss), 0);
+
+            /* ── Group trades by their day-of-month number ─────────────────────── */
             const tradesByDay = {};
             monthTrades.forEach(trade => {
                 const day = new Date(trade.date).getDate();
@@ -420,73 +563,89 @@
                 tradesByDay[day].push(trade);
             });
 
-            // Calculate best day
+            /* Best day = the single trading day with the highest net P&L */
             let bestDayPL = 0;
             Object.values(tradesByDay).forEach(dayTrades => {
                 const dayPL = dayTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss), 0);
                 if (dayPL > bestDayPL) bestDayPL = dayPL;
             });
 
-            // Update stats
+            /* ── Update stat cards ────────────────────────────────────────────── */
             document.getElementById('tradesCount').textContent = monthTrades.length;
-            document.getElementById('winRate').textContent = `${winRate}%`;
-            document.getElementById('monthlyPL').textContent = `$${totalPL.toFixed(2)}`;
-            document.getElementById('monthlyPL').style.color = totalPL >= 0 ? '#059669' : '#dc2626';
-            document.getElementById('bestDay').textContent = `$${bestDayPL.toFixed(2)}`;
-            document.getElementById('bestDay').style.color = '#059669';
+            document.getElementById('winRate').textContent     = `${winRate}%`;
+            document.getElementById('monthlyPL').textContent  = `$${totalPL.toFixed(2)}`;
+            /* Colour total P&L green for profit, red for loss */
+            document.getElementById('monthlyPL').style.color  = totalPL >= 0 ? '#059669' : '#dc2626';
+            document.getElementById('bestDay').textContent    = `$${bestDayPL.toFixed(2)}`;
+            document.getElementById('bestDay').style.color    = '#059669';
 
-            // Build calendar HTML
+            /* ── Build the calendar HTML string ───────────────────────────────── */
             let calendarHTML = '<div class="calendar-grid">';
-            
-            // Headers
+
+            /* Day-of-week column headers */
             const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             dayNames.forEach(day => {
                 calendarHTML += `<div class="calendar-header">${day}</div>`;
             });
 
-            // Previous month days
+            /* Trailing cells from the previous month (fills the grid before day 1) */
             for (let i = firstDay - 1; i >= 0; i--) {
                 const day = daysInPrevMonth - i;
                 calendarHTML += `<div class="calendar-day other-month"><div class="day-number">${day}</div></div>`;
             }
 
-            // Current month days
+            /* Current month day cells */
             const today = new Date();
             for (let day = 1; day <= daysInMonth; day++) {
+                /* Check if this cell is today's date */
                 const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
                 const dayTrades = tradesByDay[day] || [];
-                
-                const wins = dayTrades.filter(t => t.result === 'win').length;
-                const losses = dayTrades.filter(t => t.result === 'loss').length;
-                const dayPL = dayTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss), 0);
 
+                const wins   = dayTrades.filter(t => t.result === 'win').length;
+                const losses = dayTrades.filter(t => t.result === 'loss').length;
+                const dayPL  = dayTrades.reduce((sum, t) => sum + parseFloat(t.profitLoss), 0);
+
+                /* Apply .today class to today's cell for the indigo circle badge */
                 calendarHTML += `<div class="calendar-day${isToday ? ' today' : ''}">`;
                 calendarHTML += `<div class="day-number">${day}</div>`;
-                
+
                 if (dayTrades.length > 0) {
+                    /* Win chip — shows the count (e.g. "2 Wins") */
                     if (wins > 0) {
                         calendarHTML += `<div class="trade-indicator trade-win">${wins} Win${wins > 1 ? 's' : ''}</div>`;
                     }
+                    /* Loss chip — shows the count (e.g. "1 Loss") */
                     if (losses > 0) {
                         calendarHTML += `<div class="trade-indicator trade-loss">${losses} Loss${losses > 1 ? 'es' : ''}</div>`;
                     }
+                    /* Net P&L for this day — green if positive, red if negative */
                     calendarHTML += `<div class="day-summary" style="color: ${dayPL >= 0 ? '#059669' : '#dc2626'}">${dayPL >= 0 ? '+' : ''}$${dayPL.toFixed(2)}</div>`;
                 }
-                
+
                 calendarHTML += `</div>`;
             }
 
-            // Next month days
+            /* Leading cells for the next month to complete the last grid row.
+               42 = 6 rows × 7 columns — ensures the grid always has the same height. */
             const remainingDays = 42 - (firstDay + daysInMonth);
             for (let day = 1; day <= remainingDays; day++) {
                 calendarHTML += `<div class="calendar-day other-month"><div class="day-number">${day}</div></div>`;
             }
 
             calendarHTML += '</div>';
-            
+
+            /* Replace the loading placeholder with the built calendar */
             document.getElementById('calendarContent').innerHTML = calendarHTML;
         }
 
+        /*
+         * previousMonth() / nextMonth()
+         * ──────────────────────────────
+         * Mutate the currentDate object and re-render the calendar.
+         * setMonth() handles month-boundary wraparound automatically
+         * (e.g. December + 1 → January of the following year).
+         * No API call is needed — all trades are already in tradesData[].
+         */
         function previousMonth() {
             currentDate.setMonth(currentDate.getMonth() - 1);
             renderCalendar();
@@ -497,7 +656,7 @@
             renderCalendar();
         }
 
-        // Load trades on page load
+        /* Fetch all trades and render the calendar for the current month */
         loadTrades();
     </script>
 </body>

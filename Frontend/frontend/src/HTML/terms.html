@@ -1,3 +1,31 @@
+<!--
+  terms.html — Terms of Service
+  ================================
+  Static legal page displayed to users before or after registration.
+  Linked from:
+    - /register.html footer ("Terms of Service")
+    - /index.html footer ("Terms of Service")
+
+  Layout:
+    - Minimal top nav: logo (links back to /home.html) + "← Back to Sign Up" link
+    - Centred .container card (max-width 860px) with the full terms text
+    - Simple footer with copyright notice
+
+  No JavaScript and no API calls — this page is purely static HTML/CSS.
+  All CSS is written inline on single lines to keep the file compact,
+  as there are no complex layout patterns requiring expanded rule sets.
+
+  Sections of the terms document:
+    1. Acceptance of Terms
+    2. Use of the Platform
+    3. Your Account
+    4. Your Data
+    5. No Financial Advice (important disclaimer for a trading app)
+    6. Availability
+    7. Termination
+    8. Changes to These Terms
+    9. Contact
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,40 +33,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terms of Service - Trade Notion</title>
     <style>
+        /* Reset: remove default margin/padding; border-box sizing */
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Body: system font stack, light grey page background, dark text,
+           line-height 1.7 for comfortable legal document reading */
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; color: #333; line-height: 1.7; }
+
+        /* Minimal top nav bar: white background with a subtle drop shadow */
         nav { background: #fff; padding: 1rem 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+
+        /* Nav inner container: logo on the left, back link on the right,
+           constrained to 860px to match the document card below */
         .nav-container { max-width: 860px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Brand logo — acts as a link back to the marketing home page */
         .logo { font-size: 1.4rem; font-weight: bold; color: #4F46E5; text-decoration: none; }
+
+        /* "← Back to Sign Up" link returns the user to /register.html */
         .back-link { color: #4F46E5; text-decoration: none; font-size: 0.9rem; font-weight: 500; }
         .back-link:hover { text-decoration: underline; }
+
+        /* Main document card: white background, generous padding, rounded corners,
+           centred on the page with auto side margins, max 860px wide */
         .container { max-width: 860px; margin: 2.5rem auto; background: white; border-radius: 12px; padding: 3rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+        /* Page title — large, dark, followed immediately by the .meta date line */
         h1 { font-size: 2rem; color: #1f2937; margin-bottom: 0.5rem; }
+
+        /* "Last updated" date line — muted grey, separated from body by a bottom border */
         .meta { color: #6b7280; font-size: 0.9rem; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid #f3f4f6; }
+
+        /* Section headings for each numbered clause */
         h2 { font-size: 1.2rem; color: #1f2937; margin: 2rem 0 0.75rem; }
+
+        /* Body paragraph text — medium grey for comfortable reading contrast */
         p { color: #4b5563; margin-bottom: 1rem; }
+
+        /* Bulleted lists within sections (e.g. prohibited activities) */
         ul { color: #4b5563; margin: 0.5rem 0 1rem 1.5rem; }
         ul li { margin-bottom: 0.4rem; }
+
+        /* Footer at the bottom of the page: centred copyright notice */
         footer { text-align: center; padding: 2rem; color: #9ca3af; font-size: 0.875rem; }
     </style>
 </head>
 <body>
+    <!-- ── Minimal navigation bar ─────────────────────────────────────────── -->
+    <!-- Not the full app sidebar — just a brand logo and a back link.
+         Users typically reach this page from a link in the register page footer. -->
     <nav>
         <div class="nav-container">
+            <!-- Logo links back to the marketing home page -->
             <a href="/home.html" class="logo">Trade Notion</a>
+            <!-- Back link returns the user to the registration flow -->
             <a href="/register.html" class="back-link">← Back to Sign Up</a>
         </div>
     </nav>
 
+    <!-- ── Terms of Service document card ────────────────────────────────── -->
+    <!-- All legal sections are contained in a single centred white card.
+         Sections are numbered sequentially for easy reference. -->
     <div class="container">
         <h1>Terms of Service</h1>
+        <!-- Date the terms were last revised — update this when terms change -->
         <p class="meta">Last updated: April 2026</p>
 
+        <!-- Introduction paragraph: agreement implied by using the platform -->
         <p>Welcome to Trade Notion. By creating an account or using our platform, you agree to the following terms. Please read them carefully.</p>
 
+        <!-- Section 1: User must be 18+ and actively agree to these terms -->
         <h2>1. Acceptance of Terms</h2>
         <p>By accessing or using Trade Notion, you confirm that you are at least 18 years old and agree to be bound by these Terms of Service. If you do not agree, please do not use the platform.</p>
 
+        <!-- Section 2: Lawful use requirements with explicit prohibited activities list -->
         <h2>2. Use of the Platform</h2>
         <p>Trade Notion is a personal trading journal and analytics tool. You agree to use it only for lawful purposes and in a way that does not infringe the rights of others. You must not:</p>
         <ul>
@@ -48,28 +116,39 @@
             <li>Share your account credentials with others</li>
         </ul>
 
+        <!-- Section 3: User responsibility for account security -->
         <h2>3. Your Account</h2>
         <p>You are responsible for maintaining the confidentiality of your account credentials and for all activity that occurs under your account. Please notify us immediately at <a href="mailto:support@tradenotion.com" style="color:#4F46E5;">support@tradenotion.com</a> if you suspect any unauthorised use.</p>
 
+        <!-- Section 4: Data ownership — all trade data belongs to the user,
+             not to Trade Notion; export and deletion are available in the app -->
         <h2>4. Your Data</h2>
         <p>All trade data you log belongs to you. We do not sell, rent, or share your personal data with third parties. You can export or delete your data at any time from within the platform.</p>
 
+        <!-- Section 5: Critical disclaimer for a trading application — the analytics
+             and historical data shown are informational only, not financial advice.
+             Protects Trade Notion from liability for a user's trading decisions. -->
         <h2>5. No Financial Advice</h2>
         <p>Trade Notion is a journaling and analytics tool only. Nothing on this platform constitutes financial, investment, or trading advice. Past performance data displayed is for informational purposes only. You are solely responsible for your own trading decisions.</p>
 
+        <!-- Section 6: No uptime guarantee — standard SaaS disclaimer -->
         <h2>6. Availability</h2>
         <p>We aim to keep Trade Notion available at all times but cannot guarantee uninterrupted access. We reserve the right to perform maintenance, updates, or changes to the platform at any time.</p>
 
+        <!-- Section 7: Right to remove accounts that violate these terms -->
         <h2>7. Termination</h2>
         <p>We reserve the right to suspend or terminate accounts that violate these terms. You may delete your account at any time by contacting us.</p>
 
+        <!-- Section 8: Terms may be updated; continued use = acceptance -->
         <h2>8. Changes to These Terms</h2>
         <p>We may update these terms from time to time. Continued use of the platform after changes constitutes acceptance of the updated terms.</p>
 
+        <!-- Section 9: Contact information for terms-related questions -->
         <h2>9. Contact</h2>
         <p>For any questions regarding these terms, contact us at <a href="mailto:support@tradenotion.com" style="color:#4F46E5;">support@tradenotion.com</a>.</p>
     </div>
 
+    <!-- Simple copyright footer -->
     <footer>&copy; 2026 Trade Notion. All rights reserved.</footer>
 </body>
 </html>

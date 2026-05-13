@@ -4,13 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - Trade Notion</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
 
+    <!--
+        register.html — New user registration page
+        ==========================================
+        Collects: full name, email, password (+ confirm), trading experience.
+        On submit, sends a POST to /api/auth/register.
+        On success, shows a green banner and redirects to /login.html after 2 s.
+
+        Client-side validation:
+          • Password must be at least 8 characters (HTML5 minlength + JS check)
+          • Passwords must match (JS check before the API call)
+          • Terms checkbox must be ticked (HTML5 required)
+
+        Password strength meter:
+          A coloured bar beneath the password field gives visual feedback as
+          the user types.  Strength is calculated by checking for length ≥ 8,
+          mixed case, digits, and special characters.
+    -->
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Same full-viewport gradient background as login.html */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -21,6 +37,8 @@
             padding: 2rem;
         }
 
+        /* ── Registration card ────────────────────────────────────────────────
+           White rounded card, slightly narrower than a desktop viewport. */
         .register-container {
             background: white;
             padding: 3rem;
@@ -30,25 +48,13 @@
             max-width: 450px;
         }
 
-        .logo {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
+        /* App name and subtitle at the top of the card */
+        .logo { text-align: center; margin-bottom: 2rem; }
+        .logo h1 { color: #4F46E5; font-size: 2rem; margin-bottom: 0.5rem; }
+        .logo p  { color: #6b7280; font-size: 0.95rem; }
 
-        .logo h1 {
-            color: #4F46E5;
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .logo p {
-            color: #6b7280;
-            font-size: 0.95rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
+        /* Spacing wrapper for each label + input pair */
+        .form-group { margin-bottom: 1.5rem; }
 
         label {
             display: block;
@@ -57,6 +63,7 @@
             font-weight: 500;
         }
 
+        /* inputs and selects share the same appearance */
         input, select {
             width: 100%;
             padding: 0.875rem;
@@ -71,6 +78,10 @@
             border-color: #4F46E5;
         }
 
+        /* ── Password strength indicator ──────────────────────────────────────
+           A thin bar below the password field.  JavaScript adds one of three
+           colour classes (weak / medium / strong) based on complexity checks.
+           overflow: hidden clips the coloured fill bar to the container. */
         .password-strength {
             margin-top: 0.5rem;
             height: 4px;
@@ -79,16 +90,19 @@
             overflow: hidden;
         }
 
-        .password-strength-bar {
-            height: 100%;
-            width: 0;
-            transition: all 0.3s;
-        }
+        /* The inner bar that grows and changes colour as the user types */
+        .password-strength-bar { height: 100%; width: 0; transition: all 0.3s; }
 
-        .strength-weak { background: #ef4444; width: 33%; }
+        /* Red at 1/3 width — password is too simple */
+        .strength-weak   { background: #ef4444; width: 33%; }
+        /* Amber at 2/3 width — getting better but still improvable */
         .strength-medium { background: #f59e0b; width: 66%; }
+        /* Green at full width — password meets all complexity criteria */
         .strength-strong { background: #10b981; width: 100%; }
 
+        /* ── Terms checkbox row ───────────────────────────────────────────────
+           Flexbox aligns the checkbox and label text horizontally.
+           The checkbox itself keeps its natural width (not stretched). */
         .terms {
             display: flex;
             align-items: flex-start;
@@ -97,25 +111,14 @@
             font-size: 0.9rem;
         }
 
-        .terms input[type="checkbox"] {
-            width: auto;
-            margin-top: 0.2rem;
-        }
+        .terms input[type="checkbox"] { width: auto; margin-top: 0.2rem; }
+        .terms label { margin-bottom: 0; font-weight: 400; }
+        .terms a { color: #4F46E5; text-decoration: none; }
+        .terms a:hover { text-decoration: underline; }
 
-        .terms label {
-            margin-bottom: 0;
-            font-weight: 400;
-        }
-
-        .terms a {
-            color: #4F46E5;
-            text-decoration: none;
-        }
-
-        .terms a:hover {
-            text-decoration: underline;
-        }
-
+        /* ── Register button ──────────────────────────────────────────────────
+           Disabled state turns the button grey to signal it's not clickable
+           while the API request is in flight. */
         .btn-register {
             width: 100%;
             padding: 1rem;
@@ -129,46 +132,23 @@
             transition: background 0.3s;
         }
 
-        .btn-register:hover {
-            background: #4338CA;
-        }
+        .btn-register:hover    { background: #4338CA; }
+        .btn-register:disabled { background: #9ca3af; cursor: not-allowed; }
 
-        .btn-register:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
+        /* Login link for users who already have an account */
+        .login-link { text-align: center; color: #6b7280; margin-top: 1.5rem; }
+        .login-link a { color: #4F46E5; text-decoration: none; font-weight: 600; }
+        .login-link a:hover { text-decoration: underline; }
 
-        .login-link {
-            text-align: center;
-            color: #6b7280;
-            margin-top: 1.5rem;
-        }
+        /* Small "← Back to Home" link at the bottom of the card */
+        .back-home { text-align: center; margin-top: 1rem; }
+        .back-home a { color: #6b7280; text-decoration: none; font-size: 0.9rem; }
+        .back-home a:hover { color: #4F46E5; }
 
-        .login-link a {
-            color: #4F46E5;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .login-link a:hover {
-            text-decoration: underline;
-        }
-
-        .back-home {
-            text-align: center;
-            margin-top: 1rem;
-        }
-
-        .back-home a {
-            color: #6b7280;
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-
-        .back-home a:hover {
-            color: #4F46E5;
-        }
-
+        /* ── Status banners ───────────────────────────────────────────────────
+           Both hidden by default.  JavaScript shows the appropriate one after
+           the API call completes.
+           Error = red background, success = green background. */
         .error-message, .success-message {
             padding: 0.75rem;
             border-radius: 8px;
@@ -176,51 +156,56 @@
             display: none;
         }
 
-        .error-message {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        .success-message {
-            background: #d1fae5;
-            color: #059669;
-        }
+        .error-message   { background: #fee2e2; color: #dc2626; }
+        .success-message { background: #d1fae5; color: #059669; }
     </style>
 </head>
 <body>
+
     <div class="register-container">
+
         <div class="logo">
             <h1>Trade Notion</h1>
             <p>Create your account and start trading smarter</p>
         </div>
 
-        <div id="errorMessage" class="error-message"></div>
+        <!-- Status banners — only one is shown at a time -->
+        <div id="errorMessage"   class="error-message"></div>
         <div id="successMessage" class="success-message"></div>
 
         <form id="registerForm">
+
+            <!-- Full name — used as the display name across the app -->
             <div class="form-group">
                 <label for="fullName">Full Name</label>
                 <input type="text" id="fullName" name="fullName" placeholder="John Doe" required>
             </div>
 
+            <!-- Email — becomes the unique login identifier -->
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <input type="email" id="email" name="email" placeholder="you@example.com" required>
             </div>
 
+            <!-- Password with strength indicator bar below it -->
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Create a strong password" required minlength="8">
+                <input type="password" id="password" name="password"
+                       placeholder="Create a strong password" required minlength="8">
+                <!-- Strength bar — JavaScript updates the class on each keystroke -->
                 <div class="password-strength">
                     <div id="strengthBar" class="password-strength-bar"></div>
                 </div>
             </div>
 
+            <!-- Confirmation field — must match the password field exactly -->
             <div class="form-group">
                 <label for="confirmPassword">Confirm Password</label>
-                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Re-enter your password" required>
+                <input type="password" id="confirmPassword" name="confirmPassword"
+                       placeholder="Re-enter your password" required>
             </div>
 
+            <!-- Trading experience — stored on the User document, used for analytics context -->
             <div class="form-group">
                 <label for="tradingExperience">Trading Experience</label>
                 <select id="tradingExperience" name="tradingExperience" required>
@@ -232,9 +217,14 @@
                 </select>
             </div>
 
+            <!-- Terms checkbox — required so the form won't submit without it -->
             <div class="terms">
                 <input type="checkbox" id="terms" name="terms" required>
-                <label for="terms">I agree to the <a href="/terms.html" target="_blank">Terms of Service</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a></label>
+                <label for="terms">
+                    I agree to the
+                    <a href="/terms.html"   target="_blank">Terms of Service</a> and
+                    <a href="/privacy.html" target="_blank">Privacy Policy</a>
+                </label>
             </div>
 
             <button type="submit" class="btn-register">Create Account</button>
@@ -250,84 +240,111 @@
     </div>
 
     <script>
-        // Password strength checker
+        /*
+         * Password strength meter
+         * ──────────────────────────────────────────────────────────────────────
+         * Runs on every keypress in the password field.
+         * Adds one "strength point" for each complexity criterion met:
+         *   1. Length ≥ 8
+         *   2. Mixed case (at least one lower AND one upper)
+         *   3. Contains a digit
+         *   4. Contains a special character (not a-z, A-Z, 0-9)
+         *
+         * 1-2 points → weak (red bar)
+         * 3 points   → medium (amber bar)
+         * 4 points   → strong (green bar)
+         */
         const passwordInput = document.getElementById('password');
-        const strengthBar = document.getElementById('strengthBar');
+        const strengthBar   = document.getElementById('strengthBar');
 
         passwordInput.addEventListener('input', () => {
             const password = passwordInput.value;
-            let strength = 0;
+            let strength   = 0;
 
-            if (password.length >= 8) strength++;
-            if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
-            if (password.match(/[0-9]/)) strength++;
-            if (password.match(/[^a-zA-Z0-9]/)) strength++;
+            if (password.length >= 8)                                          strength++;
+            if (password.match(/[a-z]/) && password.match(/[A-Z]/))           strength++;
+            if (password.match(/[0-9]/))                                       strength++;
+            if (password.match(/[^a-zA-Z0-9]/))                               strength++;
 
+            // Reset to no class then apply the appropriate strength class
             strengthBar.className = 'password-strength-bar';
-            if (strength <= 2) {
-                strengthBar.classList.add('strength-weak');
-            } else if (strength === 3) {
-                strengthBar.classList.add('strength-medium');
-            } else {
-                strengthBar.classList.add('strength-strong');
-            }
+            if (strength <= 2)      strengthBar.classList.add('strength-weak');
+            else if (strength === 3) strengthBar.classList.add('strength-medium');
+            else                    strengthBar.classList.add('strength-strong');
         });
 
-        // Form submission
+        /*
+         * Registration form submission handler
+         * ──────────────────────────────────────────────────────────────────────
+         * Client-side validation runs first (password match + length).
+         * If validation passes, the data is sent to /api/auth/register.
+         * On success, shows a green banner and redirects to login after 2 s.
+         */
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+            e.preventDefault(); // Prevent default browser form POST
 
-            const btn = document.querySelector('.btn-register');
-            const fullName = document.getElementById('fullName').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
+            const btn              = document.querySelector('.btn-register');
+            const fullName         = document.getElementById('fullName').value;
+            const email            = document.getElementById('email').value;
+            const password         = document.getElementById('password').value;
+            const confirmPassword  = document.getElementById('confirmPassword').value;
             const tradingExperience = document.getElementById('tradingExperience').value;
-            const errorMessage = document.getElementById('errorMessage');
-            const successMessage = document.getElementById('successMessage');
+            const errorMessage     = document.getElementById('errorMessage');
+            const successMessage   = document.getElementById('successMessage');
 
-            errorMessage.style.display = 'none';
+            // Hide any previously shown messages before this attempt
+            errorMessage.style.display  = 'none';
             successMessage.style.display = 'none';
 
+            // ── Client-side validation ──────────────────────────────────────
+            // Check passwords match before hitting the API — saves a round-trip
             if (password !== confirmPassword) {
-                errorMessage.textContent = 'Passwords do not match!';
+                errorMessage.textContent   = 'Passwords do not match!';
                 errorMessage.style.display = 'block';
-                return;
+                return; // Stop here — don't call the API
             }
 
+            // Enforce minimum length (the HTML minlength attribute also does this,
+            // but this check ensures the error appears in our styled banner)
             if (password.length < 8) {
-                errorMessage.textContent = 'Password must be at least 8 characters.';
+                errorMessage.textContent   = 'Password must be at least 8 characters.';
                 errorMessage.style.display = 'block';
                 return;
             }
 
-            btn.disabled = true;
+            // Disable the button and show a loading label while waiting for the API
+            btn.disabled    = true;
             btn.textContent = 'Creating account…';
 
             try {
+                // Send registration data as JSON to the API
                 const response = await fetch('/api/auth/register', {
-                    method: 'POST',
+                    method:  'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: fullName, email, password, tradingExperience })
+                    body:    JSON.stringify({ name: fullName, email, password, tradingExperience })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    successMessage.textContent = 'Account created successfully! Redirecting to login...';
+                    // ── Success ───────────────────────────────────────────────
+                    successMessage.textContent   = 'Account created successfully! Redirecting to login...';
                     successMessage.style.display = 'block';
                     btn.textContent = 'Redirecting…';
+                    // Redirect to login after 2 seconds so the user can read the success message
                     setTimeout(() => { window.location.href = '/login.html'; }, 2000);
                 } else {
-                    errorMessage.textContent = data.message || 'Registration failed. Please try again.';
+                    // ── API error (email taken, validation failure, etc.) ──────
+                    errorMessage.textContent   = data.message || 'Registration failed. Please try again.';
                     errorMessage.style.display = 'block';
-                    btn.disabled = false;
+                    btn.disabled    = false;
                     btn.textContent = 'Create Account';
                 }
             } catch (error) {
-                errorMessage.textContent = 'An error occurred. Please try again.';
+                // ── Network error ─────────────────────────────────────────────
+                errorMessage.textContent   = 'An error occurred. Please try again.';
                 errorMessage.style.display = 'block';
-                btn.disabled = false;
+                btn.disabled    = false;
                 btn.textContent = 'Create Account';
             }
         });

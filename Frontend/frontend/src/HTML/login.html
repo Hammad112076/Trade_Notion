@@ -4,13 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Trade Notion</title>
+
+    <!--
+        login.html — User login page
+        ============================
+        Presents a centred card with an email + password form.
+        On submit, the form sends a POST request to /api/auth/login.
+        If login succeeds, the returned JWT is saved to localStorage
+        under the key "token" and the user is redirected to /dashboard.html.
+
+        The server returns the same "Invalid credentials" message whether
+        the email doesn't exist or the password is wrong — this prevents
+        attackers from discovering which emails are registered.
+
+        No framework — plain HTML form + fetch() API.
+    -->
+
     <style>
+        /* Remove default browser spacing and use border-box sizing everywhere */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        /* ── Page background ──────────────────────────────────────────────────
+           Full-viewport diagonal gradient centres the login card visually.
+           flex + justify/align-items: center positions the card in the middle. */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -21,6 +41,9 @@
             padding: 2rem;
         }
 
+        /* ── Login card ───────────────────────────────────────────────────────
+           White rounded card with a deep shadow that lifts it off the gradient.
+           max-width: 450px keeps it readable on wide screens. */
         .login-container {
             background: white;
             padding: 3rem;
@@ -30,6 +53,8 @@
             max-width: 450px;
         }
 
+        /* ── Logo / heading area ──────────────────────────────────────────────
+           App name in brand indigo, with a subtitle beneath it. */
         .logo {
             text-align: center;
             margin-bottom: 2rem;
@@ -46,6 +71,8 @@
             font-size: 0.95rem;
         }
 
+        /* ── Form groups ──────────────────────────────────────────────────────
+           Each group wraps one label + input pair with consistent spacing. */
         .form-group {
             margin-bottom: 1.5rem;
         }
@@ -57,6 +84,7 @@
             font-weight: 500;
         }
 
+        /* Full-width inputs with a visible border that turns indigo on focus */
         input {
             width: 100%;
             padding: 0.875rem;
@@ -66,11 +94,14 @@
             transition: border-color 0.3s;
         }
 
+        /* Remove the browser default focus outline and use our own border colour */
         input:focus {
             outline: none;
             border-color: #4F46E5;
         }
 
+        /* ── Remember me + forgot password row ───────────────────────────────
+           Flexbox spreads the checkbox to the left and the link to the right. */
         .remember-forgot {
             display: flex;
             justify-content: space-between;
@@ -85,10 +116,12 @@
             gap: 0.5rem;
         }
 
+        /* The checkbox uses its natural width — not stretched to 100% like other inputs */
         .remember-me input[type="checkbox"] {
             width: auto;
         }
 
+        /* Indigo colour for the forgot password link to match the brand */
         .forgot-password {
             color: #4F46E5;
             text-decoration: none;
@@ -98,6 +131,8 @@
             text-decoration: underline;
         }
 
+        /* ── Login button ─────────────────────────────────────────────────────
+           Full-width solid indigo button. Darkens on hover. */
         .btn-login {
             width: 100%;
             padding: 1rem;
@@ -115,6 +150,8 @@
             background: #4338CA;
         }
 
+        /* ── Sign-up link ─────────────────────────────────────────────────────
+           Shown beneath the button for users who don't yet have an account. */
         .signup-link {
             text-align: center;
             color: #6b7280;
@@ -131,6 +168,8 @@
             text-decoration: underline;
         }
 
+        /* ── Back to home link ────────────────────────────────────────────────
+           Small muted link at the bottom so users can return to the landing page. */
         .back-home {
             text-align: center;
             margin-top: 1rem;
@@ -146,6 +185,9 @@
             color: #4F46E5;
         }
 
+        /* ── Error message banner ─────────────────────────────────────────────
+           Hidden by default (display: none).  Shown by JavaScript when the
+           API returns an error — red background for immediate visual attention. */
         .error-message {
             background: #fee2e2;
             color: #dc2626;
@@ -157,25 +199,36 @@
     </style>
 </head>
 <body>
+
+    <!-- ── Login card ──────────────────────────────────────────────────────────
+         Centred on the page by the flex body styles above. -->
     <div class="login-container">
+
+        <!-- App logo / page heading -->
         <div class="logo">
             <h1>Trade Notion</h1>
             <p>Welcome back! Login to your account</p>
         </div>
 
+        <!-- Error banner — hidden until JavaScript shows it on a failed login -->
         <div id="errorMessage" class="error-message"></div>
 
+        <!-- Login form — submits via JavaScript fetch(), not native form POST -->
         <form id="loginForm">
+
+            <!-- Email field — type="email" triggers browser validation before submit -->
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <input type="email" id="email" name="email" placeholder="you@example.com" required>
             </div>
 
+            <!-- Password field — type="password" masks the characters while typing -->
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" placeholder="Enter your password" required>
             </div>
 
+            <!-- Remember me checkbox (UI only — the JWT TTL controls session length) -->
             <div class="remember-forgot">
                 <div class="remember-me">
                     <input type="checkbox" id="remember" name="remember">
@@ -183,58 +236,76 @@
                 </div>
             </div>
 
+            <!-- Submit button — disabled and relabelled while the API call is in flight -->
             <button type="submit" class="btn-login">Login</button>
         </form>
 
+        <!-- Link for new users to create an account -->
         <div class="signup-link">
             Don't have an account? <a href="/register.html">Sign up</a>
         </div>
 
+        <!-- Link to return to the public landing page -->
         <div class="back-home">
             <a href="/home.html">← Back to Home</a>
         </div>
     </div>
 
     <script>
-        
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
+        /*
+         * Login form submission handler
+         * ─────────────────────────────
+         * Intercepts the native form submit event, sends the credentials
+         * to the API with fetch(), and handles both success and failure.
+         */
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            // Prevent the default browser behaviour (full-page form POST)
+            e.preventDefault();
 
-        const btn = document.querySelector('.btn-login');
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const errorMessage = document.getElementById('errorMessage');
+            const btn          = document.querySelector('.btn-login');
+            const email        = document.getElementById('email').value;
+            const password     = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
 
-        btn.disabled = true;
-        btn.textContent = 'Logging in…';
-        errorMessage.style.display = 'none';
+            // Disable the button and show a loading label to prevent double-submission
+            btn.disabled     = true;
+            btn.textContent  = 'Logging in…';
+            // Hide any previous error message from a failed attempt
+            errorMessage.style.display = 'none';
 
-        try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
+            try {
+                // POST credentials to the login API endpoint as JSON
+                const response = await fetch('/api/auth/login', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ email, password })
+                });
 
-            const data = await response.json();
+                const data = await response.json();
 
-            if (response.ok) {
-                localStorage.setItem('token', data.token);
-                btn.textContent = 'Redirecting…';
-                setTimeout(() => { window.location.replace('/dashboard.html'); }, 100);
-            } else {
-                errorMessage.textContent = data.message || 'Login failed. Please try again.';
+                if (response.ok) {
+                    // ── Success ───────────────────────────────────────────────
+                    // Save the JWT in localStorage so every subsequent page can
+                    // attach it to API requests via the Authorization header.
+                    localStorage.setItem('token', data.token);
+                    btn.textContent = 'Redirecting…';
+                    // Small delay before redirect so the button label is visible
+                    setTimeout(() => { window.location.replace('/dashboard.html'); }, 100);
+                } else {
+                    // ── API error (wrong credentials, server error, etc.) ──────
+                    errorMessage.textContent   = data.message || 'Login failed. Please try again.';
+                    errorMessage.style.display = 'block';
+                    btn.disabled    = false;
+                    btn.textContent = 'Login';
+                }
+            } catch (error) {
+                // ── Network error (offline, server down, etc.) ────────────────
+                errorMessage.textContent   = 'An error occurred. Please try again.';
                 errorMessage.style.display = 'block';
-                btn.disabled = false;
+                btn.disabled    = false;
                 btn.textContent = 'Login';
             }
-        } catch (error) {
-            errorMessage.textContent = 'An error occurred. Please try again.';
-            errorMessage.style.display = 'block';
-            btn.disabled = false;
-            btn.textContent = 'Login';
-        }
-    });
-</script>
+        });
+    </script>
 </body>
 </html>

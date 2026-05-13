@@ -4,7 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports - Trade Notion</title>
+
+    <!--
+        reports.html — CSV report generator
+        =====================================
+        This page lets the user generate and download CSV reports of their trade data.
+        All report building happens entirely client-side: trades are fetched from the
+        API, processed in JavaScript, and downloaded as a .csv file via a Blob URL.
+        Nothing is stored server-side.
+
+        Page sections:
+          1. Report generator card — choose report type + date range, then click Generate.
+          2. Report template cards — clickable shortcuts that pre-fill the form and
+             immediately generate the chosen report type with All Time data.
+          3. Recent reports list — reports generated this browser session are stored
+             in sessionStorage so they can be re-downloaded without regenerating.
+
+        Report types (all produce .csv files):
+          - Performance Summary — key metrics (win rate, P&L, profit factor, expectancy, etc.)
+          - Detailed Trade Analysis — one row per trade with all field values
+          - Monthly Overview — aggregated stats per calendar month
+          - Strategy Breakdown — aggregated stats grouped by strategy name
+          - Risk Analysis — max drawdown, consecutive losses, largest single win/loss
+
+        Date filtering:
+          - week / month / quarter / year — relative to today (last N days)
+          - custom — shows start/end date pickers, filters inclusively between them
+          - all — no filter applied
+
+        Auth:
+          JWT is read from localStorage; if missing, redirects to /login.html.
+    -->
+
     <style>
+        /* Remove default browser margins/padding and use border-box sizing throughout */
         * {
             margin: 0;
             padding: 0;
@@ -16,6 +49,8 @@
             background: #f3f4f6;
         }
 
+        /* ── Sidebar ──────────────────────────────────────────────────────────
+           Fixed dark left panel shared with all other dashboard pages */
         .sidebar {
             position: fixed;
             left: 0;
@@ -38,9 +73,7 @@
             font-size: 1.5rem;
         }
 
-        .nav-section {
-            margin-bottom: 2rem;
-        }
+        .nav-section { margin-bottom: 2rem; }
 
         .nav-section-title {
             padding: 0 1.5rem;
@@ -61,6 +94,7 @@
             transition: all 0.3s;
         }
 
+        /* Active and hovered links: dark background + indigo left border */
         .nav-item:hover,
         .nav-item.active {
             background: #374151;
@@ -68,15 +102,15 @@
             border-left: 3px solid #4F46E5;
         }
 
-        .nav-icon {
-            font-size: 1.25rem;
-        }
+        .nav-icon { font-size: 1.25rem; }
 
+        /* Main content area — pushed right of the 260px sidebar */
         .main-content {
             margin-left: 260px;
             padding: 2rem;
         }
 
+        /* White page-header card */
         .header {
             background: white;
             padding: 1.5rem 2rem;
@@ -91,6 +125,9 @@
             margin-bottom: 0.5rem;
         }
 
+        /* ── Report generator card ────────────────────────────────────────────
+           White card containing the type/range dropdowns, optional date pickers,
+           a status message line, and the Generate button. */
         .report-generator {
             background: white;
             padding: 2rem;
@@ -106,6 +143,7 @@
             margin-bottom: 1.5rem;
         }
 
+        /* Auto-fit grid for the filter controls — wraps on narrow screens */
         .form-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -138,6 +176,7 @@
             border-color: #4F46E5;
         }
 
+        /* Shared button base */
         .btn {
             padding: 0.75rem 2rem;
             border: none;
@@ -147,6 +186,7 @@
             transition: all 0.3s;
         }
 
+        /* Filled indigo button — used for the Generate action */
         .btn-primary {
             background: #4F46E5;
             color: white;
@@ -156,12 +196,16 @@
             background: #4338CA;
         }
 
+        /* ── Report template cards grid ───────────────────────────────────────
+           Clickable cards that act as shortcuts: clicking one pre-selects that
+           report type and immediately triggers generateReport(). */
         .reports-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 1.5rem;
         }
 
+        /* Each template card lifts slightly on hover as a click affordance */
         .report-card {
             background: white;
             padding: 1.5rem;
@@ -176,6 +220,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.15);
         }
 
+        /* Header row inside each card: title/description on left, icon on right */
         .report-header {
             display: flex;
             justify-content: space-between;
@@ -183,6 +228,7 @@
             margin-bottom: 1rem;
         }
 
+        /* Square icon badge in the top-right of each template card */
         .report-icon {
             width: 50px;
             height: 50px;
@@ -193,8 +239,9 @@
             font-size: 1.5rem;
         }
 
-        .report-icon.blue { background: #dbeafe; }
-        .report-icon.green { background: #d1fae5; }
+        /* Four colour variants for the icon badges */
+        .report-icon.blue   { background: #dbeafe; }
+        .report-icon.green  { background: #d1fae5; }
         .report-icon.purple { background: #e9d5ff; }
         .report-icon.orange { background: #fed7aa; }
 
@@ -211,6 +258,7 @@
             margin-bottom: 1rem;
         }
 
+        /* Footer row at the bottom of each card: tag on left, CTA hint on right */
         .report-meta {
             display: flex;
             justify-content: space-between;
@@ -220,6 +268,9 @@
             color: #6b7280;
         }
 
+        /* ── Recent reports list ──────────────────────────────────────────────
+           Shows reports generated in the current browser session.
+           Stored in sessionStorage — cleared when the tab closes. */
         .recent-reports {
             background: white;
             padding: 2rem;
@@ -235,6 +286,7 @@
             margin-bottom: 1.5rem;
         }
 
+        /* Individual recent report row — title + generation time on left, Download button right */
         .report-item {
             padding: 1rem;
             border-bottom: 1px solid #f3f4f6;
@@ -263,6 +315,7 @@
             gap: 0.5rem;
         }
 
+        /* Small action button used on the recent-report rows */
         .action-btn {
             padding: 0.5rem 1rem;
             background: #f3f4f6;
@@ -277,22 +330,19 @@
             background: #e5e7eb;
         }
 
+        /* ── Responsive ───────────────────────────────────────────────────────
+           Collapse sidebar to icon-only on narrow viewports */
         @media (max-width: 768px) {
-            .sidebar {
-                width: 70px;
-            }
-
-            .main-content {
-                margin-left: 70px;
-            }
-
-            .nav-item span {
-                display: none;
-            }
+            .sidebar { width: 70px; }
+            .main-content { margin-left: 70px; }
+            .nav-item span { display: none; }
         }
     </style>
 </head>
 <body>
+
+    <!-- ── Sidebar navigation ──────────────────────────────────────────────────
+         Fixed dark left panel. "Reports" has the .active class for this page. -->
     <div class="sidebar">
         <div class="logo">
             <h2>Trade Notion</h2>
@@ -300,58 +350,42 @@
 
         <div class="nav-section">
             <div class="nav-section-title">Main</div>
-            <a href="/dashboard.html" class="nav-item">
-                <span class="nav-icon">📊</span>
-                <span>Dashboard</span>
-            </a>
-            <a href="/trades.html" class="nav-item">
-                <span class="nav-icon">📝</span>
-                <span>Trade Journal</span>
-            </a>
-            <a href="/analytics.html" class="nav-item">
-                <span class="nav-icon">📈</span>
-                <span>Analytics</span>
-            </a>
+            <a href="/dashboard.html" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+            <a href="/trades.html"    class="nav-item"><span class="nav-icon">📝</span><span>Trade Journal</span></a>
+            <a href="/analytics.html" class="nav-item"><span class="nav-icon">📈</span><span>Analytics</span></a>
         </div>
 
         <div class="nav-section">
             <div class="nav-section-title">Tools</div>
-            <a href="/calendar.html" class="nav-item">
-                <span class="nav-icon">📅</span>
-                <span>Calendar</span>
-            </a>
-            <a href="/reports.html" class="nav-item active">
-                <span class="nav-icon">📄</span>
-                <span>Reports</span>
-            </a>
-            <a href="/goals.html" class="nav-item">
-                <span class="nav-icon">🎯</span>
-                <span>Goals</span>
-            </a>
+            <a href="/calendar.html" class="nav-item"><span class="nav-icon">📅</span><span>Calendar</span></a>
+            <!-- Active — this is the current page -->
+            <a href="/reports.html"  class="nav-item active"><span class="nav-icon">📄</span><span>Reports</span></a>
+            <a href="/goals.html"    class="nav-item"><span class="nav-icon">🎯</span><span>Goals</span></a>
         </div>
 
         <div class="nav-section">
             <div class="nav-section-title">Account</div>
-            <a href="/settings.html" class="nav-item">
-                <span class="nav-icon">⚙️</span>
-                <span>Settings</span>
-            </a>
-            <a href="#" class="nav-item" onclick="logout()">
-                <span class="nav-icon">🚪</span>
-                <span>Logout</span>
-            </a>
+            <a href="/settings.html" class="nav-item"><span class="nav-icon">⚙️</span><span>Settings</span></a>
+            <a href="#" class="nav-item" onclick="logout()"><span class="nav-icon">🚪</span><span>Logout</span></a>
         </div>
     </div>
 
     <div class="main-content">
+
+        <!-- Page header — title and subtitle only, no action buttons -->
         <div class="header">
             <h1>Reports</h1>
             <p style="color: #6b7280; margin-top: 0.25rem;">Generate and download custom trading reports</p>
         </div>
 
+        <!-- ── Report generator card ──────────────────────────────────────────
+             The user picks a type and date range, then clicks Generate.
+             Custom Range shows two hidden date pickers (start + end).
+             #generateStatus shows progress/result text during generation. -->
         <div class="report-generator">
             <h2 class="generator-title">Generate New Report</h2>
             <div class="form-grid">
+                <!-- Report type — determines which build*() function is called -->
                 <div class="form-group">
                     <label>Report Type</label>
                     <select id="reportType">
@@ -363,6 +397,7 @@
                     </select>
                 </div>
 
+                <!-- Date range — controls which trades are included in the report -->
                 <div class="form-group">
                     <label>Date Range</label>
                     <select id="dateRange">
@@ -371,10 +406,12 @@
                         <option value="quarter">Last 3 Months</option>
                         <option value="year">Last Year</option>
                         <option value="all">All Time</option>
+                        <!-- Selecting "custom" reveals the two date pickers below -->
                         <option value="custom">Custom Range</option>
                     </select>
                 </div>
 
+                <!-- Start and end date pickers — hidden until "Custom Range" is selected -->
                 <div class="form-group" id="customRangeGroup" style="display:none;">
                     <label>Start Date</label>
                     <input type="date" id="startDate">
@@ -384,13 +421,22 @@
                     <input type="date" id="endDate">
                 </div>
             </div>
+
+            <!-- Status line: shows "Fetching…", "Building…", "✅ Exported N trades", or "❌ error" -->
             <div id="generateStatus" style="margin-bottom:1rem;color:#6b7280;font-size:0.9rem;display:none;"></div>
+
+            <!-- Generate button — disabled while the async generation is in progress -->
             <button class="btn btn-primary" id="generateBtn" onclick="generateReport()">📥 Generate & Download CSV</button>
         </div>
 
+        <!-- ── Report template cards ──────────────────────────────────────────
+             Five clickable cards that act as one-click shortcuts.
+             Each calls quickGenerate(type) which pre-fills the type dropdown
+             and immediately calls generateReport(). -->
         <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; color: #1f2937;">Report Templates</h2>
 
         <div class="reports-grid">
+            <!-- Performance Summary: headline metrics in a two-column CSV -->
             <div class="report-card" onclick="quickGenerate('performance')">
                 <div class="report-header">
                     <div>
@@ -402,6 +448,7 @@
                 <div class="report-meta"><span>Most Popular</span><span>Click to generate</span></div>
             </div>
 
+            <!-- Detailed Trade Analysis: one row per trade with all logged fields -->
             <div class="report-card" onclick="quickGenerate('detailed')">
                 <div class="report-header">
                     <div>
@@ -413,6 +460,7 @@
                 <div class="report-meta"><span>Comprehensive</span><span>Click to generate</span></div>
             </div>
 
+            <!-- Monthly Overview: one row per calendar month -->
             <div class="report-card" onclick="quickGenerate('monthly')">
                 <div class="report-header">
                     <div>
@@ -424,6 +472,7 @@
                 <div class="report-meta"><span>Time-based</span><span>Click to generate</span></div>
             </div>
 
+            <!-- Strategy Breakdown: one row per strategy name -->
             <div class="report-card" onclick="quickGenerate('strategy')">
                 <div class="report-header">
                     <div>
@@ -435,6 +484,7 @@
                 <div class="report-meta"><span>Strategy-focused</span><span>Click to generate</span></div>
             </div>
 
+            <!-- Risk Analysis: drawdown, consecutive losses, extreme trade values -->
             <div class="report-card" onclick="quickGenerate('risk')">
                 <div class="report-header">
                     <div>
@@ -445,11 +495,15 @@
                 </div>
                 <div class="report-meta"><span>Risk-focused</span><span>Click to generate</span></div>
             </div>
-
         </div>
 
+        <!-- ── Recent reports ─────────────────────────────────────────────────
+             Reports generated this session are listed here for re-download.
+             The CSV content is stored in sessionStorage alongside the filename
+             so re-downloading doesn't need another API call. -->
         <div class="recent-reports">
             <h2 class="recent-title">Recently Generated Reports</h2>
+            <!-- Populated by renderRecent() — shows each report with a Download button -->
             <div id="recentReportsList">
                 <div class="empty-state" style="padding:2rem;text-align:center;color:#6b7280;">
                     No reports generated yet. Use the form above or click a template to get started.
@@ -459,19 +513,35 @@
     </div>
 
     <script>
+        /*
+         * Auth guard
+         * ───────────
+         * Redirect to login if no JWT is stored in localStorage.
+         */
         const token = localStorage.getItem('token');
         if (!token) window.location.href = '/login.html';
 
         function logout() { localStorage.removeItem('token'); window.location.href = '/login.html'; }
 
-        // Show/hide custom date inputs
+        /*
+         * Show / hide custom date pickers
+         * ────────────────────────────────
+         * When "Custom Range" is selected in the date range dropdown, reveal the
+         * start and end date inputs.  Selecting any other option hides them again.
+         */
         document.getElementById('dateRange').addEventListener('change', function() {
             const show = this.value === 'custom';
             document.getElementById('customRangeGroup').style.display  = show ? 'flex' : 'none';
             document.getElementById('customRangeGroup2').style.display = show ? 'flex' : 'none';
         });
 
-        // Fetch all trades from API
+        /*
+         * fetchTrades()
+         * ──────────────
+         * Fetches all of the user's trades from GET /api/trades.
+         * Returns the trades array; throws an Error on a non-OK response so the
+         * caller's try/catch can handle it.
+         */
         async function fetchTrades() {
             const r = await fetch('/api/trades', { headers: { Authorization: `Bearer ${token}` } });
             if (!r.ok) throw new Error('Failed to fetch trades');
@@ -479,12 +549,21 @@
             return data.trades || [];
         }
 
-        // Filter trades by selected date range
+        /*
+         * applyDateFilter(trades, range, start, end)
+         * ───────────────────────────────────────────
+         * Filters a trades array to only include trades within the specified period.
+         *   range = 'all'   → return all trades unchanged
+         *   range = 'week' / 'month' / 'quarter' / 'year' → last N days from today
+         *   range = 'custom' → between start and end dates (inclusive)
+         */
         function applyDateFilter(trades, range, start, end) {
             if (!range || range === 'all') return trades;
-            const now = new Date();
+            const now  = new Date();
+            /* Number of calendar days for each named period */
             const days = { week: 7, month: 30, quarter: 90, year: 365 }[range];
-            const cutoff = range === 'custom' ? new Date(start) : new Date(now - days * 86400000);
+            /* Cutoff date: for relative ranges, subtract N days from now */
+            const cutoff    = range === 'custom' ? new Date(start) : new Date(now - days * 86400000);
             const endCutoff = range === 'custom' ? new Date(end) : null;
             return trades.filter(t => {
                 const d = new Date(t.date);
@@ -493,21 +572,56 @@
             });
         }
 
-        // CSV helpers
+        /* ── CSV helpers ─────────────────────────────────────────────────────── */
+
+        /*
+         * esc(v) — CSV cell escaping
+         * Wraps the value in double-quotes and escapes any internal double-quotes
+         * by doubling them, as required by the RFC 4180 CSV standard.
+         * Converts null/undefined to empty string via the nullish coalescing operator.
+         */
         function esc(v) { return `"${String(v ?? '').replace(/"/g, '""')}"`; }
+
+        /*
+         * toCSV(headers, rows)
+         * ─────────────────────
+         * Converts a header array and a 2D rows array into a CSV string.
+         * Each value is wrapped by esc() and cells are joined with commas.
+         * Rows are joined with newlines.
+         */
         function toCSV(headers, rows) {
             return [headers.map(esc), ...rows.map(r => r.map(esc))].map(r => r.join(',')).join('\n');
         }
+
+        /*
+         * download(csv, filename)
+         * ────────────────────────
+         * Creates an in-memory Blob from the CSV string, generates a temporary
+         * object URL, and programmatically clicks an invisible <a> element to
+         * trigger the browser's file download dialog.
+         * Revokes the Blob URL immediately after to free memory.
+         */
         function download(csv, filename) {
             const blob = new Blob([csv], { type: 'text/csv' });
             const url  = URL.createObjectURL(blob);
             const a    = document.createElement('a');
             a.href = url; a.download = filename; a.click();
-            URL.revokeObjectURL(url);
+            URL.revokeObjectURL(url); /* Release the in-memory URL */
         }
 
-        // ── Report builders ──────────────────────────────────────────────
+        /* ── Report builders ───────────────────────────────────────────────── */
 
+        /*
+         * buildPerformance(trades)
+         * ─────────────────────────
+         * Produces a two-column CSV (Metric, Value) with summary statistics:
+         *   - Trade counts (total, wins, losses, breakeven)
+         *   - Win rate as a percentage
+         *   - Total P&L, average win, average loss
+         *   - Profit factor: gross wins / gross losses (∞ if no losses but wins exist)
+         *   - Expectancy: (winRate × avgWin) − (lossRate × avgLoss)
+         *   - Best and worst single-trade P&L values
+         */
         function buildPerformance(trades) {
             const total   = trades.length;
             const wins    = trades.filter(t => t.result === 'win').length;
@@ -519,9 +633,11 @@
             const sumW    = wTrades.reduce((s, t) => s + (t.profitLoss || 0), 0);
             const sumL    = Math.abs(lTrades.reduce((s, t) => s + (t.profitLoss || 0), 0));
             const avgWin  = wTrades.length ? (sumW / wTrades.length).toFixed(2) : 0;
-            const avgLoss = lTrades.length  ? (sumL / lTrades.length).toFixed(2)  : 0;
+            const avgLoss = lTrades.length ? (sumL / lTrades.length).toFixed(2)  : 0;
+            /* Profit factor = gross wins / gross losses; ∞ when there are wins but no losses */
             const pf      = sumL > 0 ? (sumW / sumL).toFixed(2) : sumW > 0 ? '∞' : '0.00';
             const wr      = total > 0 ? wins / total : 0;
+            /* Expectancy = expected P&L per trade based on historical win rate and averages */
             const exp     = ((wr * parseFloat(avgWin)) - ((1 - wr) * parseFloat(avgLoss))).toFixed(2);
             const best    = total ? Math.max(...trades.map(t => t.profitLoss || 0)).toFixed(2) : 0;
             const worst   = total ? Math.min(...trades.map(t => t.profitLoss || 0)).toFixed(2) : 0;
@@ -540,6 +656,13 @@
             ]);
         }
 
+        /*
+         * buildDetailed(trades)
+         * ──────────────────────
+         * One row per trade — every logged field including psychology notes.
+         * This is the most comprehensive report and is useful for importing
+         * into Excel or Google Sheets for custom analysis.
+         */
         function buildDetailed(trades) {
             const headers = ['Date', 'Symbol', 'Direction', 'Strategy', 'Shares', 'P&L', 'Result',
                              'Confidence', 'Emotion Before', 'Emotion After', 'What Went Right', 'What Went Wrong'];
@@ -553,6 +676,13 @@
             return toCSV(headers, rows);
         }
 
+        /*
+         * buildMonthly(trades)
+         * ─────────────────────
+         * Aggregates trades into calendar months (YYYY-MM).
+         * Each row shows: month, total trades, wins, losses, win rate, total P&L.
+         * Sorted chronologically so the earliest month is first.
+         */
         function buildMonthly(trades) {
             const map = {};
             trades.forEach(t => {
@@ -564,6 +694,7 @@
                 if (t.result === 'win')  map[key].wins++;
                 if (t.result === 'loss') map[key].losses++;
             });
+            /* Sort() on YYYY-MM strings produces chronological order */
             const rows = Object.entries(map).sort().map(([month, s]) => [
                 month, s.trades, s.wins, s.losses,
                 s.trades ? ((s.wins / s.trades) * 100).toFixed(1) + '%' : '0%',
@@ -572,6 +703,13 @@
             return toCSV(['Month', 'Trades', 'Wins', 'Losses', 'Win Rate', 'Total P&L'], rows);
         }
 
+        /*
+         * buildStrategy(trades)
+         * ──────────────────────
+         * Groups trades by strategy name (trade.model).
+         * Trades with no strategy are grouped under "Unknown".
+         * Each row shows: strategy, trades, wins, losses, win rate, total P&L, avg P&L.
+         */
         function buildStrategy(trades) {
             const map = {};
             trades.forEach(t => {
@@ -591,20 +729,32 @@
             return toCSV(['Strategy', 'Trades', 'Wins', 'Losses', 'Win Rate', 'Total P&L', 'Avg P&L'], rows);
         }
 
+        /*
+         * buildRisk(trades)
+         * ──────────────────
+         * Computes risk-focused metrics across the filtered trade set:
+         *   - Max drawdown: the largest peak-to-trough decline in cumulative P&L
+         *   - Max consecutive losses / wins: longest losing or winning streak
+         *   - Largest single win and loss
+         *   - Average trade P&L
+         */
         function buildRisk(trades) {
-            const pls = trades.map(t => t.profitLoss || 0);
+            const pls  = trades.map(t => t.profitLoss || 0);
             const best  = pls.length ? Math.max(...pls) : 0;
             const worst = pls.length ? Math.min(...pls) : 0;
-            // Max drawdown
+
+            /* Drawdown: track running peak cumulative P&L and measure the dip below it */
             let peak = 0, cum = 0, maxDD = 0;
             pls.forEach(pl => { cum += pl; if (cum > peak) peak = cum; const dd = peak - cum; if (dd > maxDD) maxDD = dd; });
-            // Consecutive losses/wins
+
+            /* Consecutive streaks: track current run length, reset on outcome change */
             let maxLoss = 0, maxWin = 0, curL = 0, curW = 0;
             trades.forEach(t => {
                 if (t.result === 'loss') { curL++; curW = 0; maxLoss = Math.max(maxLoss, curL); }
                 else if (t.result === 'win') { curW++; curL = 0; maxWin = Math.max(maxWin, curW); }
-                else { curL = 0; curW = 0; }
+                else { curL = 0; curW = 0; } /* Breakeven resets both streaks */
             });
+
             const avg = pls.length ? (pls.reduce((a, b) => a + b, 0) / pls.length).toFixed(2) : 0;
             return toCSV(['Metric', 'Value'], [
                 ['Total Trades', trades.length],
@@ -617,6 +767,13 @@
             ]);
         }
 
+        /*
+         * buildTax(trades)
+         * ─────────────────
+         * Detailed chronological trade log with a running cumulative P&L column.
+         * Useful as a starting point for tax calculations — not a substitute
+         * for professional tax advice.
+         */
         function buildTax(trades) {
             let cum = 0;
             const sorted = [...trades].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -626,25 +783,41 @@
                     new Date(t.date).toLocaleDateString(),
                     t.symbol, t.direction || '', t.model || '',
                     (t.profitLoss || 0).toFixed(2), t.result || '',
-                    cum.toFixed(2)
+                    cum.toFixed(2) /* Running total */
                 ];
             });
             return toCSV(['Date', 'Symbol', 'Direction', 'Strategy', 'P&L', 'Result', 'Cumulative P&L'], rows);
         }
 
+        /*
+         * Builder and label lookup maps
+         * ──────────────────────────────
+         * BUILDERS maps each report type key to its build function.
+         * LABELS maps each type key to a human-readable name used in filenames
+         * and the recent-reports list.
+         */
         const BUILDERS = { performance: buildPerformance, detailed: buildDetailed, monthly: buildMonthly, strategy: buildStrategy, risk: buildRisk, tax: buildTax };
         const LABELS   = { performance: 'Performance Summary', detailed: 'Detailed Trade Analysis', monthly: 'Monthly Overview', strategy: 'Strategy Breakdown', risk: 'Risk Analysis', tax: 'Tax Summary' };
 
-        // ── Recent reports (session) ──────────────────────────────────────
+        /* ── Recent reports (session storage) ──────────────────────────────── */
+
+        /*
+         * recentReports — array of { name, filename, csv, time } objects.
+         * Persisted in sessionStorage so the list survives page reloads within
+         * the same browser session, but is cleared when the tab closes.
+         * Limited to 10 entries; oldest entries are dropped when the limit is reached.
+         */
         const recentReports = JSON.parse(sessionStorage.getItem('recentReports') || '[]');
 
+        /* Adds a new entry to the top of the recent reports list and saves to sessionStorage */
         function saveRecent(name, filename, csv) {
             recentReports.unshift({ name, filename, csv, time: new Date().toLocaleString() });
-            if (recentReports.length > 10) recentReports.pop();
+            if (recentReports.length > 10) recentReports.pop(); /* Keep the list to 10 max */
             sessionStorage.setItem('recentReports', JSON.stringify(recentReports));
             renderRecent();
         }
 
+        /* Rebuilds the recent reports list HTML from the recentReports[] array */
         function renderRecent() {
             const el = document.getElementById('recentReportsList');
             if (!recentReports.length) {
@@ -658,22 +831,37 @@
                         <p>Generated ${r.time} • CSV</p>
                     </div>
                     <div class="report-actions">
+                        <!-- Re-download without hitting the API again — CSV is stored in memory -->
                         <button class="action-btn" onclick="reDownload(${i})">📥 Download</button>
                     </div>
                 </div>`).join('');
         }
 
+        /* Triggers a browser download of a previously generated report by index */
         function reDownload(i) { download(recentReports[i].csv, recentReports[i].filename); }
 
+        /* Render the list on page load (in case the user navigated away and back) */
         renderRecent();
 
-        // ── Generate ─────────────────────────────────────────────────────
+        /* ── Main generate function ──────────────────────────────────────────── */
+
+        /*
+         * generateReport()
+         * ─────────────────
+         * Reads the type and date-range selectors, validates the custom range
+         * (if selected), fetches trades, applies the date filter, calls the
+         * appropriate builder, triggers a download, and saves to recent reports.
+         *
+         * The Generate button is disabled during the async operation to prevent
+         * double-clicks.  The status text element shows progress and result messages.
+         */
         async function generateReport() {
             const type      = document.getElementById('reportType').value;
             const range     = document.getElementById('dateRange').value;
             const startDate = document.getElementById('startDate').value;
             const endDate   = document.getElementById('endDate').value;
 
+            /* Custom range requires both dates to be filled in */
             if (range === 'custom' && (!startDate || !endDate)) {
                 alert('Please select both a start and end date for a custom range.'); return;
             }
@@ -694,10 +882,12 @@
                 }
 
                 status.textContent = `Building report from ${trades.length} trade(s)…`;
-                const csv      = BUILDERS[type](trades);
+
+                /* Call the builder for the selected report type */
+                const csv        = BUILDERS[type](trades);
                 const rangeLabel = range === 'custom' ? `${startDate}_to_${endDate}` : range || 'all-time';
-                const filename = `${type}-report-${rangeLabel}.csv`;
-                const label    = `${LABELS[type]} (${rangeLabel.replace(/-/g, ' ')})`;
+                const filename   = `${type}-report-${rangeLabel}.csv`;
+                const label      = `${LABELS[type]} (${rangeLabel.replace(/-/g, ' ')})`;
 
                 download(csv, filename);
                 saveRecent(label, filename, csv);
@@ -710,6 +900,13 @@
             btn.disabled = false; btn.textContent = '📥 Generate & Download CSV';
         }
 
+        /*
+         * quickGenerate(type)
+         * ────────────────────
+         * Called when a template card is clicked.
+         * Pre-selects the report type in the dropdown, scrolls to the top of the
+         * page so the user sees the status message, and immediately triggers generation.
+         */
         function quickGenerate(type) {
             document.getElementById('reportType').value = type;
             window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -1,3 +1,23 @@
+<!--
+  index.html — Public Marketing Landing Page
+  ============================================
+  This is the first page an unauthenticated visitor sees when they arrive at the
+  root URL ("/").  It is a static marketing page — no JavaScript, no API calls.
+
+  Structure:
+    1. Fixed top navigation bar — logo, anchor links (Features / About / Contact),
+       Login and Sign Up buttons
+    2. Hero section — full-width gradient banner with headline, subtitle, and CTA
+    3. Features section — 6-card grid highlighting the platform's main capabilities
+    4. About section — 3-card "why we built this" value proposition
+    5. Footer — copyright, Terms of Service link, Privacy Policy link, support email
+
+  Navigation:
+    The "Features" and "About Us" links use #fragment anchors to scroll the user
+    down to the matching <section id="..."> on the same page (no page load).
+    "Contact" links to the footer id="contact".
+    Login → /login.html, Sign Up → /register.html.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,19 +25,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trade Notion - Trading Journal & Analytics Platform</title>
     <style>
+        /* ── Reset ────────────────────────────────────────────────────────── */
+        /* Remove browser default margin/padding; border-box sizing so padding
+           never expands elements beyond their declared width. */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        /* ── Page base ────────────────────────────────────────────────────── */
+        /* line-height: 1.6 gives comfortable reading spacing for paragraph text
+           on the marketing copy sections. */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             line-height: 1.6;
             color: #333;
         }
 
-        /* Navigation */
+        /* ── Top navigation bar ───────────────────────────────────────────── */
+        /* Fixed to the top so it stays visible as the user scrolls through
+           the marketing sections.  z-index: 1000 ensures it sits above all
+           page content including the hero section that sits directly below it.
+           The subtle drop shadow separates it from the page behind. */
         nav {
             background: #fff;
             padding: 1rem 2rem;
@@ -28,6 +58,8 @@
             z-index: 1000;
         }
 
+        /* Constrain the nav inner content to 1200px and use flex to spread
+           the logo, link list, and buttons across the full width. */
         .nav-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -36,12 +68,16 @@
             align-items: center;
         }
 
+        /* Brand name in indigo — the primary brand colour used throughout the app. */
         .logo {
             font-size: 1.5rem;
             font-weight: bold;
             color: #4F46E5;
         }
 
+        /* ── Navigation anchor links ──────────────────────────────────────── */
+        /* Horizontal list of page-section jump links.  list-style: none removes
+           the default bullet points.  gap: 2rem spaces them evenly. */
         .nav-links {
             display: flex;
             gap: 2rem;
@@ -55,15 +91,19 @@
             transition: color 0.3s;
         }
 
+        /* Turns indigo on hover to hint that these are clickable links. */
         .nav-links a:hover {
             color: #4F46E5;
         }
 
+        /* ── Nav call-to-action buttons ───────────────────────────────────── */
+        /* Login and Sign Up sit on the right end of the nav bar. */
         .nav-buttons {
             display: flex;
             gap: 1rem;
         }
 
+        /* Shared base styles for all nav and hero CTA buttons. */
         .btn {
             padding: 0.6rem 1.5rem;
             border: none;
@@ -74,11 +114,14 @@
             text-decoration: none;
         }
 
+        /* Login button — ghost style (no background), indigo text only.
+           Lower visual weight than Sign Up to guide visitors toward registration. */
         .btn-login {
             background: transparent;
             color: #4F46E5;
         }
 
+        /* Sign Up button — solid indigo fill, more prominent than Login. */
         .btn-signup {
             background: #4F46E5;
             color: white;
@@ -88,7 +131,12 @@
             background: #4338CA;
         }
 
-        /* Hero Section */
+        /* ── Hero section ─────────────────────────────────────────────────── */
+        /* The hero is the first thing a visitor sees after the nav bar.
+           margin-top: 80px offsets the content below the fixed nav bar height
+           so the heading is not hidden behind it.
+           The purple-to-indigo gradient gives it energy and brand identity.
+           text-align: center focuses attention on the headline and CTA button. */
         .hero {
             margin-top: 80px;
             padding: 4rem 2rem;
@@ -97,17 +145,23 @@
             text-align: center;
         }
 
+        /* Large headline — the main value proposition in a single sentence. */
         .hero h1 {
             font-size: 3rem;
             margin-bottom: 1rem;
         }
 
+        /* Supporting subtitle below the headline with slightly reduced opacity
+           to create visual hierarchy without needing a different colour. */
         .hero p {
             font-size: 1.3rem;
             margin-bottom: 2rem;
             opacity: 0.95;
         }
 
+        /* Hero CTA button — white fill on the dark gradient background so it
+           stands out clearly.  The indigo text links it back to the brand.
+           translateY(-2px) on hover gives a subtle "lift" effect. */
         .hero .btn-cta {
             background: white;
             color: #4F46E5;
@@ -120,7 +174,10 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
 
-        /* Features Section */
+        /* ── Features section ─────────────────────────────────────────────── */
+        /* Constrained to 1200px and centred.  Padding of 4rem top/bottom
+           gives comfortable breathing room between the hero above and the
+           About section below. */
         .features {
             padding: 4rem 2rem;
             max-width: 1200px;
@@ -134,12 +191,19 @@
             color: #1f2937;
         }
 
+        /* Auto-fit grid: columns are at least 300px wide and expand to fill
+           the available space.  On wide screens this gives 3 columns;
+           on a tablet it collapses to 2; on mobile to 1. */
         .features-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
         }
 
+        /* ── Feature card ─────────────────────────────────────────────────── */
+        /* Light grey background distinguishes the card from the white page.
+           translateY(-5px) on hover makes each card "float" so the user knows
+           it is interactive (even though these cards have no click action). */
         .feature-card {
             padding: 2rem;
             border-radius: 10px;
@@ -152,6 +216,8 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
+        /* Large emoji icon above the card title — purely decorative but helps
+           users quickly scan what each feature is about. */
         .feature-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
@@ -167,7 +233,9 @@
             color: #6b7280;
         }
 
-        /* About Section */
+        /* ── About section ────────────────────────────────────────────────── */
+        /* Reuses .features-grid for the 3-card layout.  Same max-width and
+           padding as the features section for visual consistency. */
         .about {
             padding: 4rem 2rem;
             max-width: 1200px;
@@ -181,7 +249,10 @@
             color: #1f2937;
         }
 
-        /* Footer */
+        /* ── Footer ───────────────────────────────────────────────────────── */
+        /* Dark charcoal footer matching the app sidebar colour.
+           Contains copyright notice, legal links (Terms / Privacy), and
+           the support email address. */
         footer {
             background: #1f2937;
             color: white;
@@ -189,6 +260,8 @@
             text-align: center;
         }
 
+        /* Footer links default to a muted grey, turn white on hover to signal
+           interactivity without competing with the dark background. */
         footer a {
             color: #9ca3af;
             text-decoration: none;
@@ -200,15 +273,23 @@
     </style>
 </head>
 <body>
-    <!-- Navigation -->
+    <!-- ── Fixed navigation bar ───────────────────────────────────────────── -->
+    <!-- Stays pinned to the top as the user scrolls the marketing sections.
+         Left: brand logo. Centre: anchor links to page sections.
+         Right: Login (ghost) and Sign Up (filled) buttons. -->
     <nav>
         <div class="nav-container">
             <div class="logo">Trade Notion</div>
+
+            <!-- Anchor links scroll the page to the matching section id -->
             <ul class="nav-links">
                 <li><a href="#features">Features</a></li>
                 <li><a href="#about">About Us</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
+
+            <!-- CTA buttons: Login navigates to the login page;
+                 Sign Up navigates directly to registration -->
             <div class="nav-buttons">
                 <a href="/login.html" class="btn btn-login">Login</a>
                 <a href="/register.html" class="btn btn-signup">Sign Up</a>
@@ -216,42 +297,54 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- ── Hero section ───────────────────────────────────────────────────── -->
+    <!-- Full-width gradient banner: main headline, one-line subtitle, and a
+         prominent "Start Trading Smarter" CTA that links to /register.html.
+         This is the primary conversion point for new visitors. -->
     <section class="hero">
         <h1>Elevate Your Trading Journey</h1>
         <p>The ultimate trading journal and analytics platform for serious traders</p>
         <a href="/register.html" class="btn btn-cta">Start Trading Smarter</a>
     </section>
 
-    <!-- Features Section -->
+    <!-- ── Features section ───────────────────────────────────────────────── -->
+    <!-- Six feature cards laid out in an auto-fit grid.
+         Each card has a large emoji icon, a bold title, and a brief description.
+         The id="features" attribute is the scroll target for the nav "Features" link. -->
     <section id="features" class="features">
         <h2>Powerful Features for Better Trading</h2>
         <div class="features-grid">
+            <!-- Analytics feature card -->
             <div class="feature-card">
                 <div class="feature-icon">📊</div>
                 <h3>Advanced Analytics</h3>
                 <p>Gain deep insights into your trading performance with comprehensive statistics and visual reports.</p>
             </div>
+            <!-- Trade journal feature card -->
             <div class="feature-card">
                 <div class="feature-icon">📝</div>
                 <h3>Trade Journal</h3>
                 <p>Log every trade with detailed notes, screenshots, and emotions to track your progress over time.</p>
             </div>
+            <!-- Performance metrics feature card -->
             <div class="feature-card">
                 <div class="feature-icon">📈</div>
                 <h3>Performance Metrics</h3>
                 <p>Monitor win rate, profit factor, expectancy, and other key metrics that matter to your success.</p>
             </div>
+            <!-- Goal tracking feature card -->
             <div class="feature-card">
                 <div class="feature-icon">🎯</div>
                 <h3>Goal Tracking</h3>
                 <p>Set and track your trading goals to stay focused and motivated on your journey to profitability.</p>
             </div>
+            <!-- Security feature card -->
             <div class="feature-card">
                 <div class="feature-icon">🔒</div>
                 <h3>Secure & Private</h3>
                 <p>Your trading data is encrypted and protected with bank-level security protocols.</p>
             </div>
+            <!-- Calendar feature card -->
             <div class="feature-card">
                 <div class="feature-icon">📅</div>
                 <h3>Trading Calendar</h3>
@@ -260,10 +353,18 @@
         </div>
     </section>
 
-    <!-- About Section -->
+    <!-- ── About section ──────────────────────────────────────────────────── -->
+    <!-- "Built by Traders, for Traders" value proposition.
+         Introductory paragraph followed by three cards covering accountability,
+         edge understanding, and consistent growth.
+         The id="about" attribute is the scroll target for the nav "About Us" link. -->
     <section id="about" class="about">
         <h2>Built by Traders, for Traders</h2>
+        <!-- Centred introductory paragraph capped at 700px wide so lines don't
+             stretch too long on wide screens (optimal reading length). -->
         <p style="text-align:center;color:#6b7280;max-width:700px;margin:0 auto 3rem;font-size:1.1rem;line-height:1.8;">Trade Notion was founded by traders, for traders. We understand the challenges of maintaining discipline, tracking performance, and continuously improving your trading strategy. Whether you're a day trader, swing trader, or long-term investor — Trade Notion helps you stay accountable and focused on your goals.</p>
+
+        <!-- Reuses the same .features-grid class for consistent 3-column layout -->
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feature-icon">🎯</div>
@@ -283,10 +384,13 @@
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- ── Footer ─────────────────────────────────────────────────────────── -->
+    <!-- Dark footer with copyright notice, legal page links, and support email.
+         id="contact" makes this the scroll target for the nav "Contact" link. -->
     <footer id="contact">
         <p>&copy; 2026 Trade Notion. All rights reserved.</p>
         <p style="margin-top:0.75rem;">
+            <!-- Legal pages linked here and also from the register page footer -->
             <a href="/terms.html">Terms of Service</a>
             &nbsp;·&nbsp;
             <a href="/privacy.html">Privacy Policy</a>

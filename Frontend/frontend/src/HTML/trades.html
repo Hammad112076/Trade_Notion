@@ -4,18 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trade Journal - Trade Notion</title>
+
+    <!--
+        trades.html — Full trade journal page
+        ======================================
+        This is the core data-management page of the app. It lets the user:
+          1. View all their trades in a filterable table
+          2. Edit any trade inline via a modal with 13+ fields
+          3. Delete a single trade or wipe all trades at once
+          4. Export all visible trades to a CSV file (client-side Blob download)
+          5. Import trades from a CSV file (flexible column mapping, BOM-stripping)
+
+        Page layout:
+          - Fixed sidebar (same as all dashboard pages) with nav links
+          - Header bar with page title and action buttons (Add, Import, Sample CSV, Export, Delete All)
+          - Filter bar with Symbol text search, Type, Status, and Date Range dropdowns
+          - Trades table generated dynamically by JavaScript
+          - Edit modal (hidden by default) that opens when clicking "Edit" on a row
+          - CSV info modal (hidden by default) that shows accepted column names
+
+        Data flow:
+          - On load, calls loadTrades() which fetches GET /api/trades with optional query params
+          - Filter controls call loadTrades() whenever they change, re-fetching with new params
+          - The "Edit" button calls openEditModal(id), which pre-populates the modal from the
+            allTrades[] cache (no extra API call needed for the modal itself)
+          - saveEdit() sends a PUT /api/trades/:id request with the updated fields
+          - deleteTrade() sends DELETE /api/trades/:id
+          - deleteAllTrades() sends DELETE /api/trades/all (two confirmation dialogs to prevent accidents)
+          - exportCSV() builds a CSV string from allTrades[] and triggers a browser download
+          - handleCSVImport() reads a local .csv file, maps its columns, and posts each row individually
+
+        Auth:
+          - JWT is read from localStorage on load; if missing, immediately redirects to /login.html
+          - Every API call includes the Authorization: Bearer <token> header
+    -->
+
     <style>
+        /* Remove default browser margins/padding and use border-box sizing throughout */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        /* Light grey page background so white cards stand out */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: #f3f4f6;
         }
 
+        /* ── Sidebar navigation ───────────────────────────────────────────────
+           Fixed dark panel on the left. overflow-y: auto lets it scroll if
+           there are more nav items than vertical space. */
         .sidebar {
             position: fixed;
             left: 0;
@@ -28,6 +68,7 @@
             overflow-y: auto;
         }
 
+        /* App brand name shown at the top of the sidebar */
         .logo {
             padding: 0 1.5rem;
             margin-bottom: 2rem;
@@ -38,10 +79,12 @@
             font-size: 1.5rem;
         }
 
+        /* Labelled group of nav links (e.g. "Main", "Tools", "Account") */
         .nav-section {
             margin-bottom: 2rem;
         }
 
+        /* Tiny uppercase label above each group of nav links */
         .nav-section-title {
             padding: 0 1.5rem;
             color: #9ca3af;
@@ -51,6 +94,7 @@
             margin-bottom: 0.5rem;
         }
 
+        /* Individual sidebar link — flex row aligns the icon and label text */
         .nav-item {
             padding: 0.75rem 1.5rem;
             color: #d1d5db;
@@ -61,6 +105,8 @@
             transition: all 0.3s;
         }
 
+        /* Active and hovered links get a dark background and indigo left border
+           to indicate the current page or interactive state */
         .nav-item:hover,
         .nav-item.active {
             background: #374151;
@@ -68,15 +114,18 @@
             border-left: 3px solid #4F46E5;
         }
 
+        /* Emoji icon at the start of each nav link */
         .nav-icon {
             font-size: 1.25rem;
         }
 
+        /* The main content area sits to the right of the 260px sidebar */
         .main-content {
             margin-left: 260px;
             padding: 2rem;
         }
 
+        /* White card at the top of the page for the page title and action buttons */
         .header {
             background: white;
             padding: 1.5rem 2rem;
@@ -90,6 +139,8 @@
             font-size: 1.75rem;
         }
 
+        /* ── Button styles ────────────────────────────────────────────────────
+           Shared base for all buttons; variant classes override colour. */
         .btn {
             padding: 0.625rem 1.25rem;
             border: none;
@@ -99,6 +150,7 @@
             transition: all 0.3s;
         }
 
+        /* Filled indigo button — primary action (Add Trade) */
         .btn-primary {
             background: #4F46E5;
             color: white;
@@ -110,11 +162,15 @@
             background: #4338CA;
         }
 
+        /* Muted grey button — secondary actions (Import, Export, Sample CSV) */
         .btn-secondary {
             background: #f3f4f6;
             color: #374151;
         }
 
+        /* ── Filter bar ───────────────────────────────────────────────────────
+           White card above the trades table.  The inner grid auto-fits as many
+           filter controls as will fit in a row, then wraps to a new row. */
         .filters {
             background: white;
             padding: 1.5rem;
@@ -123,12 +179,14 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
+        /* Auto-fit grid: each filter column is at least 200px wide */
         .filters-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
         }
 
+        /* Wraps one label + input/select pair for a single filter */
         .filter-group {
             display: flex;
             flex-direction: column;
@@ -141,6 +199,7 @@
             font-weight: 500;
         }
 
+        /* Inputs and selects in the filter bar share the same border style */
         .filter-group select,
         .filter-group input {
             padding: 0.625rem;
@@ -155,6 +214,9 @@
             border-color: #4F46E5;
         }
 
+        /* ── Trades table container ───────────────────────────────────────────
+           White rounded card that holds both the table header row and the table.
+           overflow: hidden clips the table's corner edges to the card's border-radius. */
         .trades-container {
             background: white;
             border-radius: 10px;
@@ -162,6 +224,7 @@
             overflow: hidden;
         }
 
+        /* Top bar of the trades card: shows the total count and any action buttons */
         .trades-header {
             padding: 1.5rem;
             border-bottom: 2px solid #f3f4f6;
@@ -170,11 +233,13 @@
             align-items: center;
         }
 
+        /* The actual <table> element inside the card */
         .trades-table {
             width: 100%;
             border-collapse: collapse;
         }
 
+        /* Column headers — light grey background, muted text, small uppercase font */
         .trades-table th {
             text-align: left;
             padding: 1rem 1.5rem;
@@ -184,15 +249,21 @@
             font-size: 0.875rem;
         }
 
+        /* Data cells — subtle bottom border creates horizontal row separators */
         .trades-table td {
             padding: 1rem 1.5rem;
             border-bottom: 1px solid #f3f4f6;
         }
 
+        /* Highlight the row the user is hovering over */
         .trades-table tr:hover {
             background: #f9fafb;
         }
 
+        /* ── Status / direction badges ────────────────────────────────────────
+           Pill-shaped colour chips applied to the Direction and Result columns.
+           Each outcome (win/loss/long/short) gets a distinct background and text
+           colour for quick visual scanning. */
         .badge {
             padding: 0.25rem 0.75rem;
             border-radius: 12px;
@@ -200,26 +271,33 @@
             font-weight: 600;
         }
 
+        /* Win = green */
         .badge.win {
             background: #d1fae5;
             color: #059669;
         }
 
+        /* Loss = red */
         .badge.loss {
             background: #fee2e2;
             color: #dc2626;
         }
 
+        /* Long = blue */
         .badge.long {
             background: #dbeafe;
             color: #2563eb;
         }
 
+        /* Short = amber */
         .badge.short {
             background: #fef3c7;
             color: #d97706;
         }
 
+        /* ── Row action buttons ───────────────────────────────────────────────
+           Small inline buttons at the end of each table row.
+           Edit = blue tint, Delete = red tint. */
         .action-btn {
             padding: 0.4rem 0.8rem;
             background: #f3f4f6;
@@ -244,89 +322,142 @@
         .action-btn.edit { background: #dbeafe; color: #2563eb; }
         .action-btn.edit:hover { background: #bfdbfe; }
 
-        /* Modal */
+        /* ── Edit trade modal ─────────────────────────────────────────────────
+           The overlay covers the whole viewport with a semi-transparent dark
+           background.  display: none by default; adding class "open" switches
+           it to display: flex which centres the inner .modal box. */
         .modal-overlay {
             display: none; position: fixed; inset: 0;
             background: rgba(0,0,0,.45); z-index: 100;
             align-items: center; justify-content: center;
         }
         .modal-overlay.open { display: flex; }
+
+        /* White scrollable card that contains all the edit fields */
         .modal {
             background: white; border-radius: 12px; width: 520px; max-width: 95vw;
             max-height: 90vh; overflow-y: auto; padding: 2rem;
             box-shadow: 0 20px 60px rgba(0,0,0,.2);
         }
         .modal h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem; color: #1f2937; }
+
+        /* Two-column grid for the edit fields — most fields take one column,
+           full-width fields (notes, tags) use grid-column: 1 / -1 */
         .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+        /* Wrapper for a single label + input pair inside the modal */
         .modal-field { display: flex; flex-direction: column; gap: .4rem; margin-bottom: .25rem; }
+
+        /* Makes the field span both columns (used for textarea notes and tags) */
         .modal-field.full { grid-column: 1/-1; }
+
+        /* Small uppercase label above each field */
         .modal-field label { font-size: .8rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; }
+
+        /* Shared styles for all form controls inside the modal */
         .modal-field input, .modal-field select, .modal-field textarea {
             padding: .6rem .75rem; border: 2px solid #e5e7eb; border-radius: 6px;
             font-size: .9rem; width: 100%; font-family: inherit; box-sizing: border-box;
         }
+        /* Allow vertical resizing of textareas but not horizontal */
         .modal-field textarea { resize: vertical; min-height: 80px; }
         .modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { outline: none; border-color: #4F46E5; }
+
+        /* Container for the list of mistake-tag chips inside the modal */
         .edit-tags-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+
+        /* Individual tag chip — shows the tag text and an × button to remove it */
         .edit-tag-chip { display: flex; align-items: center; gap: 4px; padding: 3px 10px; background: #f1f1ef; border-radius: 4px; font-size: 12px; border: 1px solid #e5e7eb; }
+
+        /* The × remove button on a tag chip — turns red on hover */
         .edit-tag-chip .rm { cursor: pointer; color: #6b7280; font-size: 14px; line-height: 1; }
         .edit-tag-chip .rm:hover { color: #dc2626; }
+
+        /* Save/Cancel buttons at the bottom of the modal, aligned to the right */
         .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.5rem; }
         .modal-actions button { padding: .6rem 1.25rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: .9rem; }
+
+        /* Save button — indigo fill to match primary action style */
         .btn-save-modal { background: #4F46E5; color: white; }
         .btn-save-modal:hover { background: #4338CA; }
+
+        /* Cancel button — neutral grey */
         .btn-cancel-modal { background: #f3f4f6; color: #374151; }
 
-        /* CSV info modal */
+        /* ── CSV column-names info modal ──────────────────────────────────────
+           A separate, smaller modal that shows the user what column names are
+           recognised during CSV import.  Opens when the user clicks "Sample CSV".
+           z-index 2000 puts it above the edit modal (z-index 100). */
         .csv-info-overlay {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
             z-index: 2000; justify-content: center; align-items: center;
         }
         .csv-info-overlay.open { display: flex; }
+
+        /* White box that holds the column-name grid and close button */
         .csv-info-box {
             background: white; border-radius: 12px; padding: 2rem;
             max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,.3);
         }
         .csv-info-box h3 { font-size: 1.1rem; color: #1f2937; margin-bottom: .25rem; }
         .csv-info-box p  { font-size: .82rem; color: #6b7280; margin-bottom: 1.25rem; }
+
+        /* Two-column grid listing all accepted column names */
         .csv-cols-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: .35rem .75rem;
             margin-bottom: 1.25rem;
         }
+
+        /* Each accepted column name in a pill — optional = grey, required = indigo */
         .csv-col-item {
             background: #f3f4f6; border-radius: 6px; padding: .35rem .65rem;
             font-size: .82rem; color: #1f2937; font-weight: 500;
         }
         .csv-col-item.required { background: #ede9fe; color: #4F46E5; }
+
+        /* Full-width close button at the bottom of the info modal */
         .csv-info-close {
             width: 100%; padding: .6rem; background: #4F46E5; color: white;
             border: none; border-radius: 8px; font-size: .9rem; font-weight: 600; cursor: pointer;
         }
         .csv-info-close:hover { background: #4338CA; }
 
-        /* CSV import */
+        /* ── CSV import status bar ────────────────────────────────────────────
+           Appears below the header after the user selects a CSV file.
+           Hidden by default; shown by JavaScript when a file is being imported. */
         .import-bar {
             background: white; padding: 1rem 1.5rem; border-radius: 10px;
             margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,.1);
             display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
         }
         .import-bar label { font-size: .875rem; color: #374151; font-weight: 500; }
+
+        /* The real file input is hidden — a styled button click triggers it */
         #csvFileInput { display: none; }
+
+        /* Small hint text next to the import status */
         .csv-hint { font-size: .8rem; color: #9ca3af; }
+
+        /* Import progress and result text (e.g. "Importing 3/10…" or "✅ Imported 10 trades") */
         #importStatus { font-size: .875rem; font-weight: 500; }
 
+        /* Centred placeholder shown when no trades exist for the current filters */
         .empty-state {
             text-align: center;
             padding: 4rem 2rem;
             color: #6b7280;
         }
 
+        /* Shown while the API fetch is in progress */
         .loading {
             text-align: center;
             padding: 3rem;
             color: #6b7280;
         }
 
+        /* ── Responsive: narrow screens ───────────────────────────────────────
+           On screens ≤ 768px, collapse the sidebar to icon-only (70px) and
+           hide the text labels so the main content still has enough space. */
         @media (max-width: 768px) {
             .sidebar {
                 width: 70px;
@@ -343,17 +474,23 @@
     </style>
 </head>
 <body>
+
+    <!-- ── Sidebar navigation ──────────────────────────────────────────────────
+         Fixed dark panel on the left with links to every main page.
+         "Trade Journal" has the .active class to show the current location. -->
     <div class="sidebar">
         <div class="logo">
             <h2>Trade Notion</h2>
         </div>
 
+        <!-- Main section: primary analytics and data pages -->
         <div class="nav-section">
             <div class="nav-section-title">Main</div>
             <a href="/dashboard.html" class="nav-item">
                 <span class="nav-icon">📊</span>
                 <span>Dashboard</span>
             </a>
+            <!-- This page — active state applied -->
             <a href="/trades.html" class="nav-item active">
                 <span class="nav-icon">📝</span>
                 <span>Trade Journal</span>
@@ -364,6 +501,7 @@
             </a>
         </div>
 
+        <!-- Tools section: supplementary views -->
         <div class="nav-section">
             <div class="nav-section-title">Tools</div>
             <a href="/calendar.html" class="nav-item">
@@ -380,12 +518,14 @@
             </a>
         </div>
 
+        <!-- Account section: settings and logout -->
         <div class="nav-section">
             <div class="nav-section-title">Account</div>
             <a href="/settings.html" class="nav-item">
                 <span class="nav-icon">⚙️</span>
                 <span>Settings</span>
             </a>
+            <!-- logout() clears the JWT from localStorage and redirects to login -->
             <a href="#" class="nav-item" onclick="logout()">
                 <span class="nav-icon">🚪</span>
                 <span>Logout</span>
@@ -393,34 +533,57 @@
         </div>
     </div>
 
+    <!-- ── Main content area ───────────────────────────────────────────────────
+         Sits to the right of the fixed sidebar. -->
     <div class="main-content">
+
+        <!-- ── Page header ────────────────────────────────────────────────────
+             Shows the page title on the left and action buttons on the right.
+             Clicking "Import CSV" triggers the hidden file input.
+             "Sample CSV" opens the info modal listing accepted column names.
+             "Export CSV" builds a CSV from allTrades[] and triggers a download.
+             "Delete All Trades" sends DELETE /api/trades/all after two confirms. -->
         <div class="header" style="display:flex;justify-content:space-between;align-items:center;">
             <div>
                 <h1>Trade Journal</h1>
                 <p style="color:#6b7280;margin-top:.25rem;font-size:.9rem;">Log, edit and review all your trades</p>
             </div>
             <div style="display:flex;gap:.75rem;">
+                <!-- Links to the new trade form page -->
                 <a href="/new-trade.html" class="btn btn-primary">+ Add Trade</a>
+                <!-- Clicking this programmatically clicks the hidden file input below -->
                 <button class="btn btn-secondary" onclick="document.getElementById('csvFileInput').click()">📂 Import CSV</button>
+                <!-- Opens the modal that lists recognised CSV column names -->
                 <button class="btn btn-secondary" onclick="document.getElementById('csvInfoOverlay').classList.add('open')">📋 Sample CSV</button>
+                <!-- Exports allTrades[] as a downloadable .csv file -->
                 <button class="btn btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
+                <!-- Two-step confirmation before wiping all trades -->
                 <button class="btn btn-secondary" style="color:#dc2626;border-color:#dc2626;" onclick="deleteAllTrades()">🗑 Delete All Trades</button>
             </div>
         </div>
 
-        <!-- CSV import -->
+        <!-- Hidden file input — triggered by the "Import CSV" button above.
+             The onchange handler reads the selected file and begins the import. -->
         <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVImport(event)">
+
+        <!-- Import status bar — hidden until a CSV file is selected.
+             Shows progress ("Importing 3/10…") and the final result ("✅ Imported 10"). -->
         <div class="import-bar" id="importBar" style="display:none;">
             <span class="csv-hint">Expected columns: <strong>Date, Symbol, Direction, Strategy, Shares, P&L, Result</strong></span>
             <span id="importStatus"></span>
         </div>
 
+        <!-- ── Filter bar ──────────────────────────────────────────────────────
+             Every control calls loadTrades() on change, which re-fetches from the
+             API with the updated query params.  Filtering is server-side. -->
         <div class="filters">
             <div class="filters-grid">
+                <!-- Symbol text filter — matches trades whose symbol contains the entered text -->
                 <div class="filter-group">
                     <label>Symbol</label>
                     <input type="text" id="symbolFilter" placeholder="Search symbol...">
                 </div>
+                <!-- Direction filter — narrows to long or short trades only -->
                 <div class="filter-group">
                     <label>Type</label>
                     <select id="typeFilter">
@@ -429,6 +592,7 @@
                         <option value="short">Short</option>
                     </select>
                 </div>
+                <!-- Result filter — shows only wins or only losses -->
                 <div class="filter-group">
                     <label>Status</label>
                     <select id="statusFilter">
@@ -437,6 +601,7 @@
                         <option value="loss">Loss</option>
                     </select>
                 </div>
+                <!-- Date range filter — limits to today / this week / this month -->
                 <div class="filter-group">
                     <label>Date Range</label>
                     <select id="dateFilter">
@@ -449,22 +614,32 @@
             </div>
         </div>
 
+        <!-- ── Trades table card ───────────────────────────────────────────────
+             The header row shows the live trade count.
+             The inner container is replaced by JavaScript with either a <table>,
+             an empty-state message, or an error message. -->
         <div class="trades-container">
             <div class="trades-header">
                 <h2 style="font-size: 1.25rem;">All Trades (<span id="tradeCount">0</span>)</h2>
             </div>
 
+            <!-- Replaced by displayTrades() with a <table> or empty/error state -->
             <div id="tradesTableContainer">
                 <div class="loading">Loading trades...</div>
             </div>
         </div>
     </div>
 
-    <!-- Edit Modal -->
+    <!-- ── Edit Trade Modal ────────────────────────────────────────────────────
+         Hidden overlay. JavaScript adds/removes class "open" to show/hide it.
+         Clicking the overlay background (not the modal box) also closes it.
+         Contains 13+ fields covering every property of a trade document. -->
     <div class="modal-overlay" id="editModal">
         <div class="modal">
             <h3>Edit Trade</h3>
             <div class="modal-grid">
+
+                <!-- Core trade fields — symbol, date, direction -->
                 <div class="modal-field">
                     <label>Symbol</label>
                     <input type="text" id="editSymbol" placeholder="e.g. NQ, AAPL">
@@ -480,10 +655,14 @@
                         <option value="short">Short</option>
                     </select>
                 </div>
+
+                <!-- Strategy name — free text, stored as trade.model on the server -->
                 <div class="modal-field">
                     <label>Strategy</label>
                     <input type="text" id="editStrategy" placeholder="e.g. Breakout">
                 </div>
+
+                <!-- Position size and monetary outcome -->
                 <div class="modal-field">
                     <label>Shares / Contracts</label>
                     <input type="number" id="editShares" placeholder="e.g. 1">
@@ -492,6 +671,8 @@
                     <label>P&L</label>
                     <input type="number" id="editPL" step="0.01" placeholder="e.g. 250">
                 </div>
+
+                <!-- Outcome classification -->
                 <div class="modal-field">
                     <label>Result</label>
                     <select id="editResult">
@@ -500,6 +681,8 @@
                         <option value="breakeven">Breakeven</option>
                     </select>
                 </div>
+
+                <!-- Time-of-day session when the trade was taken -->
                 <div class="modal-field">
                     <label>Session</label>
                     <select id="editSession">
@@ -512,10 +695,14 @@
                         <option value="after-hours">After Hours</option>
                     </select>
                 </div>
+
+                <!-- Numeric confidence score (1–10) logged before the trade -->
                 <div class="modal-field">
                     <label>Confidence (1–10)</label>
                     <input type="number" id="editConfidence" min="1" max="10" placeholder="e.g. 7">
                 </div>
+
+                <!-- Psychological state when entering and exiting the trade -->
                 <div class="modal-field">
                     <label>Emotion Before</label>
                     <select id="editEmotionBefore">
@@ -545,11 +732,17 @@
                         <option value="neutral">Neutral</option>
                     </select>
                 </div>
+
+                <!-- Mistake tags — full-width chip input (press Enter to add a tag) -->
                 <div class="modal-field full">
                     <label>Mistake Tags</label>
+                    <!-- Pressing Enter on this input adds the typed text as a chip below -->
                     <input type="text" id="editMistakeTagInput" placeholder="Type a tag and press Enter…">
+                    <!-- Chips are rendered here by renderEditTags() -->
                     <div class="edit-tags-list" id="editMistakeTagsList"></div>
                 </div>
+
+                <!-- Free-text retrospective notes — span the full two-column width -->
                 <div class="modal-field full">
                     <label>What Went Right</label>
                     <textarea id="editWentRight" placeholder="What did you execute well?"></textarea>
@@ -559,7 +752,11 @@
                     <textarea id="editWentWrong" placeholder="What could be improved?"></textarea>
                 </div>
             </div>
+
+            <!-- Inline error/success message shown below the fields when saveEdit() runs -->
             <div id="editMsg" style="font-size:.85rem;margin-top:.75rem;display:none;"></div>
+
+            <!-- Modal footer: Cancel closes the modal, Save calls saveEdit() -->
             <div class="modal-actions">
                 <button class="btn-cancel-modal" onclick="closeEditModal()">Cancel</button>
                 <button class="btn-save-modal" onclick="saveEdit()">Save Changes</button>
@@ -568,33 +765,80 @@
     </div>
 
     <script>
+        /*
+         * Auth guard and currency symbol setup
+         * ─────────────────────────────────────
+         * If no JWT is in localStorage, the user is not logged in — redirect
+         * immediately to the login page so they cannot see trade data.
+         * The currency symbol is read from localStorage so P&L values are
+         * displayed in the currency the user configured in settings.
+         */
         const token = localStorage.getItem('token');
         const CURRENCY_SYM = { usd:'$', eur:'€', gbp:'£', jpy:'¥' };
         const sym = CURRENCY_SYM[localStorage.getItem('currency') || 'usd'] || '$';
         if (!token) window.location.href = '/login.html';
+
+        /* Clears the token from localStorage and sends the user back to login */
         function logout() { localStorage.removeItem('token'); window.location.href = '/login.html'; }
 
+        /*
+         * Reusable header objects for fetch() calls
+         * ──────────────────────────────────────────
+         * authHeader — attach to GET and DELETE requests (no body)
+         * jsonHeader — attach to POST and PUT requests (JSON body + auth)
+         */
         const authHeader = { 'Authorization': `Bearer ${token}` };
         const jsonHeader = { 'Content-Type': 'application/json', ...authHeader };
 
+        /*
+         * Module-level state
+         * ──────────────────
+         * allTrades    — the last array returned by loadTrades(); used by
+         *                displayTrades(), openEditModal(), and exportCSV()
+         *                without needing additional API calls.
+         * editingId    — the _id of the trade currently open in the edit modal.
+         * editMistakeTags — mutable array of tag strings being edited; kept
+         *                   separate from the DOM so renderEditTags() can
+         *                   re-build the chip list from it at any time.
+         */
         let allTrades = [];
         let editingId = null;
         let editMistakeTags = [];
 
+        /*
+         * renderEditTags()
+         * ─────────────────
+         * Rebuilds the mistake-tag chip list inside the edit modal from the
+         * editMistakeTags[] array.  Called whenever a tag is added or removed.
+         * Each chip contains the tag text and an × button that calls removeEditTag().
+         */
         function renderEditTags() {
             document.getElementById('editMistakeTagsList').innerHTML = editMistakeTags.map(t =>
                 `<div class="edit-tag-chip">${t}<span class="rm" onclick="removeEditTag('${t}')">×</span></div>`
             ).join('');
         }
+
+        /* Removes a single tag from editMistakeTags[] and re-renders the chip list */
         function removeEditTag(t) { editMistakeTags = editMistakeTags.filter(x => x !== t); renderEditTags(); }
 
-        // ── Load & display ────────────────────────────────────────────────
+        /* ── Load & display trades ───────────────────────────────────────────── */
+
+        /*
+         * loadTrades()
+         * ─────────────
+         * Reads the current filter control values, builds a query string, and
+         * fetches matching trades from GET /api/trades.  On success, caches the
+         * result in allTrades[] and calls displayTrades() to update the table.
+         * On failure (network or server error) replaces the table with an error state.
+         */
         async function loadTrades() {
             let url = '/api/trades?';
             const s = document.getElementById('symbolFilter').value;
             const t = document.getElementById('typeFilter').value;
             const r = document.getElementById('statusFilter').value;
             const d = document.getElementById('dateFilter').value;
+
+            /* Append only the params that have a value — empty strings are ignored */
             if (s) url += `symbol=${encodeURIComponent(s)}&`;
             if (t) url += `tradeType=${t}&`;
             if (r) url += `status=${r}&`;
@@ -609,8 +853,23 @@
             }
         }
 
+        /*
+         * displayTrades(trades)
+         * ──────────────────────
+         * Renders the trades[] array into an HTML table inside #tradesTableContainer.
+         * If the array is empty, shows a friendly empty-state message with a link
+         * to add the first trade.
+         *
+         * For each trade:
+         *  - date   — formatted as "Apr 30, 2026" using the browser's locale
+         *  - P&L    — coloured green (positive) or red (negative), with + prefix
+         *  - badges — direction (long/short) and result (win/loss) use the .badge CSS classes
+         *  - buttons — Edit triggers openEditModal(id); Delete triggers deleteTrade(id)
+         */
         function displayTrades(trades) {
+            /* Update the live trade count shown in the card header */
             document.getElementById('tradeCount').textContent = trades.length;
+
             if (!trades.length) {
                 document.getElementById('tradesTableContainer').innerHTML = `
                     <div class="empty-state">
@@ -619,6 +878,7 @@
                     </div>`;
                 return;
             }
+
             document.getElementById('tradesTableContainer').innerHTML = `
                 <table class="trades-table">
                     <thead><tr><th>Date</th><th>Symbol</th><th>Direction</th><th>Strategy</th><th>Shares</th><th>P&L</th><th>Result</th><th>Actions</th></tr></thead>
@@ -626,6 +886,7 @@
                         ${trades.map(trade => {
                             const date   = new Date(trade.date).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
                             const pl     = parseFloat(trade.profitLoss) || 0;
+                            /* Green for zero or positive P&L, red for negative */
                             const plColor = pl >= 0 ? '#059669' : '#dc2626';
                             const dir    = trade.direction || '—';
                             const result = trade.result || '—';
@@ -647,12 +908,24 @@
                 </table>`;
         }
 
-        // ── Edit modal ────────────────────────────────────────────────────
+        /* ── Edit modal ─────────────────────────────────────────────────────── */
+
+        /*
+         * openEditModal(id)
+         * ──────────────────
+         * Finds the trade with the given id in allTrades[] (no API round-trip),
+         * pre-populates every modal field with the trade's current values, then
+         * shows the modal by adding class "open".
+         *
+         * trade.date is stored as an ISO 8601 string (e.g. "2026-04-30T00:00:00.000Z").
+         * slice(0,10) extracts just the "YYYY-MM-DD" part that the date input needs.
+         */
         function openEditModal(id) {
             const trade = allTrades.find(t => t._id === id);
             if (!trade) return;
             editingId = id;
 
+            /* Populate every field with the trade's stored value, falling back to '' */
             document.getElementById('editSymbol').value    = trade.symbol    || '';
             document.getElementById('editDate').value      = trade.date ? trade.date.slice(0,10) : '';
             document.getElementById('editDirection').value = trade.direction  || 'long';
@@ -666,13 +939,26 @@
             document.getElementById('editEmotionAfter').value  = trade.emotionAfter    || '';
             document.getElementById('editWentRight').value     = trade.whatWentRight   || '';
             document.getElementById('editWentWrong').value     = trade.whatWentWrongI  || '';
+
+            /* Copy the trade's tag array into editMistakeTags so it can be mutated without
+               affecting the cached allTrades[] entry until the edit is saved */
             editMistakeTags = Array.isArray(trade.mistakeTag) ? [...trade.mistakeTag] : [];
             document.getElementById('editMistakeTagInput').value = '';
             renderEditTags();
+
+            /* Hide any previous error message left from the last save attempt */
             document.getElementById('editMsg').style.display = 'none';
+
+            /* Show the modal overlay */
             document.getElementById('editModal').classList.add('open');
         }
 
+        /*
+         * closeEditModal()
+         * ─────────────────
+         * Hides the overlay, resets editingId and editMistakeTags, and re-enables
+         * the Save button in case it was left disabled by a failed save attempt.
+         */
         function closeEditModal() {
             document.getElementById('editModal').classList.remove('open');
             editingId = null;
@@ -681,18 +967,37 @@
             saveBtn.disabled = false;
             saveBtn.textContent = 'Save Changes';
         }
+
+        /* Clicking the dark overlay background (not the modal box) also closes it */
         document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditModal(); });
 
+        /*
+         * saveEdit()
+         * ───────────
+         * Validates the Symbol field, then sends PUT /api/trades/:editingId with
+         * all the edited field values.  While the request is in flight the Save
+         * button is disabled to prevent double-submission.
+         *
+         * Notes fields are nested under a "notes" object because the API's
+         * PUT handler merges them into the trade's embedded notes sub-document.
+         *
+         * On success: closes the modal and reloads the trades table.
+         * On failure: shows the API's error message in the inline #editMsg element.
+         */
         async function saveEdit() {
             if (!editingId) return;
             const saveBtn = document.querySelector('.btn-save-modal');
             const pl  = parseFloat(document.getElementById('editPL').value) || 0;
             const sym = document.getElementById('editSymbol').value.trim();
+
+            /* Symbol is the only required field — show an inline error if it's empty */
             if (!sym) {
                 const msg = document.getElementById('editMsg');
                 msg.textContent = '❌ Symbol is required'; msg.style.color = '#dc2626'; msg.style.display = 'block';
                 return;
             }
+
+            /* Build the request body from all modal fields */
             const body = {
                 symbol:    sym,
                 date:      document.getElementById('editDate').value,
@@ -712,12 +1017,14 @@
                 }
             };
 
+            /* Disable the button while waiting for the API response */
             saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
             try {
                 const res = await fetch(`/api/trades/${editingId}`, { method:'PUT', headers: jsonHeader, body: JSON.stringify(body) });
                 const d   = await res.json();
                 if (res.ok) { closeEditModal(); loadTrades(); }
                 else {
+                    /* Show the server's error message inline — re-enable the button so the user can retry */
                     const msg = document.getElementById('editMsg');
                     msg.textContent = '❌ ' + (d.message || 'Failed to save');
                     msg.style.color = '#dc2626'; msg.style.display = 'block';
@@ -730,7 +1037,14 @@
             }
         }
 
-        // ── Delete ────────────────────────────────────────────────────────
+        /* ── Delete single trade ───────────────────────────────────────────── */
+
+        /*
+         * deleteTrade(id)
+         * ────────────────
+         * Asks for confirmation, then sends DELETE /api/trades/:id.
+         * On success, reloads the table so the deleted row disappears.
+         */
         async function deleteTrade(id) {
             if (!confirm('Delete this trade? This cannot be undone.')) return;
             try {
@@ -740,7 +1054,15 @@
             } catch (e) { alert('Network error.'); }
         }
 
-        // ── Delete All Trades ─────────────────────────────────────────────
+        /* ── Delete all trades ─────────────────────────────────────────────── */
+
+        /*
+         * deleteAllTrades()
+         * ──────────────────
+         * Two-step confirmation (two separate confirm dialogs) guards against
+         * accidental clicks.  Sends DELETE /api/trades/all which deletes every
+         * trade belonging to this user.  Reports the count of deleted trades.
+         */
         async function deleteAllTrades() {
             if (!confirm('Delete ALL trades? This cannot be undone.')) return;
             if (!confirm('Are you sure? All 261+ trades will be permanently deleted.')) return;
@@ -756,9 +1078,24 @@
             } catch (e) { alert('Network error.'); }
         }
 
-        // ── Export CSV ────────────────────────────────────────────────────
+        /* ── Export CSV ─────────────────────────────────────────────────────── */
+
+        /*
+         * exportCSV()
+         * ────────────
+         * Converts allTrades[] to a CSV string with 7 columns, wraps it in a
+         * Blob, creates a temporary <a> element pointing to the Blob URL, and
+         * programmatically clicks it to trigger a browser download.
+         *
+         * esc() wraps each value in double-quotes and escapes any embedded
+         * double-quotes by doubling them (standard CSV escaping).
+         *
+         * URL.revokeObjectURL() is called after the click to release the
+         * in-memory Blob URL and avoid a memory leak.
+         */
         function exportCSV() {
             if (!allTrades.length) { alert('No trades to export.'); return; }
+            /* Wrap values in quotes and escape any internal quote characters */
             const esc = v => `"${String(v ?? '').replace(/"/g,'""')}"`;
             const headers = ['Date','Symbol','Direction','Strategy','Shares','P&L','Result'];
             const rows = allTrades.map(t => [
@@ -771,10 +1108,35 @@
             const url  = URL.createObjectURL(blob);
             const a    = document.createElement('a');
             a.href = url; a.download = 'trades-export.csv'; a.click();
-            URL.revokeObjectURL(url);
+            URL.revokeObjectURL(url); /* Release the Blob URL from memory */
         }
 
-        // ── CSV Import ────────────────────────────────────────────────────
+        /* ── CSV Import ──────────────────────────────────────────────────────── */
+
+        /*
+         * handleCSVImport(event)
+         * ───────────────────────
+         * Called when the user selects a .csv file via the hidden file input.
+         *
+         * Steps:
+         *  1. Read the file as text using the File API.
+         *  2. Strip the UTF-8 BOM character (﻿) if present, and normalise
+         *     Windows (\r\n) and old Mac (\r) line endings to Unix (\n).
+         *  3. Split into lines; the first line is the header row.
+         *  4. Normalise each header (strip spaces, lowercase) and map them to
+         *     column indexes using find() which accepts multiple aliases per field.
+         *     This lets the importer work with exports from many different
+         *     brokers and trading platforms without manual column renaming.
+         *  5. Validate that a "symbol" column was found — it's the only required field.
+         *  6. For each subsequent line, parse it with parseRow() (which handles
+         *     quoted fields containing commas), build a tradeData object, and
+         *     POST it to /api/trades.
+         *  7. Update the importStatus element after each row with a running count.
+         *  8. Show the final result ("✅ Imported 10 trade(s)").
+         *
+         * parseMoney() strips currency symbols, handles parentheses for negatives
+         * (accounting notation), and falls back to 0 for non-numeric values.
+         */
         async function handleCSVImport(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -786,17 +1148,22 @@
             importStatus.style.color = '#6b7280';
 
             const text = await file.text();
-            // Strip BOM and normalise line endings
-            const clean = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            /* Strip BOM (﻿ added by Excel) and normalise line endings */
+            const clean = text.replace(/^﻿/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             const lines = clean.trim().split('\n').filter(l => l.trim());
             if (lines.length < 2) { importStatus.textContent = '❌ CSV must have a header row and at least one trade.'; return; }
 
-            // Parse header using same parser as data rows for consistency
+            /* Normalise header names: remove whitespace, convert to lowercase */
             const rawHeaders = parseRow(lines[0]).map(h => h.replace(/\s/g,'').toLowerCase());
             const col = name => rawHeaders.indexOf(name);
 
-            // Required: symbol. Accept flexible column names.
+            /* find(...names) returns the column index of the first alias that exists in the header row.
+               Returns -1 if none of the aliases are found. */
             const find = (...names) => { for (const n of names) { const i = col(n); if (i >= 0) return i; } return -1; };
+
+            /* Map logical field names to column indexes using multiple recognised aliases.
+               This lets the importer handle exports from different platforms without
+               requiring the user to rename their CSV columns. */
             const colMap = {
                 date:      find('date','tradedate','dateandtime','datetime','date/time'),
                 symbol:    find('symbol','trade/symbol','ticker','instrument','asset'),
@@ -814,44 +1181,66 @@
                 tradingDay:find('tradingday','week'),
             };
 
+            /* Symbol is the only required column — abort with a helpful error if missing */
             if (colMap.symbol < 0) {
                 importStatus.textContent = `❌ Could not find a Symbol column. Headers found: ${rawHeaders.join(', ')}`;
                 importStatus.style.color = '#dc2626'; return;
             }
 
-            // Debug: log first data row so we can verify column alignment
+            /* Debug logging — console only, not shown to the user */
             console.log('Raw headers (normalized):', rawHeaders);
             console.log('Header map:', colMap);
             console.log('First data row:', parseRow(lines[1]));
             console.log('Symbol value from first row:', parseRow(lines[1])[colMap.symbol]);
 
+            /*
+             * parseRow(line)
+             * ───────────────
+             * Parses a single CSV line into an array of cell values.
+             * Handles quoted fields that may contain commas — e.g.:
+             *   "AAPL","Breakout, momentum",250.00
+             * The parser tracks whether it is currently inside a quoted field
+             * (inQ flag) and only splits on commas that are outside quotes.
+             */
             function parseRow(line) {
-                // Handle quoted fields
                 const cols = []; let cur = '', inQ = false;
                 for (const ch of line) {
                     if (ch === '"') { inQ = !inQ; }
                     else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
                     else cur += ch;
                 }
-                cols.push(cur.trim());
+                cols.push(cur.trim()); /* Push the last cell (no trailing comma) */
                 return cols;
             }
 
-            const rows = lines.slice(1).map(parseRow);
+            const rows = lines.slice(1).map(parseRow); /* Skip the header row */
             let ok = 0, failed = 0;
 
             importStatus.textContent = `Importing 0 / ${rows.length}…`;
 
-            // Handle currency-formatted values: "$182.50", "-$50", "(50.00)" = -50
+            /*
+             * parseMoney(v)
+             * ──────────────
+             * Converts currency-formatted strings to a plain number:
+             *   "$182.50"  → 182.50
+             *   "-$50"     → -50
+             *   "(50.00)"  → -50   (accounting / parentheses notation)
+             *   ""         → 0
+             */
             function parseMoney(v) {
                 if (v == null || v === '') return 0;
                 const s = String(v).trim();
+                /* Parentheses around the value indicate a negative number */
                 const negative = s.startsWith('(') && s.endsWith(')');
+                /* Strip everything except digits, decimal points, and minus signs */
                 const n = parseFloat(s.replace(/[^0-9.\-]/g, ''));
                 if (isNaN(n)) return 0;
                 return negative ? -Math.abs(n) : n;
             }
 
+            /* Post each data row to the API individually.
+               get(key) safely retrieves the cell value for a logical field name,
+               returning '' if the column was not found in this file. */
             for (let i = 0; i < rows.length; i++) {
                 const r = rows[i];
                 const get = (key) => colMap[key] >= 0 ? (r[colMap[key]] || '').trim() : '';
@@ -865,6 +1254,7 @@
                     model:      stratRaw || null,
                     shares:     colMap.shares >= 0 ? parseFloat(r[colMap.shares]) || null : null,
                     profitLoss: pl,
+                    /* Fall back to P&L sign if no explicit result column is present */
                     status:     get('result').toLowerCase() || (pl > 0 ? 'win' : pl < 0 ? 'loss' : 'breakeven'),
                     notes: {
                         session:       get('session')    || null,
@@ -876,6 +1266,8 @@
                         confidenceLevel: colMap.confidence >= 0 ? parseInt(r[colMap.confidence]) || null : null,
                     }
                 };
+
+                /* Skip rows with no symbol — they cannot be imported meaningfully */
                 if (!tradeData.symbol) { failed++; continue; }
 
                 try {
@@ -883,39 +1275,64 @@
                     if (res.ok) ok++; else failed++;
                 } catch { failed++; }
 
+                /* Update the progress text after each row */
                 importStatus.textContent = `Importing ${ok + failed} / ${rows.length}…`;
             }
 
+            /* Final result message — green if at least one trade was imported, red if all failed */
             importStatus.textContent = `✅ Imported ${ok} trade(s)${failed ? ` — ${failed} skipped (missing symbol)` : ''}.`;
             importStatus.style.color = ok > 0 ? '#059669' : '#dc2626';
-            event.target.value = ''; // reset file input
-            if (ok > 0) loadTrades();
+            event.target.value = ''; /* Reset the file input so the same file can be re-imported */
+            if (ok > 0) loadTrades(); /* Refresh the table to show newly imported trades */
         }
 
-        // ── Edit modal tag input ──────────────────────────────────────────
+        /* ── Edit modal tag input ───────────────────────────────────────────── */
+
+        /*
+         * When the user presses Enter in the mistake tag text input:
+         *  1. Read and trim the typed tag text.
+         *  2. Only add it if it's non-empty and not already in the array (prevents duplicates).
+         *  3. Re-render the chip list.
+         *  4. Clear the input so the user can type the next tag.
+         */
         document.getElementById('editMistakeTagInput').addEventListener('keypress', e => {
-            if (e.key !== 'Enter') return; e.preventDefault();
+            if (e.key !== 'Enter') return;
+            e.preventDefault(); /* Prevent form submission if wrapped in a <form> */
             const t = e.target.value.trim();
             if (t && !editMistakeTags.includes(t)) { editMistakeTags.push(t); renderEditTags(); }
             e.target.value = '';
         });
 
-        // ── Filters ───────────────────────────────────────────────────────
+        /* ── Filter event listeners ────────────────────────────────────────── */
+
+        /*
+         * Every filter control triggers loadTrades() immediately when changed.
+         * "input" fires on every keystroke for the symbol text box.
+         * "change" fires when a new option is selected in the dropdowns.
+         * This gives real-time filtering without a separate "Apply" button.
+         */
         document.getElementById('symbolFilter').addEventListener('input', loadTrades);
         document.getElementById('typeFilter').addEventListener('change', loadTrades);
         document.getElementById('statusFilter').addEventListener('change', loadTrades);
         document.getElementById('dateFilter').addEventListener('change', loadTrades);
 
+        /* Initial load — fetch all trades with no filters applied */
         loadTrades();
     </script>
 
-    <!-- CSV Column Names Modal -->
+    <!-- ── CSV Column Names Modal ─────────────────────────────────────────────
+         Shown when the user clicks "Sample CSV".
+         Lists every column name the importer recognises; "Symbol" is highlighted
+         in indigo as the only required column.
+         Clicking the dark overlay background closes the modal. -->
     <div class="csv-info-overlay" id="csvInfoOverlay" onclick="if(event.target===this)this.classList.remove('open')">
         <div class="csv-info-box">
             <h3>CSV Column Names</h3>
             <p>Your CSV header row can include any of these column names. Only <strong style="color:#4F46E5">Symbol</strong> is required — everything else is optional.</p>
             <div class="csv-cols-grid">
+                <!-- Required column — highlighted in indigo -->
                 <div class="csv-col-item required">Symbol</div>
+                <!-- Optional columns — shown in grey -->
                 <div class="csv-col-item">Date</div>
                 <div class="csv-col-item">Direction</div>
                 <div class="csv-col-item">Strategy</div>
@@ -929,6 +1346,7 @@
                 <div class="csv-col-item">What Went Right</div>
                 <div class="csv-col-item">What Went Wrong</div>
             </div>
+            <!-- Closes the modal by removing the "open" class -->
             <button class="csv-info-close" onclick="document.getElementById('csvInfoOverlay').classList.remove('open')">Got it</button>
         </div>
     </div>

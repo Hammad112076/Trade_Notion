@@ -4,8 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Trade - Trade Notion</title>
+
+    <!--
+        new-trade.html — Log a new trade
+        ==================================
+        This page presents a Notion-style property form for entering a new trade.
+        Instead of a traditional form layout, each field appears as a row with a
+        labelled property name on the left and the input control on the right —
+        giving a clean, minimal feel similar to Notion database entries.
+
+        Page sections (form-block cards):
+          1. Trade Information — Symbol, Date, Trading Day, Direction, Session, Strategy
+          2. Trade Execution  — Shares/Contracts, P&L, R:R Ratio
+          3. Psychology       — Confidence slider (1–10), Emotion Before, Emotion After
+          4. Review           — Mistake Tags (chip input), What Went Right, What Went Wrong
+
+        Strategy dropdown:
+          Built-in strategies are hard-coded in updateModelDropdown().
+          Custom strategies are loaded from GET /api/settings on page load and
+          appended under a "── Custom ──" separator in the dropdown.
+          New strategies can be typed in the "Add new strategy" text box and
+          saved to the user's settings via POST /api/settings/models.
+
+        Form submission:
+          On submit, the page POSTs to /api/trades.
+          P&L determines the result automatically (positive = win, negative = loss,
+          zero = breakeven) — no separate result field on this form.
+          On success, shows a green banner and redirects to /trades.html after 1 s.
+
+        Auth:
+          JWT is read from localStorage; if missing, redirects to /login.html.
+    -->
+
+    <!-- DM Mono for monospace headings and numbers, DM Sans for body text.
+         This gives the form a clean, Notion-inspired typographic feel. -->
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
     <style>
+        /*
+         * CSS custom properties (design tokens)
+         * ──────────────────────────────────────
+         * Defining colours and sizes here means the whole form can be
+         * re-themed by changing just these values.
+         * --bg           page background (off-white like Notion's parchment)
+         * --surface      card/input background (pure white)
+         * --border       card and input border colour
+         * --text-primary main readable text
+         * --text-secondary muted label/hint text
+         * --accent       interactive colour (blue buttons, focused borders)
+         * --tag-bg       chip background for mistake tags
+         * --danger       error red / delete actions
+         * --success      success green
+         * --radius       shared border-radius value
+         */
         :root {
             --bg: #f7f7f5;
             --surface: #ffffff;
@@ -20,46 +71,74 @@
             --success: #0f9b58;
             --radius: 6px;
         }
+
+        /* Remove default browser margins and use border-box sizing everywhere */
         * { margin:0; padding:0; box-sizing:border-box; }
+
+        /* DM Sans for body text, off-white background matching the token above */
         body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text-primary); font-size:14px; }
 
-        /* sidebar */
+        /* ── Sidebar ──────────────────────────────────────────────────────────
+           Fixed dark left panel — 240px wide, scrollable if content overflows */
         .sidebar { position:fixed; left:0; top:0; bottom:0; width:240px; background:#1f2937; color:white; padding:2rem 0; overflow-y:auto; }
         .logo { padding:0 1.5rem; margin-bottom:2rem; }
+        /* DM Mono for the brand name gives a code/terminal aesthetic */
         .logo h2 { color:#4F46E5; font-size:1.4rem; font-family:'DM Mono',monospace; }
         .nav-section { margin-bottom:1.5rem; }
         .nav-section-title { padding:0 1.5rem; color:#9ca3af; font-size:0.7rem; font-weight:600; text-transform:uppercase; margin-bottom:0.4rem; letter-spacing:.08em; }
+        /* Each nav link is a flex row: icon + label text */
         .nav-item { padding:.6rem 1.5rem; color:#d1d5db; text-decoration:none; display:flex; align-items:center; gap:.65rem; transition:all .2s; font-size:.875rem; }
+        /* Active and hover state: dark background + indigo left border accent */
         .nav-item:hover,.nav-item.active { background:#374151; color:white; border-left:3px solid #4F46E5; }
         .nav-icon { font-size:1.1rem; }
 
-        /* layout */
+        /* ── Main content area ────────────────────────────────────────────────
+           Pushed right of the 240px sidebar with generous horizontal padding
+           so the form card sits centred in the available space. */
         .main-content { margin-left:240px; padding:3rem 4rem; }
+
+        /* Page title row: title + subtitle on the left, Back button on the right */
         .page-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2.5rem; }
+        /* DM Mono for the heading gives a data-entry / terminal feel */
         .page-title { font-family:'DM Mono',monospace; font-size:2rem; font-weight:500; letter-spacing:-.03em; }
         .page-subtitle { color:var(--text-secondary); margin-top:4px; font-size:13px; }
+        /* Back button — ghost style, gets a full border on hover */
         .back-btn { padding:.5rem 1rem; background:var(--surface); color:var(--text-secondary); border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; font-size:13px; text-decoration:none; transition:all .2s; font-family:'DM Sans',sans-serif; }
         .back-btn:hover { border-color:var(--text-primary); color:var(--text-primary); }
 
-        /* alerts */
+        /* ── Status banners ───────────────────────────────────────────────────
+           Both hidden by default.  One is shown after the form submits.
+           Green for success, red for API errors. */
         .alert { padding:.75rem 1rem; border-radius:var(--radius); margin-bottom:1.25rem; font-size:13px; display:none; }
         .alert-success { background:#f0fdf4; color:var(--success); border:1px solid #bbf7d0; }
         .alert-error   { background:#fef2f2; color:var(--danger);  border:1px solid #fecaca; }
 
-        /* blocks */
+        /* ── Form blocks ──────────────────────────────────────────────────────
+           Each logical group of fields is wrapped in a white card (.form-block)
+           with a labelled header (.block-header) and a padded body (.block-body). */
         .form-block { background:var(--surface); border:1px solid var(--border); border-radius:8px; margin-bottom:1.25rem; overflow:hidden; }
         .block-header { padding:1rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:.5rem; }
+        /* Section label — tiny uppercase, muted colour */
         .block-header h2 { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-secondary); }
         .block-body { padding:1.25rem 1.5rem; }
 
-        /* property rows */
+        /* ── Property rows ────────────────────────────────────────────────────
+           Each row = a label column (fixed 200px) + a value column (flexible).
+           On hover, the row gets the page background colour as a subtle highlight.
+           This mimics the Notion property-row interaction. */
         .prop-row { display:flex; align-items:flex-start; padding:3px 0; border-radius:4px; transition:background .15s; }
         .prop-row:hover { background:var(--bg); }
+        /* Label: fixed-width, has a type icon and red asterisk for required fields */
         .prop-label { width:200px; min-width:200px; display:flex; align-items:center; gap:6px; padding:8px 6px 8px 4px; color:var(--text-secondary); font-size:13px; font-weight:500; user-select:none; }
         .prop-label .type-icon { font-size:13px; opacity:.7; }
+        /* Red asterisk next to required field names */
         .prop-label .req { color:var(--danger); margin-left:2px; font-size:11px; }
+        /* Value: takes all remaining row space */
         .prop-value { flex:1; padding:2px 0; }
 
+        /* Inputs/selects/textareas inside property values:
+           Transparent by default (no visible border), subtle border appears on
+           hover, and a blue border with box-shadow appears on focus. */
         .prop-value input[type="text"],
         .prop-value input[type="number"],
         .prop-value input[type="date"],
@@ -71,37 +150,59 @@
         }
         .prop-value input:hover,.prop-value select:hover,.prop-value textarea:hover { border-color:var(--border); background:var(--bg); }
         .prop-value input:focus,.prop-value select:focus,.prop-value textarea:focus { border-color:var(--accent); background:#fff; box-shadow:0 0 0 2px rgba(47,128,237,.12); }
+        /* Textareas can be resized vertically by the user */
         .prop-value textarea { resize:vertical; min-height:72px; line-height:1.5; }
 
+        /* Radio buttons for Long/Short direction — laid out in a horizontal row */
         .radio-row { display:flex; align-items:center; gap:1.25rem; padding:8px; }
         .radio-option { display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; }
         .radio-option input { width:auto; accent-color:var(--accent); }
 
+        /* ── Confidence slider row ────────────────────────────────────────────
+           The range input takes available width; the badge beside it shows the
+           current value in a monospace blue pill that updates on every slider move. */
         .range-wrap { padding:8px; display:flex; align-items:center; gap:12px; }
         .range-wrap input[type="range"] { flex:1; accent-color:var(--accent); }
+        /* Monospace badge shows the live value (1–10) */
         .range-badge { font-family:'DM Mono',monospace; font-size:12px; color:var(--accent); background:#eff6ff; padding:2px 8px; border-radius:12px; min-width:32px; text-align:center; }
 
+        /* The P&L input uses monospace weight so numbers look clean */
         #calculatedPL { font-family:'DM Mono',monospace; font-weight:500; }
 
+        /* ── Mistake tag chip input ───────────────────────────────────────────
+           The text input sits above the chip list.
+           Tags appear as small coloured chips with an × button to remove them. */
         .tag-input-wrap input { margin-bottom:6px; }
         .tags-list { display:flex; flex-wrap:wrap; gap:5px; padding:0 8px 4px; }
         .tag-chip { display:flex; align-items:center; gap:4px; padding:3px 10px; background:var(--tag-bg); border-radius:4px; font-size:12px; border:1px solid var(--border); }
+        /* × button on each chip — turns red on hover */
         .tag-chip .rm { cursor:pointer; color:var(--text-secondary); font-size:14px; line-height:1; }
         .tag-chip .rm:hover { color:var(--danger); }
 
+        /* ── Add custom strategy row ──────────────────────────────────────────
+           Text input + blue "Add" button placed below the Strategy dropdown.
+           Typing a name and clicking Add inserts it into the dropdown,
+           selects it, and saves it to the user's settings via the API. */
         .model-add-row { display:flex; gap:6px; margin-top:6px; padding:0 8px; }
         .model-add-row input { flex:1; }
         .model-add-row button { padding:6px 12px; background:var(--accent); color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-family:'DM Sans',sans-serif; white-space:nowrap; }
         .model-add-row button:hover { background:var(--accent-hover); }
 
-        /* footer */
+        /* ── Form footer ──────────────────────────────────────────────────────
+           Sticky-looking footer at the bottom of the form with Discard (ghost)
+           and Save Trade (blue) buttons aligned to the right. */
         .form-footer { display:flex; justify-content:flex-end; gap:10px; padding:1.25rem 1.5rem; border-top:1px solid var(--border); background:var(--surface); border-radius:0 0 8px 8px; margin-top:-1.25rem; }
+        /* Save button — blue; turns grey when disabled during API call */
         .btn-save { padding:8px 24px; background:var(--accent); color:#fff; border:none; border-radius:var(--radius); cursor:pointer; font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; transition:background .2s; }
         .btn-save:hover { background:var(--accent-hover); }
         .btn-save:disabled { background:#b3b0ad; cursor:not-allowed; }
+        /* Discard button — ghost style, gets a full border on hover */
         .btn-discard { padding:8px 16px; background:transparent; color:var(--text-secondary); border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; font-size:13px; font-family:'DM Sans',sans-serif; transition:all .2s; }
         .btn-discard:hover { border-color:var(--text-primary); color:var(--text-primary); }
 
+        /* ── Responsive: narrow screens ───────────────────────────────────────
+           On screens ≤ 900px, collapse the sidebar to icon-only (60px) and
+           reduce the label column width to save horizontal space. */
         @media(max-width:900px){
             .sidebar{width:60px;}
             .main-content{margin-left:60px;padding:2rem 1.5rem;}
@@ -112,11 +213,15 @@
 </head>
 <body>
 
+<!-- ── Sidebar navigation ──────────────────────────────────────────────────
+     Fixed dark left panel. "Trade Journal" is marked active because this page
+     is part of the Trade Journal flow (it logs a new trade into the journal). -->
 <div class="sidebar">
     <div class="logo"><h2>Trade Notion</h2></div>
     <div class="nav-section">
         <div class="nav-section-title">Main</div>
         <a href="/dashboard.html" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+        <!-- Active — this page is part of the Trade Journal flow -->
         <a href="/trades.html" class="nav-item active"><span class="nav-icon">📝</span><span>Trade Journal</span></a>
         <a href="/analytics.html" class="nav-item"><span class="nav-icon">📈</span><span>Analytics</span></a>
     </div>
@@ -129,36 +234,50 @@
     <div class="nav-section">
         <div class="nav-section-title">Account</div>
         <a href="/settings.html" class="nav-item"><span class="nav-icon">⚙️</span><span>Settings</span></a>
+        <!-- logout() removes the token and redirects to the login page -->
         <a href="#" class="nav-item" onclick="logout()"><span class="nav-icon">🚪</span><span>Logout</span></a>
     </div>
 </div>
 
+<!-- ── Main content ────────────────────────────────────────────────────────
+     Sits to the right of the sidebar. Contains the page header and the form. -->
 <div class="main-content">
+
+    <!-- Page title bar: heading + subtitle on the left, Back link on the right -->
     <div class="page-header">
         <div>
             <div class="page-title">Log New Trade</div>
             <div class="page-subtitle">Fill in the details below.</div>
         </div>
+        <!-- Returns to the trade journal without saving anything -->
         <a href="/trades.html" class="back-btn">← Back to Journal</a>
     </div>
 
+    <!-- Status banners — only one is shown after the form submission attempt -->
     <div id="alertSuccess" class="alert alert-success"></div>
     <div id="alertError"   class="alert alert-error"></div>
 
     <form id="tradeForm">
 
-        <!-- Trade Info -->
+        <!-- ── Section 1: Trade Information ─────────────────────────────────
+             Core fields that identify what was traded, when, and how. -->
         <div class="form-block">
             <div class="block-header"><h2>🗂 Trade Information</h2></div>
             <div class="block-body">
+
+                <!-- Symbol — the ticker the user traded (uppercased in JS before submission) -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">🔤</span> Symbol <span class="req">*</span></div>
                     <div class="prop-value"><input type="text" id="symbol" placeholder="e.g. NQ, GBPUSD, AAPL" required></div>
                 </div>
+
+                <!-- Trade date — defaults to today (set by JS) -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">📅</span> Date <span class="req">*</span></div>
                     <div class="prop-value"><input type="date" id="date" required></div>
                 </div>
+
+                <!-- Trading day of the week — optional; used in analytics day-of-week breakdown -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">📆</span> Trading Day</div>
                     <div class="prop-value">
@@ -169,15 +288,20 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- Direction — Long or Short; radio buttons for quick selection -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">↔️</span> Direction <span class="req">*</span></div>
                     <div class="prop-value">
                         <div class="radio-row">
+                            <!-- Long is selected by default (most common for equity traders) -->
                             <label class="radio-option"><input type="radio" name="direction" value="long" checked> Long</label>
                             <label class="radio-option"><input type="radio" name="direction" value="short"> Short</label>
                         </div>
                     </div>
                 </div>
+
+                <!-- Market session — time of day when the trade was taken -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">⏰</span> Session</div>
                     <div class="prop-value">
@@ -192,10 +316,16 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- Strategy — populated by updateModelDropdown() with built-in +
+                     custom strategies from the user's settings.
+                     The text input below lets the user add a new strategy on the fly. -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">🧠</span> Strategy <span class="req">*</span></div>
                     <div class="prop-value">
+                        <!-- Dropdown is rebuilt by updateModelDropdown() after settings load -->
                         <select id="model" required><option value="">Select strategy</option></select>
+                        <!-- Inline "Add new strategy" row — saves to API and updates dropdown -->
                         <div class="model-add-row">
                             <input type="text" id="newModel" placeholder="Add new strategy…">
                             <button type="button" onclick="addCustomModel()">+ Add</button>
@@ -205,20 +335,28 @@
             </div>
         </div>
 
-        <!-- Execution -->
+        <!-- ── Section 2: Trade Execution ────────────────────────────────────
+             Quantitative fields: size, outcome, and risk/reward. -->
         <div class="form-block">
             <div class="block-header"><h2>⚡ Trade Execution</h2></div>
             <div class="block-body">
+
+                <!-- Number of shares or contracts in the position -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">🔢</span> Shares / Contracts</div>
                     <div class="prop-value"><input type="number" id="shares" placeholder="e.g. 1"></div>
                 </div>
+
+                <!-- P&L — positive for profit, negative for loss.
+                     The input is coloured green/red in real-time by colorPL(). -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">💰</span> P&amp;L <span class="req">*</span></div>
                     <div class="prop-value">
                         <input type="number" id="calculatedPL" step="0.01" placeholder="Enter P&L (e.g. 250 or -120)" required>
                     </div>
                 </div>
+
+                <!-- Risk:Reward ratio — free text so traders can enter "1:2.5" or "2R" etc. -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">⚖️</span> R:R Ratio</div>
                     <div class="prop-value"><input type="text" id="riskReward" placeholder="e.g. 1:2.5"></div>
@@ -226,19 +364,28 @@
             </div>
         </div>
 
-        <!-- Psychology -->
+        <!-- ── Section 3: Psychology ──────────────────────────────────────────
+             Tracks the trader's mental state before and after the trade.
+             These fields feed the psychology analytics insights. -->
         <div class="form-block">
             <div class="block-header"><h2>🧘 Psychology</h2></div>
             <div class="block-body">
+
+                <!-- Confidence level: range slider 1–10.
+                     The badge beside the slider updates live to show the current value. -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">🎯</span> Confidence</div>
                     <div class="prop-value">
                         <div class="range-wrap">
+                            <!-- Slider default is 5 (neutral confidence) -->
                             <input type="range" id="confidenceLevel" min="1" max="10" value="5">
+                            <!-- Live display of the slider value, updated by the input event listener -->
                             <div class="range-badge" id="confidenceValue">5</div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Emotional state when entering the trade (pre-trade mindset) -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">😶</span> Before</div>
                     <div class="prop-value">
@@ -250,6 +397,8 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- Emotional state immediately after closing the trade (post-trade reflection) -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">😌</span> After</div>
                     <div class="prop-value">
@@ -264,23 +413,33 @@
             </div>
         </div>
 
-        <!-- Review -->
+        <!-- ── Section 4: Review ──────────────────────────────────────────────
+             Post-trade analysis fields for building a learning loop. -->
         <div class="form-block">
             <div class="block-header"><h2>🔍 Review</h2></div>
             <div class="block-body">
+
+                <!-- Mistake tags — press Enter to add, click × to remove.
+                     Tags are stored in the mistakeTags[] array and submitted as an array. -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">🏷</span> Mistake Tags</div>
                     <div class="prop-value">
                         <div class="tag-input-wrap">
+                            <!-- Typing a tag name here and pressing Enter adds it as a chip -->
                             <input type="text" id="mistakeTagInput" placeholder="Type a tag and press Enter…">
+                            <!-- Chip list is rebuilt by renderTags() whenever mistakeTags[] changes -->
                             <div class="tags-list" id="mistakeTagsList"></div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Free-text field: what the trader executed well on this trade -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">✅</span> Went Right</div>
                     <div class="prop-value"><textarea id="whatWentRight" placeholder="What did you execute well?"></textarea></div>
                 </div>
+
+                <!-- Free-text field: what the trader would do differently next time -->
                 <div class="prop-row">
                     <div class="prop-label"><span class="type-icon">❌</span> Went Wrong</div>
                     <div class="prop-value"><textarea id="whatWentWrong" placeholder="What could be improved?"></textarea></div>
@@ -288,7 +447,10 @@
             </div>
         </div>
 
-        <!-- Footer -->
+        <!-- ── Form footer ────────────────────────────────────────────────────
+             Discard navigates back without saving.
+             Save Trade submits the form. The button is disabled while the API
+             call is in flight to prevent double-submission. -->
         <div class="form-footer">
             <button type="button" class="btn-discard" onclick="window.location.href='/trades.html'">Discard</button>
             <button type="submit" class="btn-save" id="submitBtn">Save Trade</button>
@@ -298,13 +460,38 @@
 </div>
 
 <script>
+/*
+ * Auth guard
+ * ───────────
+ * If no JWT is present in localStorage, the user is not authenticated —
+ * redirect immediately to prevent unauthorised access to this page.
+ */
 const token = localStorage.getItem('token');
 if (!token) window.location.href = '/login.html';
+
+/* Clears the token and sends the user to the login page */
 function logout() { localStorage.removeItem('token'); window.location.href = '/login.html'; }
 
+/*
+ * Module-level state
+ * ───────────────────
+ * customModels  — array of custom strategy names fetched from /api/settings.
+ *                 Populated by loadSettings() and modified by addCustomModel().
+ * mistakeTags   — array of tag strings entered via the chip input.
+ *                 Populated by the Enter-key listener and cleared on form reset.
+ */
 let customModels = [], mistakeTags = [];
 
-/* ── Settings load ── */
+/*
+ * loadSettings()
+ * ───────────────
+ * Fetches GET /api/settings to retrieve the user's saved custom strategy names.
+ * Stores them in customModels[] and calls updateModelDropdown() to rebuild the
+ * Strategy dropdown with both built-in and custom options.
+ *
+ * Any error is logged to the console but does not block the form — the user
+ * can still log a trade using only the built-in strategies.
+ */
 async function loadSettings() {
     try {
         const r = await fetch('/api/settings', { headers: { Authorization: `Bearer ${token}` } });
@@ -317,23 +504,48 @@ async function loadSettings() {
 }
 loadSettings();
 
-/* ── Models ── */
+/*
+ * updateModelDropdown()
+ * ──────────────────────
+ * Rebuilds the Strategy <select> element with:
+ *  - A placeholder "Select strategy" option
+ *  - Eight built-in strategy names (Momentum, Breakout, etc.)
+ *  - If the user has custom strategies, a disabled separator line followed
+ *    by each custom strategy as its own option.
+ *
+ * Called once after settings load, and again whenever a new custom strategy is added.
+ */
 function updateModelDropdown() {
     const sel = document.getElementById('model');
     sel.innerHTML = '<option value="">Select strategy</option>';
+    /* Built-in strategies available to all users */
     ['Momentum','Breakout','Reversal','Scalping','Swing Trading','Day Trading','ORB','London ORB'].forEach(m => {
         const o = document.createElement('option'); o.value = o.textContent = m; sel.appendChild(o);
     });
     if (customModels.length) {
+        /* Disabled separator so the user can visually tell where built-ins end and custom begin */
         const sep = document.createElement('option'); sep.disabled = true; sep.textContent = '── Custom ──'; sel.appendChild(sep);
         customModels.forEach(m => { const o = document.createElement('option'); o.value = o.textContent = m; sel.appendChild(o); });
     }
 }
+
+/*
+ * addCustomModel()
+ * ─────────────────
+ * Reads the text from the "Add new strategy" input, adds it to customModels[],
+ * rebuilds the dropdown, auto-selects the new option, and saves it to the user's
+ * settings via POST /api/settings/models.
+ *
+ * If the save fails, the strategy still works for this session (it's in the
+ * dropdown) but won't persist to future sessions — the console error flags this.
+ */
 async function addCustomModel() {
     const inp = document.getElementById('newModel');
     const name = inp.value.trim(); if (!name) return;
+    /* Prevent duplicates in the local array before the API saves it */
     if (!customModels.includes(name)) customModels.push(name);
     updateModelDropdown();
+    /* Auto-select the newly added strategy so the user doesn't have to pick it */
     document.getElementById('model').value = name;
     inp.value = '';
     try {
@@ -349,25 +561,54 @@ async function addCustomModel() {
     } catch(e) { console.error('Strategy save error:', e); }
 }
 
-/* ── Tags ── */
+/*
+ * Mistake tag chip input
+ * ───────────────────────
+ * Pressing Enter in the tag text input:
+ *  1. Trims the typed text.
+ *  2. Adds it to mistakeTags[] if it isn't already there (prevents duplicates).
+ *  3. Re-renders the chip list via renderTags().
+ *  4. Clears the input for the next tag.
+ */
 document.getElementById('mistakeTagInput').addEventListener('keypress', e => {
-    if (e.key !== 'Enter') return; e.preventDefault();
+    if (e.key !== 'Enter') return;
+    e.preventDefault(); /* Prevent form submission */
     const t = e.target.value.trim();
     if (t && !mistakeTags.includes(t)) { mistakeTags.push(t); renderTags(); }
     e.target.value = '';
 });
+
+/*
+ * renderTags()
+ * ─────────────
+ * Rebuilds the chip list HTML from the mistakeTags[] array.
+ * Each chip shows the tag text and an × button that calls removeTag().
+ */
 function renderTags() {
     document.getElementById('mistakeTagsList').innerHTML = mistakeTags.map(t =>
         `<div class="tag-chip">${t}<span class="rm" onclick="removeTag('${t}')">×</span></div>`).join('');
 }
+
+/* Filters the tag out of mistakeTags[] and re-renders the chip list */
 function removeTag(t) { mistakeTags = mistakeTags.filter(x => x !== t); renderTags(); }
 
-/* ── Confidence ── */
+/*
+ * Confidence slider live preview
+ * ─────────────────────────────
+ * Updates the monospace badge beside the slider to show the current value
+ * as the user drags the thumb — no need to read the number from the slider itself.
+ */
 document.getElementById('confidenceLevel').addEventListener('input', e => {
     document.getElementById('confidenceValue').textContent = e.target.value;
 });
 
-/* ── P&L ── */
+/*
+ * P&L colour feedback
+ * ─────────────────────
+ * While the user types in the P&L field, the text turns green for positive
+ * values (profit) and red for negative values (loss).
+ * This gives immediate visual confirmation that the sign is correct.
+ */
 document.getElementById('calculatedPL').addEventListener('input', colorPL);
 function colorPL() {
     const el = document.getElementById('calculatedPL');
@@ -375,11 +616,31 @@ function colorPL() {
     el.style.color = isNaN(v) ? '' : v >= 0 ? 'var(--success)' : 'var(--danger)';
 }
 
-/* ── Submit ── */
+/*
+ * Form submission handler
+ * ────────────────────────
+ * Intercepts the native form submit, builds the tradeData object, and POSTs
+ * it to /api/trades.
+ *
+ * result is derived from P&L sign:
+ *   profitLoss > 0  → win
+ *   profitLoss < 0  → loss
+ *   profitLoss = 0  → breakeven
+ * This means the user never has to set a Result field on this form.
+ *
+ * Notes fields (session, confidence, emotions, tags, retrospective text) are
+ * nested under a "notes" key because the backend stores them in an embedded
+ * sub-document on the Trade model.
+ *
+ * On success: shows a green banner and redirects to /trades.html after 1 second.
+ * On API error: shows the server's message in the red banner and re-enables the button.
+ * On network error: shows a generic message and re-enables the button.
+ */
 document.getElementById('tradeForm').addEventListener('submit', async e => {
     e.preventDefault();
     const btn = document.getElementById('submitBtn');
     btn.disabled = true; btn.textContent = 'Saving…';
+    /* Hide any previous status banners before this attempt */
     document.getElementById('alertSuccess').style.display =
     document.getElementById('alertError').style.display   = 'none';
 
@@ -392,6 +653,7 @@ document.getElementById('tradeForm').addEventListener('submit', async e => {
         date:       document.getElementById('date').value,
         shares:     parseInt(document.getElementById('shares').value) || null,
         profitLoss: pl,
+        /* Derive result from P&L sign — no separate result dropdown on this form */
         status:     pl > 0 ? 'win' : pl < 0 ? 'loss' : 'breakeven',
         strategy:   document.getElementById('model').value,
         notes: {
@@ -415,15 +677,18 @@ document.getElementById('tradeForm').addEventListener('submit', async e => {
         });
         const data = await r.json();
         if (r.ok) {
+            /* Show success banner and redirect to the journal after a short delay */
             const s = document.getElementById('alertSuccess');
             s.textContent = 'Trade saved! Redirecting…'; s.style.display = 'block';
             setTimeout(() => window.location.href = '/trades.html', 1000);
         } else {
+            /* Show the API's validation or conflict message */
             const er = document.getElementById('alertError');
             er.textContent = data.message || 'Failed to save trade.'; er.style.display = 'block';
             btn.disabled = false; btn.textContent = 'Save Trade';
         }
     } catch(err) {
+        /* Network error (server down, offline, etc.) */
         const er = document.getElementById('alertError');
         er.textContent = 'An error occurred. Please try again.'; er.style.display = 'block';
         btn.disabled = false; btn.textContent = 'Save Trade';

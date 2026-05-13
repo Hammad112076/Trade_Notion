@@ -4,15 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analytics - Trade Notion</title>
+
+    <!--
+        analytics.html — Deep performance analytics page
+        =================================================
+        This page provides quantitative analysis of the user's trading history.
+        All data is fetched from the API and rendered client-side using Chart.js
+        for charts and plain HTML tables for breakdowns.
+
+        Sections rendered on this page:
+          1. Summary metric cards — Total P&L, Win Rate, Profit Factor, Avg Win,
+             Avg Loss, Expectancy
+          2. Equity Curve chart — cumulative P&L over trades (chronological)
+          3. Drawdown chart — decline from running peak P&L (red fill)
+          4. Best Days to Trade table — Wilson CI-ranked day-of-week analysis
+          5. Streak analysis cards — max/avg/current win and loss streaks
+          6. Rolling 20-trade average P&L chart — reveals performance regime shifts
+          7. Symbol performance breakdown table
+          8. Psychology Insights — Emotion Before table and Confidence Level table
+
+        Date filtering:
+          Four buttons (All Time / 7 Days / 30 Days / 90 Days) pass a dateRange
+          query param to the API.  Changing the filter calls loadAnalytics() which
+          re-fetches everything and rebuilds all charts and tables.
+
+        Data flow:
+          - loadAnalytics() fetches GET /api/trades/stats/overview for summary stats
+          - loadTradeData() fetches GET /api/trades for the full trade array
+          - Individual build*() functions process that array and render each section
+
+        Chart.js is loaded from CDN (v4.4.0) and used for three line charts.
+        Each chart instance is stored in a variable so it can be destroyed before
+        being rebuilt on a filter change (prevents "canvas already in use" errors).
+
+        Auth:
+          JWT is read from localStorage; if missing, redirects to /login.html.
+    -->
+
+    <!-- Chart.js v4.4.0 — UMD build provides a global `Chart` object -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
     <style>
+        /* Remove default browser margins/padding and use border-box sizing everywhere */
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        /* Light grey page background so white cards stand out */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: #f3f4f6;
         }
 
+        /* ── Sidebar ──────────────────────────────────────────────────────────
+           Fixed dark left panel — scrollable if content exceeds the viewport height */
         .sidebar {
             position: fixed; left: 0; top: 0; bottom: 0; width: 260px;
             background: #1f2937; color: white; padding: 2rem 0; overflow-y: auto;
@@ -28,19 +71,25 @@
             padding: 0.75rem 1.5rem; color: #d1d5db; text-decoration: none;
             display: flex; align-items: center; gap: 0.75rem; transition: all 0.3s;
         }
+        /* Active and hovered links: dark background + indigo left border */
         .nav-item:hover, .nav-item.active {
             background: #374151; color: white; border-left: 3px solid #4F46E5;
         }
         .nav-icon { font-size: 1.25rem; }
 
+        /* Main content pushed right of the 260px sidebar */
         .main-content { margin-left: 260px; padding: 2rem; }
 
+        /* White card at the top: page title, subtitle, and date-filter buttons */
         .header {
             background: white; padding: 1.5rem 2rem; border-radius: 10px;
             margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .header h1 { color: #1f2937; font-size: 1.75rem; margin-bottom: 0.25rem; }
 
+        /* ── Date filter buttons ──────────────────────────────────────────────
+           Horizontal row of period-selection buttons.
+           Active button gets a filled indigo style to show the current selection. */
         .date-selector { display: flex; gap: 1rem; margin-top: 1rem; }
         .date-btn {
             padding: 0.5rem 1rem; border: 2px solid #e5e7eb; background: white;
@@ -50,7 +99,9 @@
             background: #4F46E5; color: white; border-color: #4F46E5;
         }
 
-        /* ── Metric cards ── */
+        /* ── Summary metric cards ─────────────────────────────────────────────
+           Auto-fit grid: each card is at least 280px wide. Six cards total.
+           Each card has a coloured icon on the right and a large value on the left. */
         .metrics-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem; margin-bottom: 2rem;
@@ -61,6 +112,9 @@
         }
         .metric-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .metric-title { color: #6b7280; font-size: 0.875rem; font-weight: 500; }
+
+        /* Square icon badge on the right of each metric card header.
+           Each metric gets a distinct background/text colour pair. */
         .metric-icon {
             width: 40px; height: 40px; border-radius: 8px;
             display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
@@ -71,10 +125,15 @@
         .metric-icon.orange { background: #fed7aa; color: #ea580c; }
         .metric-icon.red    { background: #fee2e2; color: #dc2626; }
         .metric-icon.teal   { background: #ccfbf1; color: #0d9488; }
+
+        /* Large bold metric value, and a smaller description line below it */
         .metric-value { font-size: 2rem; font-weight: bold; color: #1f2937; margin-bottom: 0.25rem; }
         .metric-description { font-size: 0.875rem; color: #6b7280; }
 
-        /* ── Charts ── */
+        /* ── Chart layout ─────────────────────────────────────────────────────
+           Two charts side by side (equity curve + drawdown) in a 2-column grid.
+           On screens ≤ 1100px they stack into one column.
+           chart-card-full spans the full width for the rolling average chart. */
         .charts-row {
             display: grid; grid-template-columns: 1fr 1fr;
             gap: 1.5rem; margin-bottom: 2rem;
@@ -90,7 +149,10 @@
         .chart-title { font-size: 1.1rem; font-weight: 600; color: #1f2937; margin-bottom: 0.25rem; }
         .chart-subtitle { font-size: 0.8rem; color: #6b7280; margin-bottom: 1rem; }
 
-        /* ── Streak cards ── */
+        /* ── Streak cards ─────────────────────────────────────────────────────
+           Five small centred cards showing streak statistics.
+           Values are colour-coded: green for wins, red for losses, indigo for
+           the current streak (can be either). */
         .streak-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 1rem; margin-bottom: 2rem;
@@ -108,7 +170,9 @@
         .streak-value.loss  { color: #dc2626; }
         .streak-value.neutral { color: #4F46E5; }
 
-        /* ── Tables ── */
+        /* ── Data tables ──────────────────────────────────────────────────────
+           Shared table container and cell styles used by symbol, day, emotion,
+           and confidence tables. */
         .performance-table {
             width: 100%; background: white; border-radius: 10px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 2rem;
@@ -123,10 +187,18 @@
         }
         td { padding: 0.875rem 1.5rem; border-bottom: 1px solid #f3f4f6; }
         tr:hover { background: #f9fafb; }
+        /* Coloured text for positive (green) and negative (red) monetary values */
         .stat-positive { color: #059669; font-weight: 600; }
         .stat-negative { color: #dc2626; font-weight: 600; }
 
-        /* ── Quant badges & score bar ── */
+        /* ── Day-of-week quant badges and score bar ───────────────────────────
+           Signal badge tells the user at a glance whether to trade or avoid that day:
+             TRADE  = score ≥ 0.6 (green)
+             WATCH  = score ≥ 0.35 (amber)
+             AVOID  = score < 0.35 (red)
+
+           Score bar is a mini progress bar showing the normalised composite score
+           (0–10 display) as a filled indigo bar. */
         .quant-badge {
             display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px;
             font-size: 0.75rem; font-weight: 700; letter-spacing: 0.03em;
@@ -141,9 +213,13 @@
         }
         .score-bar-fill { height: 100%; border-radius: 3px; background: #4F46E5; }
 
+        /* Centred placeholder text shown while data is fetching or when no trades exist */
         .loading  { text-align: center; padding: 3rem; color: #6b7280; }
         .empty-state { text-align: center; padding: 3rem; color: #6b7280; }
 
+        /* ── Responsive breakpoints ───────────────────────────────────────────
+           ≤ 1100px: chart row collapses to one column (charts stack vertically)
+           ≤ 768px: sidebar collapses to icon-only (70px) to save screen space */
         @media (max-width: 1100px) { .charts-row { grid-template-columns: 1fr; } }
         @media (max-width: 768px) {
             .sidebar { width: 70px; }
@@ -153,12 +229,16 @@
     </style>
 </head>
 <body>
+
+    <!-- ── Sidebar navigation ──────────────────────────────────────────────────
+         Fixed dark left panel. "Analytics" has the .active class for this page. -->
     <div class="sidebar">
         <div class="logo"><h2>Trade Notion</h2></div>
         <div class="nav-section">
             <div class="nav-section-title">Main</div>
             <a href="/dashboard.html" class="nav-item"><span class="nav-icon">📊</span><span>Dashboard</span></a>
             <a href="/trades.html"    class="nav-item"><span class="nav-icon">📝</span><span>Trade Journal</span></a>
+            <!-- Active — this is the current page -->
             <a href="/analytics.html" class="nav-item active"><span class="nav-icon">📈</span><span>Analytics</span></a>
         </div>
         <div class="nav-section">
@@ -170,17 +250,22 @@
         <div class="nav-section">
             <div class="nav-section-title">Account</div>
             <a href="/settings.html" class="nav-item"><span class="nav-icon">⚙️</span><span>Settings</span></a>
+            <!-- logout() clears the token and redirects to login -->
             <a href="#" class="nav-item" onclick="logout()"><span class="nav-icon">🚪</span><span>Logout</span></a>
         </div>
     </div>
 
     <div class="main-content">
 
-        <!-- Header -->
+        <!-- ── Page header ────────────────────────────────────────────────────
+             Contains the page title and the four date-filter buttons.
+             Each button calls filterByDate() with a period string and a reference
+             to itself so the active class can be moved to the clicked button. -->
         <div class="header">
             <h1>Performance Analytics</h1>
             <p style="color:#6b7280;">Deep dive into your trading performance</p>
             <div class="date-selector">
+                <!-- Empty string = All Time (no dateRange query param sent to API) -->
                 <button class="date-btn active" onclick="filterByDate('', this)">All Time</button>
                 <button class="date-btn" onclick="filterByDate('week', this)">7 Days</button>
                 <button class="date-btn" onclick="filterByDate('month', this)">30 Days</button>
@@ -188,33 +273,41 @@
             </div>
         </div>
 
-        <!-- Summary metrics -->
+        <!-- ── Summary metric cards ───────────────────────────────────────────
+             Six cards in an auto-fit grid.  Each value element is updated by
+             loadAnalytics() after fetching /api/trades/stats/overview. -->
         <div class="metrics-grid">
+            <!-- Total P&L: coloured green or red depending on sign -->
             <div class="metric-card">
                 <div class="metric-header"><span class="metric-title">Total P&L</span><div class="metric-icon green">💰</div></div>
                 <div class="metric-value" id="totalPL">Loading...</div>
                 <div class="metric-description" id="plDesc">Calculating...</div>
             </div>
+            <!-- Win Rate: wins / total trades as a percentage -->
             <div class="metric-card">
                 <div class="metric-header"><span class="metric-title">Win Rate</span><div class="metric-icon blue">🎯</div></div>
                 <div class="metric-value" id="winRate">Loading...</div>
                 <div class="metric-description" id="winRateDesc">Calculating...</div>
             </div>
+            <!-- Profit Factor: gross wins / gross losses — > 1 means profitable system -->
             <div class="metric-card">
                 <div class="metric-header"><span class="metric-title">Profit Factor</span><div class="metric-icon purple">⚡</div></div>
                 <div class="metric-value" id="profitFactor">Loading...</div>
                 <div class="metric-description" id="profitFactorDesc">Calculating...</div>
             </div>
+            <!-- Avg Win: mean P&L of all winning trades -->
             <div class="metric-card">
                 <div class="metric-header"><span class="metric-title">Avg Win</span><div class="metric-icon green">📈</div></div>
                 <div class="metric-value" id="avgWin">Loading...</div>
                 <div class="metric-description">Average winning trade</div>
             </div>
+            <!-- Avg Loss: mean P&L of all losing trades (displayed as positive) -->
             <div class="metric-card">
                 <div class="metric-header"><span class="metric-title">Avg Loss</span><div class="metric-icon red">📉</div></div>
                 <div class="metric-value" id="avgLoss">Loading...</div>
                 <div class="metric-description">Average losing trade</div>
             </div>
+            <!-- Expectancy: (winRate × avgWin) − (lossRate × avgLoss) — expected value per trade -->
             <div class="metric-card">
                 <div class="metric-header"><span class="metric-title">Expectancy</span><div class="metric-icon teal">💡</div></div>
                 <div class="metric-value" id="expectancy">Loading...</div>
@@ -222,11 +315,15 @@
             </div>
         </div>
 
-        <!-- Equity Curve + Drawdown -->
+        <!-- ── Equity Curve + Drawdown charts ─────────────────────────────────
+             Side-by-side Chart.js line charts.
+             Equity curve: cumulative P&L per trade, coloured green or red.
+             Drawdown: distance below the running peak (always ≤ 0, red fill). -->
         <div class="charts-row">
             <div class="chart-card">
                 <div class="chart-title">Equity Curve</div>
                 <div class="chart-subtitle">Cumulative P&L over time (chronological)</div>
+                <!-- Canvas is sized by the chart-card width and the height attribute -->
                 <canvas id="equityChart" height="160"></canvas>
             </div>
             <div class="chart-card">
@@ -236,35 +333,52 @@
             </div>
         </div>
 
-        <!-- Best days to trade -->
+        <!-- ── Best Days to Trade table ───────────────────────────────────────
+             Populated by buildDayAnalysis().
+             Ranks days of the week by a composite score combining:
+               - Wilson 95% CI lower bound (reliability)
+               - Risk-adjusted median P&L (edge / volatility)
+               - Sharpe ratio of daily P&L (stability)
+             Each day gets a TRADE / WATCH / AVOID signal badge. -->
         <div class="performance-table">
             <div class="table-header">
                 <h2 class="table-title">Best Days to Trade</h2>
                 <p class="table-subtitle">Ranked by how consistently you win — not just win rate, but how reliable that win rate really is</p>
             </div>
+            <!-- Replaced by buildDayAnalysis() with a <table> or empty-state message -->
             <div id="dayTableContainer"><div class="loading">Loading...</div></div>
         </div>
 
-        <!-- Streak summary -->
+        <!-- ── Streak analysis cards ───────────────────────────────────────────
+             Five streak metrics computed by buildStreakAnalysis().
+             Max/avg win and loss streak lengths, plus the current active streak. -->
         <div style="margin-bottom:0.75rem;">
             <span style="font-size:1.1rem;font-weight:600;color:#1f2937;">Win / Loss Streak Analysis</span>
         </div>
         <div class="streak-grid" id="streakGrid">
+            <!-- Values are filled in by buildStreakAnalysis() -->
             <div class="streak-card"><div class="streak-label">Max Win Streak</div><div class="streak-value win" id="maxWinStreak">—</div></div>
             <div class="streak-card"><div class="streak-label">Max Loss Streak</div><div class="streak-value loss" id="maxLossStreak">—</div></div>
             <div class="streak-card"><div class="streak-label">Avg Win Streak</div><div class="streak-value win" id="avgWinStreak">—</div></div>
             <div class="streak-card"><div class="streak-label">Avg Loss Streak</div><div class="streak-value loss" id="avgLossStreak">—</div></div>
+            <!-- Current streak label and colour class are set dynamically -->
             <div class="streak-card"><div class="streak-label">Current Streak</div><div class="streak-value neutral" id="currentStreak">—</div></div>
         </div>
 
-        <!-- Rolling 20-trade Avg P&L -->
+        <!-- ── Rolling 20-trade average P&L chart ──────────────────────────────
+             Full-width chart built by buildRollingChart().
+             At each trade i (where i ≥ 19), plots the mean P&L of trades [i-19, i].
+             The first 19 points are null (spanGaps:false leaves them as gaps).
+             Useful for spotting when performance is improving or deteriorating. -->
         <div class="chart-card-full">
             <div class="chart-title">Rolling Performance (20-trade window)</div>
             <div class="chart-subtitle">Avg P&L per trade on a 20-trade rolling basis — reveals regime shifts</div>
             <canvas id="rollingChart" height="100"></canvas>
         </div>
 
-        <!-- Symbol breakdown -->
+        <!-- ── Symbol performance breakdown table ──────────────────────────────
+             Populated by buildSymbolTable().  One row per traded symbol showing:
+             trade count, win rate, total P&L, best trade, worst trade. -->
         <div class="performance-table">
             <div class="table-header">
                 <h2 class="table-title">Symbol Performance Breakdown</h2>
@@ -272,13 +386,17 @@
             <div id="symbolTableContainer"><div class="loading">Loading symbol data...</div></div>
         </div>
 
-        <!-- Psychology Insights -->
+        <!-- ── Psychology Insights ─────────────────────────────────────────────
+             Two side-by-side tables: Emotion Before and Confidence Level.
+             Only trades that have emotion/confidence data are counted.
+             If none exist, an empty-state prompt encourages the user to log them. -->
         <div style="margin-bottom:0.75rem;margin-top:0.5rem;">
             <span style="font-size:1.1rem;font-weight:600;color:#1f2937;">🧘 Psychology Insights</span>
             <span style="font-size:0.8rem;color:#6b7280;margin-left:0.75rem;">How your mental state affects performance</span>
         </div>
 
         <div class="charts-row">
+            <!-- Emotion Before table — built by buildEmotionTable() -->
             <div class="performance-table" style="margin-bottom:0;">
                 <div class="table-header">
                     <h2 class="table-title">Emotion Before Trade</h2>
@@ -286,6 +404,7 @@
                 </div>
                 <div id="emotionTableContainer"><div class="loading">Loading...</div></div>
             </div>
+            <!-- Confidence Level table — built by buildConfidenceTable() -->
             <div class="performance-table" style="margin-bottom:0;">
                 <div class="table-header">
                     <h2 class="table-title">Confidence Level</h2>
@@ -298,6 +417,13 @@
     </div><!-- /main-content -->
 
     <script>
+    /*
+     * Auth guard and currency symbol setup
+     * ─────────────────────────────────────
+     * Redirect to login if no JWT is stored.
+     * Read the user's preferred currency from localStorage so all P&L values
+     * are displayed with the correct symbol ($, €, £, ¥).
+     */
     const token = localStorage.getItem('token');
     const CURRENCY_SYM = { usd:'$', eur:'€', gbp:'£', jpy:'¥' };
     const sym = CURRENCY_SYM[localStorage.getItem('currency') || 'usd'] || '$';
@@ -305,9 +431,24 @@
 
     function logout() { localStorage.removeItem('token'); window.location.href = '/login.html'; }
 
+    /*
+     * State
+     * ──────
+     * currentFilter — the active dateRange value sent to the API ('', 'week', etc.)
+     * Chart instances — stored so they can be destroyed before rebuilding.
+     *   Destroying the old instance before creating a new one prevents Chart.js
+     *   from throwing "canvas already in use by a different chart" errors.
+     */
     let currentFilter = '';
     let equityChartInst = null, drawdownChartInst = null, rollingChartInst = null;
 
+    /*
+     * filterByDate(range, btn)
+     * ─────────────────────────
+     * Called when the user clicks a date-filter button.
+     * Updates currentFilter, moves the .active class to the clicked button,
+     * then reloads all analytics sections with the new filter.
+     */
     function filterByDate(range, btn) {
         currentFilter = range;
         document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
@@ -315,31 +456,52 @@
         loadAnalytics();
     }
 
-    // ── Summary stats ──────────────────────────────────────────────────────────
+    /* ── Summary stats ─────────────────────────────────────────────────────── */
+
+    /*
+     * loadAnalytics()
+     * ────────────────
+     * Fetches GET /api/trades/stats/overview (with optional dateRange param)
+     * and populates the six summary metric cards.
+     *
+     * fmt(n) formats a number to two decimal places with locale-specific commas,
+     * taking the absolute value so the sign can be applied separately for
+     * correct handling of negative P&L values.
+     *
+     * After the metric cards are updated, calls loadTradeData() to fetch the
+     * full trade array and drive all charts and tables.
+     */
     async function loadAnalytics() {
         try {
             let url = '/api/trades/stats/overview' + (currentFilter ? `?dateRange=${currentFilter}` : '');
             const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             if (res.ok) {
                 const { stats } = await res.json();
+                /* Format a number as a locale string with 2 decimal places */
                 const fmt = n => Math.abs(parseFloat(n)).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
                 const totalPL = parseFloat(stats.totalPL);
+
+                /* Total P&L — prepend minus sign if negative so we can always use sym+abs */
                 document.getElementById('totalPL').textContent = `${totalPL < 0 ? '-' : ''}${sym}${fmt(totalPL)}`;
                 document.getElementById('totalPL').style.color = totalPL >= 0 ? '#059669' : '#dc2626';
                 document.getElementById('plDesc').textContent = `${stats.wins} wins / ${stats.losses} losses`;
 
+                /* Win Rate */
                 document.getElementById('winRate').textContent = `${stats.winRate}%`;
                 document.getElementById('winRateDesc').textContent = `${stats.wins} wins / ${stats.totalTrades} trades`;
 
+                /* Profit Factor — descriptive label based on the value */
                 const pfVal = parseFloat(stats.profitFactor);
                 document.getElementById('profitFactor').textContent = pfVal.toFixed(2);
                 document.getElementById('profitFactorDesc').textContent =
                     pfVal > 1 ? 'Profitable system' : pfVal === 1 ? 'Break even' : pfVal === 0 ? 'No data' : 'Needs improvement';
 
+                /* Avg Win, Avg Loss, Expectancy */
                 document.getElementById('avgWin').textContent = `${sym}${fmt(stats.avgWin)}`;
                 document.getElementById('avgLoss').textContent = `${sym}${fmt(stats.avgLoss)}`;
                 document.getElementById('expectancy').textContent = `${parseFloat(stats.expectancy) < 0 ? '-' : ''}${sym}${fmt(stats.expectancy)}`;
             } else {
+                /* If the API returns an error, replace all values with dashes */
                 ['totalPL','winRate','profitFactor','avgWin','avgLoss','expectancy'].forEach(id => {
                     document.getElementById(id).textContent = '—';
                 });
@@ -353,10 +515,25 @@
             document.getElementById('plDesc').textContent = 'Error loading stats';
         }
 
+        /* Regardless of stats success, fetch trade data for charts and tables */
         loadTradeData();
     }
 
-    // ── All trade data (drives all charts + tables) ────────────────────────────
+    /* ── All trade data ─────────────────────────────────────────────────────── */
+
+    /*
+     * loadTradeData()
+     * ────────────────
+     * Fetches the complete trade array from GET /api/trades (with optional filter).
+     * Passes the result to each build*() function to render charts and tables.
+     *
+     * Sorts a copy of the array chronologically for time-based charts (equity
+     * curve, drawdown, rolling average) while passing the original unsorted array
+     * to the symbol and psychology tables where order doesn't matter.
+     *
+     * If there are no trades, shows an empty-state in every table and clears
+     * all chart canvases.
+     */
     async function loadTradeData() {
         try {
             let url = '/api/trades' + (currentFilter ? `?dateRange=${currentFilter}` : '');
@@ -372,9 +549,10 @@
                 return;
             }
 
-            // Sort chronologically for time-based charts
+            /* Sort by date ascending — required for cumulative / rolling calculations */
             const sorted = [...trades].sort((a, b) => new Date(a.date) - new Date(b.date));
 
+            /* Build all sections from the data */
             buildEquityCurve(sorted);
             buildDrawdown(sorted);
             buildRollingChart(sorted);
@@ -386,13 +564,29 @@
         } catch (e) { console.error('Trade data error:', e); }
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────────
+    /* ── Helpers ─────────────────────────────────────────────────────────────── */
+
+    /*
+     * clearCharts()
+     * ──────────────
+     * Destroys all three Chart.js instances and nulls their references.
+     * Called when there are no trades so empty canvases are shown instead of
+     * stale data from the previous filter period.
+     */
     function clearCharts() {
         [['equityChartInst','equityChart'],['drawdownChartInst','drawdownChart'],['rollingChartInst','rollingChart']].forEach(([inst, id]) => {
             if (window[inst]) { window[inst].destroy(); window[inst] = null; }
         });
     }
 
+    /*
+     * minmax(arr) — min-max normalisation
+     * ─────────────────────────────────────
+     * Scales all values in arr to the range [0, 1].
+     * Used to combine metrics with different scales into a single composite score.
+     * Non-finite values (Infinity, NaN) are treated as 0.
+     * If all values are equal, returns 0.5 for each element.
+     */
     function minmax(arr) {
         const clean = arr.filter(v => isFinite(v));
         if (!clean.length) return arr.map(() => 0);
@@ -401,7 +595,20 @@
         return arr.map(v => isFinite(v) ? (v - mn) / (mx - mn) : 0);
     }
 
-    // Wilson 95% CI lower bound for a proportion
+    /*
+     * wilsonLow(wins, n) — Wilson score interval lower bound
+     * ────────────────────────────────────────────────────────
+     * Returns the 95% confidence interval lower bound for a win rate.
+     * Formula: (p + z²/2n − z√(p(1−p)/n + z²/4n²)) / (1 + z²/n)
+     * where z = 1.96 (95% CI), p = wins/n.
+     *
+     * This is used instead of raw win rate in the day-of-week table because
+     * a day with 3 wins from 3 trades (100% rate) has far less statistical
+     * significance than a day with 60 wins from 100 trades (60% rate).
+     * The Wilson CI lower bound penalises small sample sizes automatically.
+     *
+     * Returns a percentage in [0, 100].
+     */
     function wilsonLow(wins, n) {
         if (n === 0) return 0;
         const z = 1.96, p = wins / n;
@@ -411,9 +618,27 @@
         return Math.max(0, center - margin) * 100;
     }
 
-    // ── 1. Equity Curve ────────────────────────────────────────────────────────
+    /* ── 1. Equity Curve ─────────────────────────────────────────────────────── */
+
+    /*
+     * buildEquityCurve(sorted)
+     * ─────────────────────────
+     * Builds a cumulative-sum line chart where each data point is the running
+     * total P&L after each trade.
+     *
+     * The line and fill colour are determined by whether the final cumulative
+     * value is positive (green) or negative (red) — a profitable account is
+     * green throughout, a losing account is red.
+     *
+     * Point dots are hidden when there are > 80 trades to prevent visual clutter.
+     * tension: 0.3 gives a slightly smoothed line without looking too artificial.
+     *
+     * The existing chart instance is destroyed before creating a new one to avoid
+     * "canvas already in use" errors when the filter changes.
+     */
     function buildEquityCurve(sorted) {
         const pl = sorted.map(t => parseFloat(t.profitLoss) || 0);
+        /* Build the cumulative sum array */
         const cum = []; let sum = 0;
         pl.forEach(v => { sum += v; cum.push(+sum.toFixed(2)); });
 
@@ -428,11 +653,13 @@
                 datasets: [{
                     label: 'Cumulative P&L',
                     data: cum,
+                    /* Colour the line based on whether the account is profitable overall */
                     borderColor: cum[cum.length - 1] >= 0 ? '#059669' : '#dc2626',
                     backgroundColor: cum[cum.length - 1] >= 0 ? 'rgba(5,150,105,0.08)' : 'rgba(220,38,38,0.08)',
                     borderWidth: 2,
                     fill: true,
                     tension: 0.3,
+                    /* Hide individual dots when there are many trades to reduce clutter */
                     pointRadius: cum.length > 80 ? 0 : 3,
                 }]
             },
@@ -440,7 +667,7 @@
                 responsive: true,
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { display: false },
+                    x: { display: false }, /* Trade numbers shown as labels but hidden */
                     y: {
                         grid: { color: 'rgba(0,0,0,0.05)' },
                         ticks: { callback: v => `$${v}` }
@@ -450,14 +677,25 @@
         });
     }
 
-    // ── 2. Drawdown ────────────────────────────────────────────────────────────
+    /* ── 2. Drawdown ─────────────────────────────────────────────────────────── */
+
+    /*
+     * buildDrawdown(sorted)
+     * ──────────────────────
+     * Plots the drawdown: how far the account has fallen from its running peak.
+     * For each trade, drawdown = current cumulative P&L − running peak.
+     * The value is always ≤ 0 (it's negative when below the peak, 0 at new highs).
+     *
+     * A persistently deep red area on this chart indicates a losing streak that
+     * the account has not yet recovered from.
+     */
     function buildDrawdown(sorted) {
         const pl = sorted.map(t => parseFloat(t.profitLoss) || 0);
         let sum = 0, peak = 0;
         const dd = pl.map(v => {
             sum += v;
-            if (sum > peak) peak = sum;
-            return +( (sum - peak).toFixed(2) );
+            if (sum > peak) peak = sum; /* Track the highest cumulative P&L seen so far */
+            return +( (sum - peak).toFixed(2) ); /* Distance below that peak */
         });
 
         const labels = sorted.map((_, i) => `#${i + 1}`);
@@ -493,12 +731,24 @@
         });
     }
 
-    // ── 3. Rolling 20-trade avg P&L ───────────────────────────────────────────
+    /* ── 3. Rolling 20-trade average P&L ─────────────────────────────────────── */
+
+    /*
+     * buildRollingChart(sorted)
+     * ──────────────────────────
+     * For each trade index i ≥ 19, computes the mean P&L of the 20 trades
+     * ending at i (a sliding window).  The first 19 values are null (no window
+     * yet), which Chart.js renders as gaps when spanGaps: false is set.
+     *
+     * This chart reveals performance regime shifts: a line trending upward means
+     * recent trades are better than average; a declining line means deterioration.
+     * Useful for identifying when a strategy starts breaking down.
+     */
     function buildRollingChart(sorted) {
         const pl = sorted.map(t => parseFloat(t.profitLoss) || 0);
-        const WIN = 20;
+        const WIN = 20; /* Window size */
         const rolling = pl.map((_, i) => {
-            if (i < WIN - 1) return null;
+            if (i < WIN - 1) return null; /* Not enough trades yet for a full window */
             const slice = pl.slice(i - WIN + 1, i + 1);
             return +(slice.reduce((a, b) => a + b, 0) / WIN).toFixed(2);
         });
@@ -519,8 +769,8 @@
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4,
-                    pointRadius: 0,
-                    spanGaps: false,
+                    pointRadius: 0, /* No dots — this is a trend line, not individual points */
+                    spanGaps: false, /* Leave gap for the initial 19 null values */
                 }]
             },
             options: {
@@ -537,19 +787,38 @@
         });
     }
 
-    // ── 4. Streak analysis ────────────────────────────────────────────────────
+    /* ── 4. Streak analysis ───────────────────────────────────────────────────── */
+
+    /*
+     * buildStreakAnalysis(sorted)
+     * ────────────────────────────
+     * Converts the trade sequence into a 'W'/'L' array, then counts consecutive
+     * runs of the same outcome to find streak lengths.
+     *
+     * Computed metrics:
+     *   maxWinStreak  — longest consecutive winning run
+     *   maxLossStreak — longest consecutive losing run
+     *   avgWinStreak  — mean length of all winning runs
+     *   avgLossStreak — mean length of all losing runs
+     *   currentStreak — how many consecutive results (W or L) end the sequence
+     *                   e.g. "3W" means 3 wins in a row going into today
+     */
     function buildStreakAnalysis(sorted) {
+        /* Convert each trade to 'W' (win) or 'L' (non-win) */
         const seq = sorted.map(t => t.result === 'win' ? 'W' : 'L');
         const winStreaks = [], lossStreaks = [];
         let cur = seq[0], len = 1;
 
+        /* Walk through the sequence, collecting run lengths */
         for (let i = 1; i < seq.length; i++) {
             if (seq[i] === cur) { len++; }
             else {
+                /* End of a run — push the length into the right bucket */
                 (cur === 'W' ? winStreaks : lossStreaks).push(len);
                 cur = seq[i]; len = 1;
             }
         }
+        /* Push the final run (loop exits without flushing the last streak) */
         if (cur) (cur === 'W' ? winStreaks : lossStreaks).push(len);
 
         const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '—';
@@ -559,25 +828,47 @@
         document.getElementById('avgWinStreak').textContent  = avg(winStreaks);
         document.getElementById('avgLossStreak').textContent = avg(lossStreaks);
 
-        // Current streak
+        /* Current streak: walk backward from the last trade while result stays the same */
         const last = seq[seq.length - 1];
         let count = 0;
         for (let i = seq.length - 1; i >= 0 && seq[i] === last; i--) count++;
         const el = document.getElementById('currentStreak');
+        /* e.g. "3W" for 3 wins in a row, coloured green; "2L" coloured red */
         el.textContent = `${count}${last}`;
         el.className = `streak-value ${last === 'W' ? 'win' : 'loss'}`;
     }
 
-    // ── 5. Day-of-week quant table ─────────────────────────────────────────────
+    /* ── 5. Day-of-week quant table ──────────────────────────────────────────── */
+
+    /*
+     * buildDayAnalysis(sorted)
+     * ─────────────────────────
+     * Groups trades by day of week and computes a composite reliability score
+     * for each day.  Sorts by score descending and renders a table.
+     *
+     * Composite score = 0.60 × normalisedCI + 0.25 × normalisedRiskAdjMedian + 0.15 × normalisedSharpe
+     *   - Wilson CI (60%): how reliable is the win rate given the sample size?
+     *   - Risk-adjusted median (25%): median P&L divided by standard deviation
+     *     (robust to outlier trades)
+     *   - Sharpe ratio (15%): mean P&L divided by P&L standard deviation
+     *
+     * Each metric is min-max normalised before combining so they are on the same scale.
+     *
+     * Date parsing: trade.date is stored as UTC midnight. Adding 12 hours before
+     * calling getUTCDay() compensates for timezone offsets of up to ±12h so a trade
+     * logged as "Monday" in any timezone is correctly attributed to Monday.
+     */
     function buildDayAnalysis(sorted) {
         const DAY = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
+        /* Initialise a bucket for each day of the week */
         const groups = {};
         DAY.forEach(d => { groups[d] = { pls: [], wins: 0 }; });
 
         const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-        // +12h before getUTCDay(): handles dates stored as local midnight in any UTC±12 timezone
+        /* +12h offsets the UTC midnight to midday to avoid ±1 day errors across time zones */
         const tradeDay = d => DAY_NAMES[new Date(new Date(d).getTime() + 12 * 60 * 60 * 1000).getUTCDay()];
+
         sorted.forEach(t => {
             const day = tradeDay(t.date);
             if (!groups[day]) groups[day] = { pls: [], wins: 0 };
@@ -585,18 +876,20 @@
             if (t.result === 'win') groups[day].wins++;
         });
 
+        /* Compute stats for each day that has at least one trade */
         const rows = DAY.map(day => {
             const { pls, wins } = groups[day];
             const n = pls.length;
-            if (n === 0) return null;
+            if (n === 0) return null; /* Skip days with no trades */
             const winRate = (wins / n) * 100;
-            const ci = wilsonLow(wins, n);
+            const ci = wilsonLow(wins, n); /* Wilson 95% CI lower bound */
             const avgPL = pls.reduce((a,b)=>a+b,0) / n;
-            // Median P&L — robust to outlier trades (used for score, not display)
+            /* Median is more robust than mean when there are a few large outlier trades */
             const sorted = [...pls].sort((a,b)=>a-b);
             const medPL = n % 2 === 1 ? sorted[(n-1)/2] : (sorted[n/2-1] + sorted[n/2]) / 2;
             const variance = pls.reduce((s,v)=>s+(v-avgPL)**2,0) / Math.max(n-1,1);
             const std = Math.sqrt(variance);
+            /* Sharpe: mean P&L / std deviation of P&L — same concept as Sharpe Ratio */
             const sharpe = std > 0 ? avgPL / std : 0;
             return { day, n, winRate, ci, avgPL, medPL, std, sharpe };
         }).filter(Boolean);
@@ -606,19 +899,22 @@
             return;
         }
 
-        // Risk-adjusted median: medPL / std — same concept as R-multiples (normalises by volatility).
-        // Monday's huge std ($124) collapses its edge score even if medPL looks large.
+        /* Risk-adjusted median: medPL / std — high median P&L on a high-volatility day
+           is less valuable than the same median on a low-volatility day */
         const riskAdjMed = rows.map(r => r.std > 0 ? r.medPL / r.std : 0);
 
-        // Weights: reliability (CI) 60%, risk-adj edge 25%, stability (Sharpe) 15%
+        /* Normalise each component to [0, 1] so they can be combined with weights */
         const normCI = minmax(rows.map(r => r.ci));
         const normAR = minmax(riskAdjMed);
         const normSH = minmax(rows.map(r => r.sharpe));
+
+        /* Weighted composite score — CI has the highest weight (reliability matters most) */
         const scored = rows.map((r, i) => ({
             ...r,
             score: +(0.60 * normCI[i] + 0.25 * normAR[i] + 0.15 * normSH[i]).toFixed(3)
-        })).sort((a, b) => b.score - a.score);
+        })).sort((a, b) => b.score - a.score); /* Best day first */
 
+        /* Determine signal badge based on score thresholds */
         const badge = s => s >= 0.6 ? 'trade' : s >= 0.35 ? 'watch' : 'avoid';
         const badgeLabel = s => s >= 0.6 ? 'TRADE' : s >= 0.35 ? 'WATCH' : 'AVOID';
 
@@ -638,6 +934,8 @@
                 <td>${r.n}</td>
                 <td>${r.winRate.toFixed(1)}%</td>
                 <td>
+                  <!-- Inline colour bar showing the Wilson CI percentage with colour coding:
+                       green ≥ 50%, amber ≥ 45%, red < 45% -->
                   <div style="display:flex;align-items:center;gap:0.5rem;">
                     <div style="flex:1;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;">
                       <div style="width:${r.ci.toFixed(0)}%;height:100%;border-radius:3px;background:${r.ci>=50?'#059669':r.ci>=45?'#d97706':'#dc2626'}"></div>
@@ -647,6 +945,7 @@
                 </td>
                 <td class="${r.avgPL>=0?'stat-positive':'stat-negative'}">${r.avgPL>=0?'+':'-'}${sym}${Math.abs(r.avgPL).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
                 <td>
+                  <!-- Score bar: filled indigo bar representing score as 0–10 -->
                   <div class="score-bar-wrap">
                     <div class="score-bar-bg"><div class="score-bar-fill" style="width:${(r.score*100).toFixed(0)}%"></div></div>
                     <span style="font-size:0.8rem;font-weight:600;color:#374151;min-width:2rem;">${(r.score*10).toFixed(1)}/10</span>
@@ -660,7 +959,15 @@
         document.getElementById('dayTableContainer').innerHTML = html;
     }
 
-    // ── 6. Symbol table ────────────────────────────────────────────────────────
+    /* ── 6. Symbol breakdown table ───────────────────────────────────────────── */
+
+    /*
+     * buildSymbolTable(trades)
+     * ─────────────────────────
+     * Groups trades by their symbol ticker.  For each symbol, computes:
+     *   - total trades, win rate, total P&L, best single trade, worst single trade.
+     * Renders a table sorted by the order symbols appear in the data.
+     */
     function buildSymbolTable(trades) {
         const symStats = {};
         trades.forEach(t => {
@@ -695,7 +1002,20 @@
         document.getElementById('symbolTableContainer').innerHTML = html;
     }
 
-    // ── 7. Emotion Before table ────────────────────────────────────────────────
+    /* ── 7. Emotion Before table ─────────────────────────────────────────────── */
+
+    /*
+     * buildEmotionTable(trades)
+     * ──────────────────────────
+     * Groups trades by their pre-trade emotional state (trade.emotionBefore).
+     * Trades without emotion data are excluded — they are not in the denominator.
+     *
+     * For each emotion, shows: trade count, win rate, avg P&L.
+     * Sorted by win rate descending so the most profitable emotional state
+     * appears at the top.
+     *
+     * emotionEmoji maps emotion names to emoji for visual appeal.
+     */
     function buildEmotionTable(trades) {
         const withEmotion = trades.filter(t => t.emotionBefore);
         if (!withEmotion.length) {
@@ -705,6 +1025,7 @@
 
         const groups = {};
         withEmotion.forEach(t => {
+            /* Capitalise the first letter of each emotion name for display */
             const e = t.emotionBefore.charAt(0).toUpperCase() + t.emotionBefore.slice(1);
             if (!groups[e]) groups[e] = { pls: [], wins: 0 };
             const pl = parseFloat(t.profitLoss) || 0;
@@ -717,7 +1038,7 @@
             const wr = (d.wins / n) * 100;
             const avgPL = d.pls.reduce((a, b) => a + b, 0) / n;
             return { emotion, n, wr, avgPL };
-        }).sort((a, b) => b.wr - a.wr);
+        }).sort((a, b) => b.wr - a.wr); /* Best-performing emotion first */
 
         const emotionEmoji = { Confident:'😎', Anxious:'😰', Excited:'🤩', Fearful:'😨', Calm:'😌', Greedy:'🤑', Disciplined:'🧘', Impulsive:'😤', Neutral:'😐' };
 
@@ -729,6 +1050,7 @@
             ${rows.map(r => `<tr>
                 <td><strong>${emotionEmoji[r.emotion] || ''} ${r.emotion}</strong></td>
                 <td>${r.n}</td>
+                <!-- Win rate ≥ 50% is green, < 50% is red -->
                 <td style="color:${r.wr>=50?'#059669':'#dc2626'};font-weight:600;">${r.wr.toFixed(1)}%</td>
                 <td class="${r.avgPL>=0?'stat-positive':'stat-negative'}">${r.avgPL>=0?'+':'-'}${sym}${Math.abs(r.avgPL).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
             </tr>`).join('')}
@@ -738,7 +1060,20 @@
         document.getElementById('emotionTableContainer').innerHTML = html;
     }
 
-    // ── 8. Confidence level table ──────────────────────────────────────────────
+    /* ── 8. Confidence level table ────────────────────────────────────────────── */
+
+    /*
+     * buildConfidenceTable(trades)
+     * ──────────────────────────────
+     * Groups trades into three confidence buckets:
+     *   Low (1–3), Medium (4–6), High (7–10).
+     *
+     * For each bucket: trade count, win rate, avg P&L, total P&L.
+     * Trades without a confidence score are excluded.
+     *
+     * Only buckets that have at least one trade are shown.
+     * Colour-coded emoji (🔴/🟡/🟢) give a quick visual hint about the confidence tier.
+     */
     function buildConfidenceTable(trades) {
         const withConf = trades.filter(t => t.confidenceLevel != null);
         if (!withConf.length) {
@@ -746,7 +1081,7 @@
             return;
         }
 
-        // Group into buckets: Low (1-3), Medium (4-6), High (7-10)
+        /* Three fixed buckets cover the full 1–10 slider range */
         const buckets = {
             'Low (1–3)':    { pls: [], wins: 0, range: [1,3] },
             'Medium (4–6)': { pls: [], wins: 0, range: [4,6] },
@@ -762,7 +1097,7 @@
         });
 
         const rows = Object.entries(buckets)
-            .filter(([, d]) => d.pls.length > 0)
+            .filter(([, d]) => d.pls.length > 0) /* Skip empty buckets */
             .map(([label, d]) => {
                 const n = d.pls.length;
                 const wr = (d.wins / n) * 100;
@@ -791,7 +1126,7 @@
         document.getElementById('confidenceTableContainer').innerHTML = html;
     }
 
-    // Initial load
+    /* Kick off the initial load with no filter (All Time) */
     loadAnalytics();
     </script>
 </body>

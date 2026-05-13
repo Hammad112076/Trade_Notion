@@ -4,23 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Trade Notion</title>
+
+    <!--
+        dashboard.html — Main overview page for logged-in users
+        ========================================================
+        This is the first page shown after login.
+
+        Page layout:
+          • Left sidebar  — Fixed navigation menu (same across all app pages)
+          • Main content  — Stats grid + recent trades table + quick action links
+
+        Data loaded on page startup (three parallel fetch() calls):
+          1. GET /api/auth/me              → user's name for the welcome header
+          2. GET /api/trades/stats/overview → four KPI cards (P&L, win rate, etc.)
+          3. GET /api/trades               → most recent 5 trades for the table
+
+        Auth guard: if no JWT is found in localStorage the page immediately
+        redirects to /login.html before any content is shown.
+
+        Currency: the user's preferred currency symbol is read from localStorage
+        ("currency" key, set by settings.html when preferences are saved).
+    -->
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f3f4f6;
+            background: #f3f4f6; /* Light grey page background */
         }
 
+        /* ── Sidebar ──────────────────────────────────────────────────────────
+           Fixed to the left edge, full viewport height.
+           Dark background contrasts with the light page content area.
+           overflow-y: auto adds a scrollbar if nav items overflow vertically. */
         .sidebar {
             position: fixed;
-            left: 0;
-            top: 0;
-            bottom: 0;
+            left: 0; top: 0; bottom: 0;
             width: 260px;
             background: #1f2937;
             color: white;
@@ -28,29 +48,25 @@
             overflow-y: auto;
         }
 
-        .logo {
-            padding: 0 1.5rem;
-            margin-bottom: 2rem;
-        }
+        /* Brand name in indigo at the top of the sidebar */
+        .logo { padding: 0 1.5rem; margin-bottom: 2rem; }
+        .logo h2 { color: #4F46E5; font-size: 1.5rem; }
 
-        .logo h2 {
-            color: #4F46E5;
-            font-size: 1.5rem;
-        }
-
-        .nav-section {
-            margin-bottom: 2rem;
-        }
+        /* ── Navigation sections ──────────────────────────────────────────────
+           Each section groups related nav items under a small uppercase label
+           (e.g. "Main", "Tools", "Account"). */
+        .nav-section { margin-bottom: 2rem; }
 
         .nav-section-title {
             padding: 0 1.5rem;
-            color: #9ca3af;
+            color: #9ca3af;      /* Muted grey for the section label */
             font-size: 0.75rem;
             font-weight: 600;
             text-transform: uppercase;
             margin-bottom: 0.5rem;
         }
 
+        /* Individual nav link — flex so icon and text sit side by side */
         .nav-item {
             padding: 0.75rem 1.5rem;
             color: #d1d5db;
@@ -61,22 +77,25 @@
             transition: all 0.3s;
         }
 
-        .nav-item:hover,
-        .nav-item.active {
+        /* Active and hover state: darker background + left indigo border accent */
+        .nav-item:hover, .nav-item.active {
             background: #374151;
             color: white;
             border-left: 3px solid #4F46E5;
         }
 
-        .nav-icon {
-            font-size: 1.25rem;
-        }
+        .nav-icon { font-size: 1.25rem; }
 
+        /* ── Main content area ────────────────────────────────────────────────
+           Left margin matches the sidebar width so content doesn't hide behind it. */
         .main-content {
             margin-left: 260px;
             padding: 2rem;
         }
 
+        /* ── Top header bar ───────────────────────────────────────────────────
+           White card at the top of the content area.
+           Flexbox pushes the welcome text left and the action buttons right. */
         .header {
             background: white;
             padding: 1.5rem 2rem;
@@ -88,11 +107,9 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        .header h1 {
-            color: #1f2937;
-            font-size: 1.75rem;
-        }
+        .header h1 { color: #1f2937; font-size: 1.75rem; }
 
+        /* Shared button base styles */
         .btn {
             padding: 0.625rem 1.25rem;
             border: none;
@@ -104,33 +121,23 @@
             display: inline-block;
         }
 
-        .btn-primary {
-            background: #4F46E5;
-            color: white;
-        }
+        .btn-primary { background: #4F46E5; color: white; }
+        .btn-primary:hover { background: #4338CA; }
 
-        .btn-primary:hover {
-            background: #4338CA;
-        }
-
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
+        /* User avatar circle (initials) in the header right side */
+        .user-menu { display: flex; align-items: center; gap: 1rem; }
 
         .user-avatar {
-            width: 40px;
-            height: 40px;
+            width: 40px; height: 40px;
             border-radius: 50%;
             background: #4F46E5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold;
         }
 
+        /* ── Stats grid ───────────────────────────────────────────────────────
+           Responsive grid of KPI cards.  auto-fit collapses from 4 to 2 to 1
+           column as the viewport narrows. */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -138,6 +145,7 @@
             margin-bottom: 2rem;
         }
 
+        /* Individual stat card — white with a subtle shadow */
         .stat-card {
             background: white;
             padding: 1.5rem;
@@ -145,53 +153,35 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
+        /* Row inside the card: title on the left, coloured icon on the right */
+        .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .stat-title  { color: #6b7280; font-size: 0.875rem; font-weight: 500; }
 
-        .stat-title {
-            color: #6b7280;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
+        /* Small icon badge — coloured square with an emoji inside */
         .stat-icon {
-            width: 40px;
-            height: 40px;
+            width: 40px; height: 40px;
             border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             font-size: 1.25rem;
         }
 
-        .stat-icon.blue { background: #dbeafe; color: #2563eb; }
-        .stat-icon.green { background: #d1fae5; color: #059669; }
+        /* Four colour variants for the four KPI cards */
+        .stat-icon.blue   { background: #dbeafe; color: #2563eb; }
+        .stat-icon.green  { background: #d1fae5; color: #059669; }
         .stat-icon.purple { background: #e9d5ff; color: #7c3aed; }
         .stat-icon.orange { background: #fed7aa; color: #ea580c; }
 
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #1f2937;
-            margin-bottom: 0.25rem;
-        }
+        /* Large bold number — the primary metric value */
+        .stat-value { font-size: 2rem; font-weight: bold; color: #1f2937; margin-bottom: 0.25rem; }
 
-        .stat-change {
-            font-size: 0.875rem;
-        }
+        /* Secondary line below the value — context text (e.g. "12 wins / 3 losses") */
+        .stat-change          { font-size: 0.875rem; }
+        .stat-change.positive { color: #059669; } /* Green for profitable context */
+        .stat-change.negative { color: #dc2626; } /* Red for loss context */
 
-        .stat-change.positive {
-            color: #059669;
-        }
-
-        .stat-change.negative {
-            color: #dc2626;
-        }
-
+        /* ── Content grid ─────────────────────────────────────────────────────
+           Two columns: recent trades table (2/3) + quick actions (1/3).
+           Stacks to a single column on narrower screens. */
         .content-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -199,42 +189,19 @@
             margin-bottom: 2rem;
         }
 
-        .card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+        /* Generic white card used for both the trades table and quick actions */
+        .card { background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .card-title  { font-size: 1.25rem; font-weight: 600; color: #1f2937; }
 
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1f2937;
-        }
+        /* "View all →" link in the card header */
+        .card-action { color: #4F46E5; text-decoration: none; font-size: 0.875rem; font-weight: 500; }
+        .card-action:hover { text-decoration: underline; }
 
-        .card-action {
-            color: #4F46E5;
-            text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .card-action:hover {
-            text-decoration: underline;
-        }
-
-        .trades-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
+        /* ── Recent trades table ─────────────────────────────────────────────
+           border-collapse removes the gap between cell borders. */
+        .trades-table { width: 100%; border-collapse: collapse; }
         .trades-table th {
             text-align: left;
             padding: 0.75rem;
@@ -243,38 +210,18 @@
             font-weight: 600;
             font-size: 0.875rem;
         }
+        .trades-table td { padding: 0.75rem; border-bottom: 1px solid #f3f4f6; }
+        .trades-table tr:hover { background: #f9fafb; }
 
-        .trades-table td {
-            padding: 0.75rem;
-            border-bottom: 1px solid #f3f4f6;
-        }
+        /* ── Result badges ────────────────────────────────────────────────────
+           Small coloured pill labels for "Win" and "Loss" in the table. */
+        .badge         { padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+        .badge.win     { background: #d1fae5; color: #059669; } /* Green for wins */
+        .badge.loss    { background: #fee2e2; color: #dc2626; } /* Red for losses */
 
-        .trades-table tr:hover {
-            background: #f9fafb;
-        }
-
-        .badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .badge.win {
-            background: #d1fae5;
-            color: #059669;
-        }
-
-        .badge.loss {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        .quick-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
+        /* ── Quick actions panel ──────────────────────────────────────────────
+           Vertical stack of large clickable buttons that link to key pages. */
+        .quick-actions { display: flex; flex-direction: column; gap: 1rem; }
 
         .quick-action-btn {
             padding: 1rem;
@@ -290,108 +237,94 @@
             display: block;
         }
 
-        .quick-action-btn:hover {
-            border-color: #4F46E5;
-            background: white;
-        }
+        .quick-action-btn:hover { border-color: #4F46E5; background: white; }
 
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: #6b7280;
-        }
+        /* ── Loading and empty states ─────────────────────────────────────────
+           Shown while data is being fetched, or when there are no trades yet. */
+        .loading     { text-align: center; padding: 2rem; color: #6b7280; }
+        .empty-state { text-align: center; padding: 3rem; color: #6b7280; }
 
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #6b7280;
-        }
-
-        @media (max-width: 1024px) {
-            .content-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        /* ── Responsive breakpoints ───────────────────────────────────────────
+           Below 1024px: content grid becomes a single column.
+           Below 768px:  sidebar collapses to icon-only mode (70px wide). */
+        @media (max-width: 1024px) { .content-grid { grid-template-columns: 1fr; } }
 
         @media (max-width: 768px) {
-            .sidebar {
-                width: 70px;
-            }
-
-            .main-content {
-                margin-left: 70px;
-            }
-
-            .nav-item span {
-                display: none;
-            }
+            .sidebar { width: 70px; }
+            .main-content { margin-left: 70px; }
+            .nav-item span { display: none; } /* Hide text labels, show only icons */
         }
     </style>
 </head>
 <body>
+
+    <!-- ── Sidebar navigation ──────────────────────────────────────────────────
+         Fixed on the left. "active" class on the Dashboard item highlights it.
+         The logout link calls the logout() function instead of linking to a page. -->
     <div class="sidebar">
-        <div class="logo">
-            <h2>Trade Notion</h2>
-        </div>
+        <div class="logo"><h2>Trade Notion</h2></div>
 
         <div class="nav-section">
             <div class="nav-section-title">Main</div>
             <a href="/dashboard.html" class="nav-item active">
-                <span class="nav-icon">📊</span>
-                <span>Dashboard</span>
+                <span class="nav-icon">📊</span><span>Dashboard</span>
             </a>
             <a href="/trades.html" class="nav-item">
-                <span class="nav-icon">📝</span>
-                <span>Trade Journal</span>
+                <span class="nav-icon">📝</span><span>Trade Journal</span>
             </a>
             <a href="/analytics.html" class="nav-item">
-                <span class="nav-icon">📈</span>
-                <span>Analytics</span>
+                <span class="nav-icon">📈</span><span>Analytics</span>
             </a>
         </div>
 
         <div class="nav-section">
             <div class="nav-section-title">Tools</div>
             <a href="/calendar.html" class="nav-item">
-                <span class="nav-icon">📅</span>
-                <span>Calendar</span>
+                <span class="nav-icon">📅</span><span>Calendar</span>
             </a>
             <a href="/reports.html" class="nav-item">
-                <span class="nav-icon">📄</span>
-                <span>Reports</span>
+                <span class="nav-icon">📄</span><span>Reports</span>
             </a>
             <a href="/goals.html" class="nav-item">
-                <span class="nav-icon">🎯</span>
-                <span>Goals</span>
+                <span class="nav-icon">🎯</span><span>Goals</span>
             </a>
         </div>
 
         <div class="nav-section">
             <div class="nav-section-title">Account</div>
             <a href="/settings.html" class="nav-item">
-                <span class="nav-icon">⚙️</span>
-                <span>Settings</span>
+                <span class="nav-icon">⚙️</span><span>Settings</span>
             </a>
+            <!-- onclick="logout()" clears the token and redirects to login -->
             <a href="#" class="nav-item" onclick="logout()">
-                <span class="nav-icon">🚪</span>
-                <span>Logout</span>
+                <span class="nav-icon">🚪</span><span>Logout</span>
             </a>
         </div>
     </div>
 
+    <!-- ── Main content area ────────────────────────────────────────────────── -->
     <div class="main-content">
+
+        <!-- Top header: personalised welcome + Add Trade button + avatar -->
         <div class="header">
             <div>
+                <!-- userName is populated by loadUserInfo() from /api/auth/me -->
                 <h1>Welcome back, <span id="userName">Trader</span>!</h1>
                 <p style="color: #6b7280; margin-top: 0.25rem;">Here's your trading overview</p>
             </div>
             <div class="user-menu">
                 <a href="/new-trade.html" class="btn btn-primary">+ Add Trade</a>
+                <!-- Avatar shows first initial of the user's name -->
                 <div class="user-avatar" id="userAvatar">T</div>
             </div>
         </div>
 
+        <!-- ── KPI stat cards ─────────────────────────────────────────────────
+             Each card shows one performance metric.
+             The id attributes are used by loadStats() to inject live values. -->
         <div class="stats-grid">
+
+            <!-- Total P&L — sum of all trade profits and losses -->
             <div class="stat-card">
                 <div class="stat-header">
                     <span class="stat-title">Total P&L</span>
@@ -401,6 +334,7 @@
                 <div class="stat-change" id="plChange">Loading...</div>
             </div>
 
+            <!-- Win Rate — percentage of trades that were profitable -->
             <div class="stat-card">
                 <div class="stat-header">
                     <span class="stat-title">Win Rate</span>
@@ -410,6 +344,7 @@
                 <div class="stat-change" id="winRateDetail">Loading...</div>
             </div>
 
+            <!-- Total Trades — count of all journal entries -->
             <div class="stat-card">
                 <div class="stat-header">
                     <span class="stat-title">Total Trades</span>
@@ -419,6 +354,7 @@
                 <div class="stat-change" id="tradesDetail">Loading...</div>
             </div>
 
+            <!-- Profit Factor — gross wins divided by gross losses (>1 = profitable system) -->
             <div class="stat-card">
                 <div class="stat-header">
                     <span class="stat-title">Profit Factor</span>
@@ -427,19 +363,26 @@
                 <div class="stat-value" id="profitFactor">0.00</div>
                 <div class="stat-change" id="profitFactorDetail">Loading...</div>
             </div>
+
         </div>
 
+        <!-- ── Two-column content grid ────────────────────────────────────────
+             Left: recent trades table  |  Right: quick action buttons -->
         <div class="content-grid">
+
+            <!-- Recent trades table — shows the 5 most recent entries -->
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">Recent Trades</h2>
                     <a href="/trades.html" class="card-action">View all →</a>
                 </div>
+                <!-- Container replaced by a <table> or empty-state by loadRecentTrades() -->
                 <div id="recentTradesContainer">
                     <div class="loading">Loading trades...</div>
                 </div>
             </div>
 
+            <!-- Quick actions — large buttons linking to the most common pages -->
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">Quick Actions</h2>
@@ -447,87 +390,114 @@
                 <div class="quick-actions">
                     <a href="/new-trade.html" class="quick-action-btn">📝 Log New Trade</a>
                     <a href="/analytics.html" class="quick-action-btn">📊 View Analytics</a>
-                    <a href="/reports.html" class="quick-action-btn">📄 Generate Report</a>
-                    <a href="/goals.html" class="quick-action-btn">🎯 Set Goals</a>
-                    <a href="/settings.html" class="quick-action-btn">⚙️ Account Settings</a>
+                    <a href="/reports.html"   class="quick-action-btn">📄 Generate Report</a>
+                    <a href="/goals.html"     class="quick-action-btn">🎯 Set Goals</a>
+                    <a href="/settings.html"  class="quick-action-btn">⚙️ Account Settings</a>
                 </div>
             </div>
+
         </div>
     </div>
 
     <script>
+        /*
+         * Auth guard — runs immediately on page load.
+         * If there is no JWT in localStorage, the user is not logged in.
+         * Redirect them to the login page before any API calls are made.
+         */
         const token = localStorage.getItem('token');
+        // Map currency codes to their symbols for formatting P&L values
         const CURRENCY_SYM = { usd:'$', eur:'€', gbp:'£', jpy:'¥' };
         const sym = CURRENCY_SYM[localStorage.getItem('currency') || 'usd'] || '$';
         if (!token) {
             window.location.href = '/login.html';
         }
 
+        /*
+         * logout() — clears the stored token and sends the user back to login.
+         * Called by the sidebar "Logout" link via onclick.
+         */
         function logout() {
             localStorage.removeItem('token');
             window.location.href = '/login.html';
         }
 
-        // Fetch user info
+        /*
+         * loadUserInfo()
+         * ─────────────────────────────────────────────────────────────────────
+         * Fetches the current user's profile from /api/auth/me.
+         * Updates the welcome headline with their first name and sets the
+         * avatar circle to their first initial.
+         */
         async function loadUserInfo() {
             try {
                 const response = await fetch('/api/auth/me', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (response.ok) {
-                    const data = await response.json();
-                    const userName = data.user.name.split(' ')[0];
-                    document.getElementById('userName').textContent = userName;
-                    document.getElementById('userAvatar').textContent = userName.charAt(0).toUpperCase();
+                    const data     = await response.json();
+                    const userName = data.user.name.split(' ')[0]; // First name only
+                    document.getElementById('userName').textContent    = userName;
+                    document.getElementById('userAvatar').textContent  = userName.charAt(0).toUpperCase();
                 }
             } catch (error) {
                 console.error('Error loading user:', error);
             }
         }
 
-        // Fetch stats
+        /*
+         * loadStats()
+         * ─────────────────────────────────────────────────────────────────────
+         * Fetches all-time performance statistics from /api/trades/stats/overview.
+         * Injects the values into the four KPI stat cards.
+         *
+         * fmt() — formats a number to always show two decimal places and adds
+         *         thousands separators (e.g. 12345.6 → "12,345.60").
+         */
         async function loadStats() {
             try {
                 const response = await fetch('/api/trades/stats/overview', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (response.ok) {
-                    const data = await response.json();
+                    const data  = await response.json();
                     const stats = data.stats;
 
-                    const fmt = n => Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+                    // Helper: format a number as a locale-aware decimal string
+                    const fmt = n => Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-                    // Total P&L
+                    // ── Total P&L card ────────────────────────────────────────
                     const totalPL = parseFloat(stats.totalPL);
+                    // Show a leading minus sign for losses (the fmt helper uses Math.abs)
                     document.getElementById('totalPL').textContent = `${totalPL < 0 ? '-' : ''}${sym}${fmt(totalPL)}`;
+                    // Colour the value green for profit, red for loss
                     document.getElementById('totalPL').style.color = totalPL >= 0 ? '#059669' : '#dc2626';
-                    document.getElementById('plChange').textContent = `${stats.wins} wins / ${stats.losses} losses`;
-                    document.getElementById('plChange').className = totalPL >= 0 ? 'stat-change positive' : 'stat-change negative';
+                    document.getElementById('plChange').textContent  = `${stats.wins} wins / ${stats.losses} losses`;
+                    document.getElementById('plChange').className    = totalPL >= 0 ? 'stat-change positive' : 'stat-change negative';
 
-                    // Win Rate
-                    document.getElementById('winRate').textContent = `${stats.winRate}%`;
+                    // ── Win Rate card ─────────────────────────────────────────
+                    document.getElementById('winRate').textContent      = `${stats.winRate}%`;
                     document.getElementById('winRateDetail').textContent = `${stats.wins} wins / ${stats.totalTrades} trades`;
 
-                    // Total Trades
-                    document.getElementById('totalTrades').textContent = stats.totalTrades;
-                    document.getElementById('tradesDetail').textContent = `All time performance`;
+                    // ── Total Trades card ─────────────────────────────────────
+                    document.getElementById('totalTrades').textContent  = stats.totalTrades;
+                    document.getElementById('tradesDetail').textContent = 'All time performance';
 
-                    // Profit Factor
-                    document.getElementById('profitFactor').textContent = parseFloat(stats.profitFactor).toFixed(2);
+                    // ── Profit Factor card ─────────────────────────────────────
+                    document.getElementById('profitFactor').textContent      = parseFloat(stats.profitFactor).toFixed(2);
+                    // Show expectancy (expected $ per trade) as the secondary line
                     document.getElementById('profitFactorDetail').textContent = `Expectancy: ${sym}${fmt(parseFloat(stats.expectancy))}`;
                 } else {
+                    // ── API returned an error — show dashes in all stat fields ──
                     ['totalPL','winRate','totalTrades','profitFactor'].forEach(id => {
                         document.getElementById(id).textContent = '—';
                     });
                     document.getElementById('plChange').textContent = 'Could not load stats';
                 }
             } catch (error) {
+                // ── Network error — show error message ────────────────────────
                 console.error('Error loading stats:', error);
                 ['totalPL','winRate','totalTrades','profitFactor'].forEach(id => {
                     document.getElementById(id).textContent = '—';
@@ -536,72 +506,75 @@
             }
         }
 
-        // Fetch recent trades
+        /*
+         * loadRecentTrades()
+         * ─────────────────────────────────────────────────────────────────────
+         * Fetches all trades and renders the first 5 in an HTML table.
+         * If there are no trades yet, shows an empty-state message with a CTA.
+         * P&L values are coloured green (profit) or red (loss).
+         */
         async function loadRecentTrades() {
             try {
                 const response = await fetch('/api/trades?limit=5', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (response.ok) {
-                    const data = await response.json();
+                    const data   = await response.json();
                     const trades = data.trades;
 
                     if (trades.length === 0) {
+                        // No trades yet — prompt the user to log their first trade
                         document.getElementById('recentTradesContainer').innerHTML = `
                             <div class="empty-state">
                                 <p>No trades yet. Start by adding your first trade!</p>
-                            </div>
-                        `;
+                            </div>`;
                         return;
                     }
 
+                    // Build a table showing the 5 most recent trades
+                    // Each row: Date | Symbol | Direction | P&L (coloured) | Result badge
                     const tableHTML = `
                         <table class="trades-table">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Symbol</th>
-                                    <th>Type</th>
-                                    <th>P&L</th>
-                                    <th>Status</th>
+                                    <th>Date</th><th>Symbol</th><th>Type</th>
+                                    <th>P&L</th><th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${trades.slice(0, 5).map(trade => {
-                                    const date = new Date(trade.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                                    const pl = parseFloat(trade.profitLoss);
+                                    const date    = new Date(trade.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                                    const pl      = parseFloat(trade.profitLoss);
                                     const plColor = pl >= 0 ? '#059669' : '#dc2626';
-                                    
                                     return `
                                         <tr>
                                             <td>${date}</td>
                                             <td><strong>${trade.symbol}</strong></td>
                                             <td>${(trade.direction || '').charAt(0).toUpperCase() + (trade.direction || '').slice(1)}</td>
-                                            <td style="color: ${plColor}; font-weight: 600;">${pl >= 0 ? '+' : '-'}${sym}${Math.abs(pl).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                                            <td><span class="badge ${trade.result}">${(trade.result || '').charAt(0).toUpperCase() + (trade.result || '').slice(1)}</span></td>
-                                        </tr>
-                                    `;
+                                            <td style="color:${plColor};font-weight:600;">
+                                                ${pl >= 0 ? '+' : '-'}${sym}${Math.abs(pl).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+                                            </td>
+                                            <td><span class="badge ${trade.result}">${(trade.result||'').charAt(0).toUpperCase()+(trade.result||'').slice(1)}</span></td>
+                                        </tr>`;
                                 }).join('')}
                             </tbody>
-                        </table>
-                    `;
+                        </table>`;
 
                     document.getElementById('recentTradesContainer').innerHTML = tableHTML;
                 }
             } catch (error) {
                 console.error('Error loading trades:', error);
                 document.getElementById('recentTradesContainer').innerHTML = `
-                    <div class="empty-state">
-                        <p>Error loading trades. Please refresh the page.</p>
-                    </div>
-                `;
+                    <div class="empty-state"><p>Error loading trades. Please refresh the page.</p></div>`;
             }
         }
 
-        // Load all data
+        /*
+         * Page startup — run all three data-loading functions in parallel.
+         * They are independent of each other so there is no need to await one
+         * before starting the next.
+         */
         loadUserInfo();
         loadStats();
         loadRecentTrades();
